@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.microbean</groupId>
+  <artifactId>microbean-type</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+
+  <parent>
+    <groupId>org.microbean</groupId>
+    <artifactId>microbean-pluginmanagement-pom</artifactId>
+    <version>17</version>
+    <relativePath />
+  </parent>
+
+  <name>microBean™ Type</name>
+  <description>${project.name}</description>
+  <inceptionYear>2020</inceptionYear>
+  <url>https://microbean.github.io/${project.artifactId}</url>
+
+  <scm>
+    <connection>scm:git:git@github.com:microbean/${project.artifactId}.git</connection>
+    <developerConnection>scm:git:git@github.com:microbean/${project.artifactId}.git</developerConnection>
+    <url>https://github.com/microbean/${project.artifactId}/</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <dependencyManagement>
+    <dependencies>
+
+
+      <!-- Normal dependencies. -->
+
+
+      <dependency>
+        <groupId>jakarta.enterprise</groupId>
+        <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        <version>3.0.0-M4</version>
+        <type>jar</type>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.microbean</groupId>
+        <artifactId>microbean-development-annotations</artifactId>
+        <version>0.2.4</version>
+        <type>jar</type>
+      </dependency>
+
+
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+
+
+    <!-- Test-scoped dependencies. -->
+
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.enterprise</groupId>
+      <artifactId>jakarta.enterprise.cdi-api</artifactId>
+      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Compile-scoped dependencies. -->
+
+
+    <dependency>
+        <groupId>org.microbean</groupId>
+        <artifactId>microbean-development-annotations</artifactId>
+        <type>jar</type>
+        <scope>compile</scope>
+    </dependency>
+
+
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <compilerArgs>
+              <arg>--enable-preview</arg>
+              <arg>-Xlint:all</arg>
+              <arg>-Xlint:-preview</arg>
+              <arg>-Xpkginfo:always</arg>
+            </compilerArgs>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <configuration>
+            <argLine>--enable-preview</argLine>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <additionalOptions>
+              <additionalOption>--enable-preview</additionalOption>
+              <additionalOption>--add-stylesheet</additionalOption>
+              <additionalOption>${project.basedir}/src/main/javadoc/css/fonts.css</additionalOption>
+            </additionalOptions>
+            <docfilessubdirs>true</docfilessubdirs>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <argLine>--enable-preview</argLine>
+            <systemPropertyVariables>
+              <project.build.directory>${project.build.directory}</project.build.directory>
+              <project.build.testOutputDirectory>${project.build.testOutputDirectory}</project.build.testOutputDirectory>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+
+      </plugins>
+    </pluginManagement>
+    <plugins>
+
+      <plugin>
+        <groupId>com.github.github</groupId>
+        <artifactId>site-maven-plugin</artifactId>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <properties>
+
+    <jdkToolchainVendor>openjdk</jdkToolchainVendor>
+
+    <!-- maven-compiler-plugin properties -->
+    <maven.compiler.release>14</maven.compiler.release>
+    <maven.compiler.source>14</maven.compiler.source>
+    <maven.compiler.target>14</maven.compiler.target>
+
+    <!-- maven-javadoc-plugin properties -->
+    <detectJavaApiLink>false</detectJavaApiLink>
+    <links>https://docs.oracle.com/en/java/javase/14/docs/api,https://microbean.github.io/microbean-development-annotations/apidocs/</links>
+
+  </properties>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>javadoc-no-fork</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
+
+</project>

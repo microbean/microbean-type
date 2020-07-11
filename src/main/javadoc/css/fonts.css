@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css?family=Lobster|Roboto|Fugaz+One');
+body {
+    font-family: 'Roboto Sans', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+}
+code, tt {
+    font-family: 'Roboto Mono', 'DejaVu Sans Mono', monospace;
+}
+.contentContainer .description dl dd, .contentContainer .details dl dd, .serializedFormContainer dl dd {
+    font-family: 'Roboto Sans', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+}
+div.block {
+    font-family: 'Roboto Sans', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+}
+pre {
+    font-family: 'Roboto Mono', 'DejaVu Sans Mono', monospace;
+}

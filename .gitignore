@@ -1,0 +1,8 @@
+.DS_Store
+*.args
+*.class
+*~
+nbactions.xml
+nb-configuration.xml
+src/site/markdown/*.html
+target/
