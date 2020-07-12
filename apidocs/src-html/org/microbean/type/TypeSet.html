@@ -212,7 +212,7 @@
 <span class="sourceLineNo">199</span><a id="line.199">      } else {</a>
 <span class="sourceLineNo">200</span><a id="line.200">        classes = new TreeSet&lt;&gt;(Types.typeNameComparator);</a>
 <span class="sourceLineNo">201</span><a id="line.201">        for (final Type type : this) {</a>
-<span class="sourceLineNo">202</span><a id="line.202">          Class&lt;?&gt; rawType = Types.toRawType(type);</a>
+<span class="sourceLineNo">202</span><a id="line.202">          Class&lt;?&gt; rawType = Types.toClass(type);</a>
 <span class="sourceLineNo">203</span><a id="line.203">          while (rawType != null) {</a>
 <span class="sourceLineNo">204</span><a id="line.204">            if (!rawType.isInterface()) {</a>
 <span class="sourceLineNo">205</span><a id="line.205">              classes.add(rawType);</a>
@@ -529,7 +529,7 @@
 <span class="sourceLineNo">516</span><a id="line.516"></a>
 <span class="sourceLineNo">517</span><a id="line.517"></a>
 <span class="sourceLineNo">518</span><a id="line.518">  private static final void getInterfaces(final Type type, final Set&lt;Class&lt;?&gt;&gt; interfaces) {</a>
-<span class="sourceLineNo">519</span><a id="line.519">    Class&lt;?&gt; cls = Types.toRawType(type);</a>
+<span class="sourceLineNo">519</span><a id="line.519">    Class&lt;?&gt; cls = Types.toClass(type);</a>
 <span class="sourceLineNo">520</span><a id="line.520">    if (cls.isInterface()) {</a>
 <span class="sourceLineNo">521</span><a id="line.521">      interfaces.add(cls);</a>
 <span class="sourceLineNo">522</span><a id="line.522">    }</a>
