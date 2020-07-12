@@ -29,16 +29,21 @@
     <dependencies>
 
 
-      <!-- Normal dependencies. -->
+      <!-- Imports. -->
 
 
       <dependency>
-        <groupId>jakarta.enterprise</groupId>
-        <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        <version>3.0.0-M4</version>
-        <type>jar</type>
+        <groupId>org.jboss.weld</groupId>
+        <artifactId>weld-core-bom</artifactId>
+        <version>4.0.0.Alpha3</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
-      
+
+
+      <!-- Normal dependencies. -->
+
+
       <dependency>
         <groupId>org.microbean</groupId>
         <artifactId>microbean-development-annotations</artifactId>
@@ -71,11 +76,12 @@
     </dependency>
 
     <dependency>
-      <groupId>jakarta.enterprise</groupId>
-      <artifactId>jakarta.enterprise.cdi-api</artifactId>
+      <groupId>org.jboss.weld</groupId>
+      <artifactId>weld-core-impl</artifactId>
       <type>jar</type>
       <scope>test</scope>
     </dependency>
+
 
     <!-- Compile-scoped dependencies. -->
 
