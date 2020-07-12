@@ -40,7 +40,6 @@ final class TestTypeNormalization {
 
   @Test
   final void testTypeNormalization() {
-
     // A straight up ordinary class should just be returned.
     Type arg = Integer.class;
     Type type = Types.normalize(arg);

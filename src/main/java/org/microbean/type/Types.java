@@ -367,7 +367,7 @@ public final class Types {
   private static final void toTypes(final ParameterizedType type,
                                     final boolean noParameterizedTypes,
                                     final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = toRawType(type);
+    final Class<?> rawType = toClass(type);
     if (rawType != null) {
       final TypeVariable<?>[] typeVariables = rawType.getTypeParameters();
       final Type[] typeVariableValues = type.getActualTypeArguments();
@@ -383,7 +383,7 @@ public final class Types {
   private static final void toTypes(final GenericArrayType type,
                                     final boolean noParameterizedTypes,
                                     final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = toRawType(type);
+    final Class<?> rawType = toClass(type);
     if (rawType != null) {
       final Class<?> arrayType = Array.newInstance(rawType, 0).getClass();
       resolvedTypes.put(arrayType, type);
@@ -450,6 +450,28 @@ public final class Types {
    * Returns {@code true} if and only if the supplied {@link Type} is
    * a raw {@link Class}.
    *
+   * <p>This method returns {@code true} if:</p>
+   *
+   * <ul>
+   *
+   * <li>The supplied {@link Type} is an instance of {@link Class},
+   * and any of the following conditions is true:
+   *
+   * <ul>
+   *
+   * <li>The return value of invoking this method on the {@linkplain
+   * Class class}' {@linkplain Class#getComponentType() component
+   * type} is {@code true}</li>
+   *
+   * <li>The {@linkplain Class class} {@linkplain
+   * Class#getTypeParameters() has type parameters}</li>
+   *
+   * </ul>
+   *
+   * </li>
+   *
+   * </ul>
+   *
    * @param type the {@link Type} in question; may be {@code null} in
    * which case {@code false} will be returned
    *
@@ -470,23 +492,24 @@ public final class Types {
    * returned.</li>
    *
    * <li>If a {@link ParameterizedType} is supplied, the result of
-   * invoking {@link #toRawType(Type)} on its {@linkplain
+   * invoking {@link #toClass(Type)} on its {@linkplain
    * ParameterizedType#getRawType() raw type} is returned.</li>
    *
    * <li>If a {@link GenericArrayType} is supplied, the result of
-   * invoking {@link #toRawType(Type)} on its {@linkplain
+   * invoking {@link #toClass(Type)} on its {@linkplain
    * GenericArrayType#getGenericComponentType() generic component
    * type} is returned.</li>
    *
    * <li>If a {@link TypeVariable} is supplied, the result of invoking
-   * {@link #toRawType(Type)} on its {@linkplain
+   * {@link #toClass(Type)} on its {@linkplain
    * TypeVariable#getBounds() first bound} is returned (if it has one)
-   * or {@link Object Object.class} if it does not.</li>
+   * or {@link Object Object.class} if it does not.  <strong>Any other
+   * bounds are ignored.</strong></li>
    *
    * <li>If a {@link WildcardType} is supplied, the result of invoking
-   * {@link #toRawType(Type)} on its {@linkplain
-   * WildcardType#getUpperBounds() first upper bound} is
-   * returned.</li>
+   * {@link #toClass(Type)} on its {@linkplain
+   * WildcardType#getUpperBounds() first upper bound} is returned.
+   * <strong>Any other bounds are ignored.</strong></li>
    *
    * </ul>
    *
@@ -494,7 +517,8 @@ public final class Types {
    * returned; may be {@code null} in which case {@code null} will be
    * returned
    *
-   * @return a {@link Class}, or {@code null}
+   * @return a {@link Class}, or {@code null} if a suitable raw type
+   * could not be determined
    *
    * @nullability This method may return {@code null}.
    *
@@ -503,51 +527,47 @@ public final class Types {
    *
    * @idempotency This method is idempotent and deterministic.
    */
-  public static final Class<?> toRawType(final Type type) {
+  public static final Class<?> toClass(final Type type) {
     final Class<?> returnValue;
     if (type == null) {
       returnValue = null;
     } else if (type instanceof Class<?> cls) {
-      returnValue = toRawType(cls);
+      returnValue = toClass(cls);
     } else if (type instanceof ParameterizedType parameterizedType) {
-      returnValue = toRawType(parameterizedType);
+      returnValue = toClass(parameterizedType);
     } else if (type instanceof GenericArrayType genericArrayType) {
-      returnValue = toRawType(genericArrayType);
+      returnValue = toClass(genericArrayType);
     } else if (type instanceof TypeVariable<?> typeVariable) {
-      returnValue = toRawType(typeVariable);
+      returnValue = toClass(typeVariable);
     } else if (type instanceof WildcardType wildcardType) {
-      returnValue = toRawType(wildcardType);
+      returnValue = toClass(wildcardType);
     } else {
       returnValue = null;
     }
     return returnValue;
   }
 
-  private static final Class<?> toRawType(final Class<?> type) {
+  private static final Class<?> toClass(final Class<?> type) {
     return type;
   }
 
-  private static final Class<?> toRawType(final ParameterizedType type) {
-    return type == null ? null : toRawType(type.getRawType());
+  private static final Class<?> toClass(final ParameterizedType type) {
+    return type == null ? null : toClass(type.getRawType());
   }
 
-  private static final Class<?> toRawType(final GenericArrayType type) {
-    final Class<?> candidate = type == null ? null : toRawType(type.getGenericComponentType());
+  private static final Class<?> toClass(final GenericArrayType type) {
+    final Class<?> candidate = type == null ? null : toClass(type.getGenericComponentType());
     return candidate == null ? null : (Class<?>)Array.newInstance(candidate, 0).getClass();
   }
 
-  private static final Class<?> toRawType(final TypeVariable<?> type) {
-    final Type[] bounds = type.getBounds();
-    return hasBound(bounds) ? toRawType(bounds[0]) : Object.class;
+  private static final Class<?> toClass(final TypeVariable<?> type) {
+    final Type[] bounds = type == null ? null : type.getBounds();
+    return bounds != null && bounds.length > 0 ? toClass(bounds[0]) : Object.class;
   }
 
-  private static final Class<?> toRawType(final WildcardType type) {
-    final Type[] bounds = type.getUpperBounds();
-    return hasBound(bounds) ? toRawType(bounds[0]) : Object.class;
-  }
-
-  private static final boolean hasBound(final Type[] bounds) {
-    return bounds != null && bounds.length > 0;
+  private static final Class<?> toClass(final WildcardType type) {
+    final Type[] bounds = type == null ? null : type.getUpperBounds();
+    return bounds != null && bounds.length > 0 ? toClass(bounds[0]) : Object.class;
   }
 
 

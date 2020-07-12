@@ -199,7 +199,7 @@ public class TypeSet extends AbstractSet<Type> {
       } else {
         classes = new TreeSet<>(Types.typeNameComparator);
         for (final Type type : this) {
-          Class<?> rawType = Types.toRawType(type);
+          Class<?> rawType = Types.toClass(type);
           while (rawType != null) {
             if (!rawType.isInterface()) {
               classes.add(rawType);
@@ -516,7 +516,7 @@ public class TypeSet extends AbstractSet<Type> {
 
 
   private static final void getInterfaces(final Type type, final Set<Class<?>> interfaces) {
-    Class<?> cls = Types.toRawType(type);
+    Class<?> cls = Types.toClass(type);
     if (cls.isInterface()) {
       interfaces.add(cls);
     }
