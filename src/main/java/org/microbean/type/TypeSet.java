@@ -43,6 +43,16 @@ import java.util.TreeSet;
 public class TypeSet extends AbstractSet<Type> {
 
 
+  /**
+   * A {@link TypeSet} that is forever empty.
+   *
+   * @nullability This field is never {@code null}.
+   *
+   * @since 0.0.3
+   */
+  public static final TypeSet EMPTY_TYPESET = new TypeSet();
+
+
   /*
    * Instance fields.
    */
@@ -68,9 +78,11 @@ public class TypeSet extends AbstractSet<Type> {
 
   /**
    * Creates a forever-{@linkplain #isEmpty() empty} {@link TypeSet}.
+   *
+   * @see #EMPTY_TYPESET
    */
   public TypeSet() {
-    this(Collections.emptySet());
+    this((Collection<? extends Type>)null);
   }
 
   /**
@@ -478,7 +490,7 @@ public class TypeSet extends AbstractSet<Type> {
    * @return Not applicable
    *
    * @exception UnsupportedOperationException when invoked
-   */  
+   */
   @Override
   public boolean retainAll(final Collection<?> objects) {
     throw new UnsupportedOperationException();

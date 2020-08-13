@@ -54,13 +54,13 @@ public final class Types {
    * Static fields.
    */
 
-  
+
   static final Comparator<Type> typeNameComparator = new TypeNameComparator();
 
-  private static final Map<Type, Type> wrapperTypes;
+  private static final Map<Class<?>, Type> wrapperTypes;
 
   static {
-    final Map<Type, Type> map = new HashMap<>();
+    final Map<Class<?>, Type> map = new HashMap<>();
     map.put(boolean.class, Boolean.class);
     map.put(byte.class, Byte.class);
     map.put(char.class, Character.class);
@@ -78,7 +78,7 @@ public final class Types {
    * Constructors.
    */
 
-  
+
   /**
    * Creates a new {@link Types}.
    */
@@ -86,7 +86,7 @@ public final class Types {
     super();
   }
 
-  
+
   /*
    * Methods.
    */
@@ -160,20 +160,54 @@ public final class Types {
    * threads.
    *
    * @idempotency This method is idempotent and deterministic.
+   *
+   * @see #resolve(Type, Function, boolean)
    */
-  public static final Type resolve(final Type type, final Function<? super Type, ? extends Type> typeResolver) {
+  public static final Type resolve(Type type, final Function<? super Type, ? extends Type> typeResolver) {
+    return resolve(type, typeResolver, false);
+  }
+
+  /**
+   * Resolves the supplied {@link Type} and returns the result.
+   *
+   * @param type the {@link Type} to resolve; may be {@code null}
+   *
+   * @param typeResolver the {@link Function} whose {@link
+   * Function#apply(Object)} method will be called on, among other
+   * things, {@link ParameterizedType} {@linkplain
+   * ParameterizedType#getActualTypeArguments() type arguments}; must
+   * not be {@code null}
+   *
+   * @param normalize whether the {@link #normalize(Type)} method
+   * should be called on the supplied {@link Type}
+   *
+   * @return the resolved {@link Type}, or {@code null}
+   *
+   * @nullability This method may return {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @since 0.0.3
+   */
+  public static final Type resolve(Type type, final Function<? super Type, ? extends Type> typeResolver, final boolean normalize) {
     final Type returnValue;
+    if (normalize) {
+      type = normalize(type);
+    }
     if (type instanceof Class<?> cls) {
-      returnValue = resolve(cls, typeResolver);
+      returnValue = resolve(cls, typeResolver, normalize);
     } else if (type instanceof ParameterizedType parameterizedType) {
-      returnValue = resolve(parameterizedType, typeResolver);
+      returnValue = resolve(parameterizedType, typeResolver, normalize);
     } else if (type instanceof GenericArrayType genericArrayType) {
-      returnValue = resolve(genericArrayType, typeResolver);
+      returnValue = resolve(genericArrayType, typeResolver, normalize);
     } else if (type instanceof TypeVariable<?> typeVariable) {
-      returnValue = resolve(typeVariable, typeResolver);
+      returnValue = resolve(typeVariable, typeResolver, normalize);
     } else if (type instanceof WildcardType wildcardType) {
       // (No-op.)
-      returnValue = resolve(wildcardType, typeResolver);
+      returnValue = resolve(wildcardType, typeResolver, normalize);
     } else {
       // (Unknown type, so we don't know how to resolve it.)
       returnValue = type;
@@ -181,12 +215,12 @@ public final class Types {
     return returnValue;
   }
 
-  private static final Type resolve(final Class<?> type, final Function<? super Type, ? extends Type> typeResolver) {
+  private static final Type resolve(final Class<?> type, final Function<? super Type, ? extends Type> typeResolver, final boolean normalizeIgnored) {
     final Type candidate = typeResolver.apply(type);
     return candidate == null ? type : candidate;
   }
 
-  private static final Type resolve(final ParameterizedType type, final Function<? super Type, ? extends Type> typeResolver) {
+  private static final Type resolve(final ParameterizedType type, final Function<? super Type, ? extends Type> typeResolver, final boolean normalize) {
     final Type candidate = typeResolver.apply(type);
     if (candidate == null) {
       final Type[] actualTypeArguments = type.getActualTypeArguments();
@@ -195,7 +229,7 @@ public final class Types {
       boolean createNewType = false;
       for (int i = 0; i < length; i++) {
         final Type actualTypeArgument = actualTypeArguments[i];
-        final Type resolvedActualTypeArgument = resolve(actualTypeArgument, typeResolver);
+        final Type resolvedActualTypeArgument = resolve(actualTypeArgument, typeResolver, normalize); // XXX recursive
         resolvedActualTypeArguments[i] = resolvedActualTypeArgument;
         if (actualTypeArgument != resolvedActualTypeArgument) {
           // If they're not the same object reference, then resolution
@@ -211,12 +245,12 @@ public final class Types {
 
   }
 
-  private static final Type resolve(final GenericArrayType type, final Function<? super Type, ? extends Type> typeResolver) {
+  private static final Type resolve(final GenericArrayType type, final Function<? super Type, ? extends Type> typeResolver, final boolean normalize) {
     final Type returnValue;
     final Type candidate = typeResolver.apply(type);
     if (candidate == null) {
       final Type genericComponentType = type.getGenericComponentType();
-      final Type resolvedComponentType = resolve(genericComponentType, typeResolver);
+      final Type resolvedComponentType = resolve(genericComponentType, typeResolver, normalize); // XXX recursive
       assert resolvedComponentType != null;
       if (resolvedComponentType == genericComponentType) {
         // Identity means that basically resolution was a no-op, so the
@@ -245,12 +279,12 @@ public final class Types {
     return returnValue;
   }
 
-  private static final Type resolve(final TypeVariable<?> type, final Function<? super Type, ? extends Type> typeResolver) {
+  private static final Type resolve(final TypeVariable<?> type, final Function<? super Type, ? extends Type> typeResolver, final boolean normalizeIgnored) {
     final Type candidate = typeResolver.apply(type);
     return candidate == null ? type : candidate;
   }
 
-  private static final Type resolve(final WildcardType type, final Function<? super Type, ? extends Type> typeResolver) {
+  private static final Type resolve(final WildcardType type, final Function<? super Type, ? extends Type> typeResolver, final boolean normalizeIgnored) {
     final Type candidate = typeResolver.apply(type);
     return candidate == null ? type : candidate;
   }
@@ -285,10 +319,46 @@ public final class Types {
    *
    * @idempotency This method is idempotent.
    *
-   * @see #toTypes(Type, Predicate)
+   * @see #toTypes(Type, Predicate, boolean)
    */
   public static final TypeSet toTypes(final Type type) {
-    return toTypes(type, null);
+    return toTypes(type, null, false);
+  }
+
+  /**
+   * Returns a non-{@code null}, {@linkplain
+   * Collections#unmodifiableSet(Set) unmodifiable <code>Set</code>}
+   * of {@link Type}s, each element of which is a {@link Type} which
+   * any instance bearing the supplied {@link Type} will implement.
+   *
+   * <p>The {@link Set} that is returned is guaranteed to not contain
+   * {@link WildcardType} or {@link TypeVariable} instances.</p>
+   *
+   * @param type the {@link Type} whose type closure should be
+   * computed; may be {@code null}
+   *
+   * @param normalize whether the {@link #normalize(Type)} method
+   * should be called on the supplied {@link Type} (provided it
+   * {@linkplain #isRawClass(Type) is not a raw <code>Class</code>})
+   *
+   * @return a non-{@code null} {@link TypeSet} <code>Set</code>} of
+   * {@link Type}s; the supplied {@link Type} will be one of its
+   * elements unless it is a {@link TypeVariable} or a {@link
+   * WildcardType}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent.
+   *
+   * @see #toTypes(Type, Predicate, boolean)
+   *
+   * @since 0.0.3
+   */
+  public static final TypeSet toTypes(final Type type, final boolean normalize) {
+    return toTypes(type, null, normalize);
   }
 
   /**
@@ -321,26 +391,73 @@ public final class Types {
    * threads.
    *
    * @idempotency This method is idempotent.
+   *
+   * @see #toTypes(Type, Predicate, boolean)
    */
   public static final TypeSet toTypes(final Type type, Predicate<? super Type> removalPredicate) {
-    final Map<Type, Type> resolvedTypes = new HashMap<>();
-    toTypes(type, isRawClass(type), resolvedTypes);
-    resolvedTypes.keySet()
-      .removeIf(k -> !(k instanceof Class) || removalPredicate != null && removalPredicate.test(resolvedTypes.get(k)));
-    return new TypeSet(resolvedTypes.values());
+    return toTypes(type, removalPredicate, false);
   }
 
-  private static final void toTypes(final Type type,
+  /**
+   * Returns a non-{@code null}, {@linkplain
+   * Collections#unmodifiableSet(Set) unmodifiable <code>Set</code>}
+   * of {@link Type}s, each element of which is a {@link Type} which
+   * any instance bearing the supplied {@link Type} will implement.
+   *
+   * <p>The {@link Set} that is returned is guaranteed to not contain
+   * {@link WildcardType} or {@link TypeVariable} instances.</p>
+   *
+   * <p>If the supplied {@link Predicate} returns {@code true} from an
+   * invocation of its {@link Predicate#test(Object)} method, then the
+   * {@link Type} that was passed to it will not be contained by the
+   * returned {@link TypeSet}.</p>
+   *
+   * @param type the {@link Type} whose type closure should be
+   * computed; may be {@code null}
+   *
+   * @param removalPredicate a {@link Predicate} used to selectively
+   * remove some {@link Type}s from the computed {@link TypeSet}; may
+   * be {@code null}
+   *
+   * @param normalize whether the {@link #normalize(Type)} method
+   * should be called on the supplied {@link Type} (provided it
+   * {@linkplain #isRawClass(Type) is not a raw <code>Class</code>})
+   *
+   * @return a non-{@code null} {@link TypeSet} <code>Set</code>} of
+   * {@link Type}s, filtered by the supplied {@link Predicate}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent.
+   *
+   * @since 0.0.3
+   */
+  public static final TypeSet toTypes(final Type type, Predicate<? super Type> removalPredicate, final boolean normalize) {
+    final Map<Type, Type> resolvedTypes = new HashMap<>();
+    toTypes(type, isRawClass(type), resolvedTypes, normalize);
+    resolvedTypes.keySet()
+      .removeIf(k -> !(k instanceof Class) || removalPredicate != null && removalPredicate.test(resolvedTypes.get(k)));
+    return resolvedTypes.isEmpty() ? TypeSet.EMPTY_TYPESET : new TypeSet(resolvedTypes.values());
+  }
+
+  private static final void toTypes(Type type,
                                     final boolean noParameterizedTypes,
-                                    final Map<Type, Type> resolvedTypes) {
+                                    final Map<Type, Type> resolvedTypes,
+                                    final boolean normalize) {
+    if (normalize && !noParameterizedTypes) {
+      type = normalize(type);
+    }
     if (type == null) {
       // Do nothing on purpose
     } else if (type instanceof Class<?> cls) {
-      toTypes(cls, noParameterizedTypes, resolvedTypes);
+      toTypes(cls, noParameterizedTypes, resolvedTypes, normalize);
     } else if (type instanceof ParameterizedType parameterizedType) {
-      toTypes(parameterizedType, noParameterizedTypes, resolvedTypes);
+      toTypes(parameterizedType, noParameterizedTypes, resolvedTypes, normalize);
     } else if (type instanceof GenericArrayType genericArrayType) {
-      toTypes(genericArrayType, noParameterizedTypes, resolvedTypes);
+      toTypes(genericArrayType, noParameterizedTypes, resolvedTypes, normalize);
     } else if (type instanceof TypeVariable<?> typeVariable) {
       // Do nothing on purpose
     } else if (type instanceof WildcardType wildcardType) {
@@ -350,44 +467,49 @@ public final class Types {
     }
   }
 
-  private static final void toTypes(final Class<?> type,
+  private static final void toTypes(final Class<?> cls,
                                     final boolean noParameterizedTypes,
-                                    final Map<Type, Type> resolvedTypes) {
-    resolvedTypes.put(type, resolve(type, resolvedTypes::get));
-    final Type superclass = noParameterizedTypes ? type.getSuperclass() : type.getGenericSuperclass();
+                                    final Map<Type, Type> resolvedTypes,
+                                    final boolean normalize) {
+    resolvedTypes.put(cls, resolve(cls, resolvedTypes::get, normalize));
+    final Type superclass = noParameterizedTypes ? cls.getSuperclass() : cls.getGenericSuperclass();
     if (superclass != null) {
-      toTypes(superclass, noParameterizedTypes, resolvedTypes);
+      toTypes(superclass, noParameterizedTypes || isRawClass(superclass), resolvedTypes, normalize);
     }
-    final Type[] interfaces = noParameterizedTypes ? type.getInterfaces() : type.getGenericInterfaces();
-    for (int i = 0; i < interfaces.length; i++) {
-      toTypes(interfaces[i], noParameterizedTypes, resolvedTypes);
+    final Type[] interfaces = noParameterizedTypes ? cls.getInterfaces() : cls.getGenericInterfaces();
+    for (final Type iface : interfaces) {
+      toTypes(iface, noParameterizedTypes || isRawClass(iface), resolvedTypes, normalize);
     }
   }
 
-  private static final void toTypes(final ParameterizedType type,
+  private static final void toTypes(final ParameterizedType parameterizedType,
                                     final boolean noParameterizedTypes,
-                                    final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = toClass(type);
+                                    final Map<Type, Type> resolvedTypes,
+                                    final boolean normalize) {
+    final Class<?> rawType = toClass(parameterizedType);
     if (rawType != null) {
-      final TypeVariable<?>[] typeVariables = rawType.getTypeParameters();
-      final Type[] typeVariableValues = type.getActualTypeArguments();
-      assert typeVariables.length == typeVariableValues.length;
-      for (int i = 0; i < typeVariables.length; i++) {
-        resolvedTypes.put(typeVariables[i], resolve(typeVariableValues[i], resolvedTypes::get));
+      if (!noParameterizedTypes) {
+        final TypeVariable<?>[] typeVariables = rawType.getTypeParameters();
+        final Type[] typeVariableValues = parameterizedType.getActualTypeArguments();
+        assert typeVariables.length == typeVariableValues.length;
+        for (int i = 0; i < typeVariables.length; i++) {
+          resolvedTypes.put(typeVariables[i], resolve(typeVariableValues[i], resolvedTypes::get, normalize));
+        }
       }
-      resolvedTypes.put(rawType, resolve(type, resolvedTypes::get));
-      toTypes(rawType, noParameterizedTypes, resolvedTypes);
+      resolvedTypes.put(rawType, resolve(parameterizedType, resolvedTypes::get, normalize));
+      toTypes(rawType, noParameterizedTypes, resolvedTypes, normalize);
     }
   }
 
-  private static final void toTypes(final GenericArrayType type,
+  private static final void toTypes(final GenericArrayType genericArrayType,
                                     final boolean noParameterizedTypes,
-                                    final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = toClass(type);
+                                    final Map<Type, Type> resolvedTypes,
+                                    final boolean normalize) {
+    final Class<?> rawType = toClass(genericArrayType);
     if (rawType != null) {
       final Class<?> arrayType = Array.newInstance(rawType, 0).getClass();
-      resolvedTypes.put(arrayType, type);
-      toTypes(arrayType, noParameterizedTypes, resolvedTypes);
+      resolvedTypes.put(arrayType, genericArrayType);
+      toTypes(arrayType, noParameterizedTypes, resolvedTypes, normalize);
     }
   }
 
@@ -423,7 +545,8 @@ public final class Types {
   @SuppressWarnings("unchecked")
   public static final <T extends Type> T box(final T type) {
     // We don't just blindly look up in wrapperTypes.  We call
-    // isPrimitive() first to potentially avoid the Map lookup.
+    // isPrimitive(Type) first (which will almost certainly be inlined
+    // by the JVM) to potentially avoid the Map lookup.
     return isPrimitive(type) ? (T)wrapperTypes.getOrDefault(type, type) : type;
   }
 
@@ -475,8 +598,8 @@ public final class Types {
    * @param type the {@link Type} in question; may be {@code null} in
    * which case {@code false} will be returned
    *
-   * @return {@code true} if if and only if the supplied {@link Type}
-   * is a raw {@link Class}
+   * @return {@code true} if and only if the supplied {@link Type} is
+   * a raw {@link Class}
    */
   public static final boolean isRawClass(final Type type) {
     return type instanceof Class<?> cls && (isRawClass(cls.getComponentType()) || cls.getTypeParameters().length > 0);
