@@ -25,7 +25,7 @@ as a Maven dependency:
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
   <!-- See https://search.maven.org/artifact/org.microbean/microbean-type for available versions. -->
-  <version>0.0.3</version>
+  <version>0.0.5</version>
 </dependency>
 ```
 
