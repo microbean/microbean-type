@@ -542,4 +542,20 @@ public class TypeSet extends AbstractSet<Type> {
     }
   }
 
+  /**
+   * Returns {@link #EMPTY_TYPESET} when invoked.
+   *
+   * @return {@link #EMPTY_TYPESET}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is deterministic and idempotent.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final TypeSet emptyTypeSet() {
+    return EMPTY_TYPESET;
+  }
+
 }
