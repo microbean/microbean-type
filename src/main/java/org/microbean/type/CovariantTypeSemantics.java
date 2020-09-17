@@ -146,8 +146,7 @@ public final class CovariantTypeSemantics extends TypeSemantics {
                                       final TypeSet payloadTypeSet) {
     boolean returnValue = false;
     for (final Type payloadType : payloadTypeSet) {
-      if (payloadType instanceof ParameterizedType payloadParameterizedType &&
-          this.isAssignable0(receiverType, payloadParameterizedType)) {
+      if (payloadType instanceof ParameterizedType && this.isAssignable0(receiverType, (ParameterizedType)payloadType)) {
         returnValue = true;
         break;
       }
@@ -204,10 +203,22 @@ public final class CovariantTypeSemantics extends TypeSemantics {
     // (Note that the Java Language Specification guarantees that if a
     // type variable extends another type variable, then the extended
     // type variable will be its sole bound.)
+    /*
     return
       receiverType.equals(payloadType) ||
       payloadType.getBounds()[0] instanceof TypeVariable<?> solePayloadTypeBound &&
       this.isAssignable(receiverType, solePayloadTypeBound);
+    */
+
+    final boolean returnValue;
+    if (receiverType.equals(payloadType)) {
+      returnValue = true;
+    } else {
+      final Object solePayloadTypeBound = payloadType.getBounds()[0];
+      returnValue = solePayloadTypeBound instanceof TypeVariable && this.isAssignable(receiverType, (TypeVariable<?>)solePayloadTypeBound);
+    }
+    return returnValue;
+    
   }
 
   @Override

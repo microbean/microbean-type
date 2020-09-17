@@ -291,73 +291,73 @@ public abstract class TypeSemantics {
     if (semantics == null || semantics == this) {
       if (receiverType == null || payloadType == null) {
         returnValue = false;
-      } else if (receiverType instanceof Class receiverClass) {
-        if (payloadType instanceof Class<?> payloadClass) {
-          returnValue = this.isAssignable(receiverClass, payloadClass);
-        } else if (payloadType instanceof ParameterizedType payloadParameterizedType) {
-          returnValue = this.isAssignable(receiverClass, payloadParameterizedType);
-        } else if (payloadType instanceof GenericArrayType payloadGenericArrayType) {
-          returnValue = this.isAssignable(receiverClass, payloadGenericArrayType);
-        } else if (payloadType instanceof TypeVariable<?> payloadTypeVariable) {
-          returnValue = this.isAssignable(receiverClass, payloadTypeVariable);
-        } else if (payloadType instanceof WildcardType payloadWildcardType) {
-          returnValue = this.isAssignable(receiverClass, payloadWildcardType);
+      } else if (receiverType instanceof Class) {
+        if (payloadType instanceof Class) {
+          returnValue = this.isAssignable((Class<?>)receiverType, (Class<?>)payloadType);
+        } else if (payloadType instanceof ParameterizedType) {
+          returnValue = this.isAssignable((Class<?>)receiverType, (ParameterizedType)payloadType);
+        } else if (payloadType instanceof GenericArrayType) {
+          returnValue = this.isAssignable((Class<?>)receiverType, (GenericArrayType)payloadType);
+        } else if (payloadType instanceof TypeVariable) {
+          returnValue = this.isAssignable((Class<?>)receiverType, (TypeVariable<?>)payloadType);
+        } else if (payloadType instanceof WildcardType) {
+          returnValue = this.isAssignable((Class<?>)receiverType, (WildcardType)payloadType);
         } else {
           returnValue = false;
         }
-      } else if (receiverType instanceof ParameterizedType receiverParameterizedType) {
-        if (payloadType instanceof Class<?> payloadClass) {
-          returnValue = this.isAssignable(receiverParameterizedType, payloadClass);
-        } else if (payloadType instanceof ParameterizedType payloadParameterizedType) {
-          returnValue = this.isAssignable(receiverParameterizedType, payloadParameterizedType);
-        } else if (payloadType instanceof GenericArrayType payloadGenericArrayType) {
-          returnValue = this.isAssignable(receiverParameterizedType, payloadGenericArrayType);
-        } else if (payloadType instanceof TypeVariable<?> payloadTypeVariable) {
-          returnValue = this.isAssignable(receiverParameterizedType, payloadTypeVariable);
-        } else if (payloadType instanceof WildcardType payloadWildcardType) {
-          returnValue = this.isAssignable(receiverParameterizedType, payloadWildcardType);
+      } else if (receiverType instanceof ParameterizedType) {
+        if (payloadType instanceof Class) {
+          returnValue = this.isAssignable((ParameterizedType)receiverType, (Class<?>)payloadType);
+        } else if (payloadType instanceof ParameterizedType) {
+          returnValue = this.isAssignable((ParameterizedType)receiverType, (ParameterizedType)payloadType);
+        } else if (payloadType instanceof GenericArrayType) {
+          returnValue = this.isAssignable((ParameterizedType)receiverType, (GenericArrayType)payloadType);
+        } else if (payloadType instanceof TypeVariable) {
+          returnValue = this.isAssignable((ParameterizedType)receiverType, (TypeVariable<?>)payloadType);
+        } else if (payloadType instanceof WildcardType) {
+          returnValue = this.isAssignable((ParameterizedType)receiverType, (WildcardType)payloadType);
         } else {
           returnValue = false;
         }
-      } else if (receiverType instanceof GenericArrayType receiverGenericArrayType) {
-        if (payloadType instanceof Class<?> payloadClass) {
-          returnValue = this.isAssignable(receiverGenericArrayType, payloadClass);
-        } else if (payloadType instanceof ParameterizedType payloadParameterizedType) {
-          returnValue = this.isAssignable(receiverGenericArrayType, payloadParameterizedType);
-        } else if (payloadType instanceof GenericArrayType payloadGenericArrayType) {
-          returnValue = this.isAssignable(receiverGenericArrayType, payloadGenericArrayType);
-        } else if (payloadType instanceof TypeVariable<?> payloadTypeVariable) {
-          returnValue = this.isAssignable(receiverGenericArrayType, payloadTypeVariable);
-        } else if (payloadType instanceof WildcardType payloadWildcardType) {
-          returnValue = this.isAssignable(receiverGenericArrayType, payloadWildcardType);
+      } else if (receiverType instanceof GenericArrayType) {
+        if (payloadType instanceof Class) {
+          returnValue = this.isAssignable((GenericArrayType)receiverType, (Class<?>)payloadType);
+        } else if (payloadType instanceof ParameterizedType) {
+          returnValue = this.isAssignable((GenericArrayType)receiverType, (ParameterizedType)payloadType);
+        } else if (payloadType instanceof GenericArrayType) {
+          returnValue = this.isAssignable((GenericArrayType)receiverType, (GenericArrayType)payloadType);
+        } else if (payloadType instanceof TypeVariable) {
+          returnValue = this.isAssignable((GenericArrayType)receiverType, (TypeVariable<?>)payloadType);
+        } else if (payloadType instanceof WildcardType) {
+          returnValue = this.isAssignable((GenericArrayType)receiverType, (WildcardType)payloadType);
         } else {
           returnValue = false;
         }
-      } else if (receiverType instanceof TypeVariable<?> receiverTypeVariable) {
-        if (payloadType instanceof Class<?> payloadClass) {
-          returnValue = this.isAssignable(receiverTypeVariable, payloadClass);
-        } else if (payloadType instanceof ParameterizedType payloadParameterizedType) {
-          returnValue = this.isAssignable(receiverTypeVariable, payloadParameterizedType);
-        } else if (payloadType instanceof GenericArrayType payloadGenericArrayType) {
-          returnValue = this.isAssignable(receiverTypeVariable, payloadGenericArrayType);
-        } else if (payloadType instanceof TypeVariable<?> payloadTypeVariable) {
-          returnValue = this.isAssignable(receiverTypeVariable, payloadTypeVariable);
-        } else if (payloadType instanceof WildcardType payloadWildcardType) {
-          returnValue = this.isAssignable(receiverTypeVariable, payloadWildcardType);
+      } else if (receiverType instanceof TypeVariable) {
+        if (payloadType instanceof Class) {
+          returnValue = this.isAssignable((TypeVariable<?>)receiverType, (Class<?>)payloadType);
+        } else if (payloadType instanceof ParameterizedType) {
+          returnValue = this.isAssignable((TypeVariable<?>)receiverType, (ParameterizedType)payloadType);
+        } else if (payloadType instanceof GenericArrayType) {
+          returnValue = this.isAssignable((TypeVariable<?>)receiverType, (GenericArrayType)payloadType);
+        } else if (payloadType instanceof TypeVariable) {
+          returnValue = this.isAssignable((TypeVariable<?>)receiverType, (TypeVariable<?>)payloadType);
+        } else if (payloadType instanceof WildcardType) {
+          returnValue = this.isAssignable((TypeVariable<?>)receiverType, (WildcardType)payloadType);
         } else {
           returnValue = false;
         }
-      } else if (receiverType instanceof WildcardType receiverWildcardType) {
-        if (payloadType instanceof Class<?> payloadClass) {
-          returnValue = this.isAssignable(receiverWildcardType, payloadClass);
-        } else if (payloadType instanceof ParameterizedType payloadParameterizedType) {
-          returnValue = this.isAssignable(receiverWildcardType, payloadParameterizedType);
-        } else if (payloadType instanceof GenericArrayType payloadGenericArrayType) {
-          returnValue = this.isAssignable(receiverWildcardType, payloadGenericArrayType);
-        } else if (payloadType instanceof TypeVariable<?> payloadTypeVariable) {
-          returnValue = this.isAssignable(receiverWildcardType, payloadTypeVariable);
-        } else if (payloadType instanceof WildcardType payloadWildcardType) {
-          returnValue = this.isAssignable(receiverWildcardType, payloadWildcardType);
+      } else if (receiverType instanceof WildcardType) {
+        if (payloadType instanceof Class) {
+          returnValue = this.isAssignable((WildcardType)receiverType, (Class<?>)payloadType);
+        } else if (payloadType instanceof ParameterizedType) {
+          returnValue = this.isAssignable((WildcardType)receiverType, (ParameterizedType)payloadType);
+        } else if (payloadType instanceof GenericArrayType) {
+          returnValue = this.isAssignable((WildcardType)receiverType, (GenericArrayType)payloadType);
+        } else if (payloadType instanceof TypeVariable) {
+          returnValue = this.isAssignable((WildcardType)receiverType, (TypeVariable<?>)payloadType);
+        } else if (payloadType instanceof WildcardType) {
+          returnValue = this.isAssignable((WildcardType)receiverType, (WildcardType)payloadType);
         } else {
           returnValue = false;
         }

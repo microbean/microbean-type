@@ -104,7 +104,7 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <configuration>
             <compilerArgs>
-              <arg>--enable-preview</arg>
+              <arg>${enablePreviewFlag}</arg>
               <arg>-Xlint:all</arg>
               <arg>-Xlint:-preview</arg>
               <arg>-Xpkginfo:always</arg>
@@ -114,14 +114,14 @@
         <plugin>
           <artifactId>maven-failsafe-plugin</artifactId>
           <configuration>
-            <argLine>--enable-preview</argLine>
+            <argLine>${enablePreviewFlag}</argLine>
           </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
             <additionalOptions>
-              <additionalOption>--enable-preview</additionalOption>
+              <additionalOption>${enablePreviewFlag}</additionalOption>
               <additionalOption>--add-stylesheet</additionalOption>
               <additionalOption>${project.basedir}/src/main/javadoc/css/fonts.css</additionalOption>
             </additionalOptions>
@@ -131,7 +131,7 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
-            <argLine>--enable-preview</argLine>
+            <argLine>${enablePreviewFlag}</argLine>
             <!-- See https://junit.org/junit5/docs/snapshot/user-guide/#running-tests-build-maven-config-params -->
             <!-- See https://github.com/apache/maven-surefire/blob/eb48f1b59ca5ccf6954ef33ecab03dbaf93214cd/surefire-providers/surefire-junit-platform/src/main/java/org/apache/maven/surefire/junitplatform/JUnitPlatformProvider.java#L242-L262 -->
             <properties>
@@ -160,6 +160,8 @@
   </build>
 
   <properties>
+
+    <enablePreviewFlag></enablePreviewFlag>
 
     <jdkToolchainVendor>openjdk</jdkToolchainVendor>
 

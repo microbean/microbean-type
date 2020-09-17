@@ -66,7 +66,7 @@ final class TestToTypes {
   final void testToTypes() throws ReflectiveOperationException {
     Set<Type> allTypes = Types.toTypes(ArrayListInteger.class);
     assertNotNull(allTypes);
-    assertEquals(11, allTypes.size());
+    assertEquals(11, allTypes.size(), allTypes.toString());
     assertTrue(allTypes.contains(Object.class));
     assertTrue(allTypes.contains(Cloneable.class));
     assertTrue(allTypes.contains(Serializable.class));
@@ -194,7 +194,7 @@ final class TestToTypes {
   final void testBaz() {
     Set<Type> allTypes = Types.toTypes(Baz.class);
     assertNotNull(allTypes);
-    assertEquals(4, allTypes.size());
+    assertEquals(4, allTypes.size(), allTypes.toString());
     assertTrue(allTypes.contains(Object.class));
     assertTrue(allTypes.contains(Baz.class));
     assertTrue(allTypes.contains(new DefaultParameterizedType(TestToTypes.class, Bar.class, Integer.class)));
@@ -202,10 +202,25 @@ final class TestToTypes {
   }
 
   @Test
+  @Issue(uri = "https://github.com/microbean/microbean-type/issues/4")
+  final void testBar() {
+    final Type barType = Types.normalize(Bar.class);
+    assertTrue(barType instanceof ParameterizedType);
+    final Type[] actualTypeArguments = ((ParameterizedType)barType).getActualTypeArguments();
+    assertNotNull(actualTypeArguments);
+    assertEquals(1, actualTypeArguments.length);
+    assertTrue(actualTypeArguments[0] instanceof TypeVariable);
+    final TypeVariable<?> b = (TypeVariable<?>)actualTypeArguments[0];
+    
+    Set<Type> allTypes = Types.toTypes(barType);
+    System.out.println("allTypes: " + allTypes);
+  }
+  
+  @Test
   final void testBravo() {
     Set<Type> allTypes = Types.toTypes(Bravo.class);
     assertNotNull(allTypes);
-    assertEquals(3, allTypes.size());
+    assertEquals(3, allTypes.size(), allTypes.toString());
     assertTrue(allTypes.contains(Object.class));
     assertTrue(allTypes.contains(Bravo.class));
     final Class<?> me = TestToTypes.class;

@@ -57,10 +57,10 @@ public final class Types {
 
   static final Comparator<Type> typeNameComparator = new TypeNameComparator();
 
-  private static final Map<Class<?>, Type> wrapperTypes;
+  private static final Map<Class<?>, Class<?>> wrapperTypes;
 
   static {
-    final Map<Class<?>, Type> map = new HashMap<>();
+    final Map<Class<?>, Class<?>> map = new HashMap<>();
     map.put(boolean.class, Boolean.class);
     map.put(byte.class, Byte.class);
     map.put(char.class, Character.class);
@@ -114,7 +114,8 @@ public final class Types {
    */
   public static final Type normalize(final Type type) {
     final Type returnValue;
-    if (type instanceof Class<?> cls) {
+    if (type instanceof Class) {
+      final Class<?> cls = (Class<?>)type;
       final Type[] typeParameters = cls.getTypeParameters();
       if (typeParameters == null || typeParameters.length <= 0) {
         final Type componentType = cls.getComponentType();
@@ -197,17 +198,17 @@ public final class Types {
     if (normalize) {
       type = normalize(type);
     }
-    if (type instanceof Class<?> cls) {
-      returnValue = resolve(cls, typeResolver, normalize);
-    } else if (type instanceof ParameterizedType parameterizedType) {
-      returnValue = resolve(parameterizedType, typeResolver, normalize);
-    } else if (type instanceof GenericArrayType genericArrayType) {
-      returnValue = resolve(genericArrayType, typeResolver, normalize);
-    } else if (type instanceof TypeVariable<?> typeVariable) {
-      returnValue = resolve(typeVariable, typeResolver, normalize);
-    } else if (type instanceof WildcardType wildcardType) {
+    if (type instanceof Class) {
+      returnValue = resolve((Class<?>)type, typeResolver, normalize);
+    } else if (type instanceof ParameterizedType) {
+      returnValue = resolve((ParameterizedType)type, typeResolver, normalize);
+    } else if (type instanceof GenericArrayType) {
+      returnValue = resolve((GenericArrayType)type, typeResolver, normalize);
+    } else if (type instanceof TypeVariable) {
+      returnValue = resolve((TypeVariable<?>)type, typeResolver, normalize);
+    } else if (type instanceof WildcardType) {
       // (No-op.)
-      returnValue = resolve(wildcardType, typeResolver, normalize);
+      returnValue = resolve((WildcardType)type, typeResolver, normalize);
     } else {
       // (Unknown type, so we don't know how to resolve it.)
       returnValue = type;
@@ -257,7 +258,7 @@ public final class Types {
         // genericComponentType was whatever it was, and so we are going
         // to be a no-op as well.
         returnValue = type;
-      } else if (resolvedComponentType instanceof Class<?> componentType) {
+      } else if (resolvedComponentType instanceof Class) {
         // This might happen when genericComponentType was a
         // TypeVariable.  In this case, it might get resolved to a
         // simple scalar (e.g. Integer.class).  Now we have,
@@ -265,7 +266,7 @@ public final class Types {
         // just a plain class.  That's actually just an ordinary Java
         // array, so "resolve" this type by returning its array
         // equivalent.
-        returnValue = Array.newInstance(componentType, 0).getClass();
+        returnValue = Array.newInstance((Class<?>)resolvedComponentType, 0).getClass();
       } else {
         // If we get here, we know that resolution actually did
         // something, so return a new GenericArrayType implementation
@@ -438,8 +439,9 @@ public final class Types {
   public static final TypeSet toTypes(final Type type, Predicate<? super Type> removalPredicate, final boolean normalize) {
     final Map<Type, Type> resolvedTypes = new HashMap<>();
     toTypes(type, isRawClass(type), resolvedTypes, normalize);
-    resolvedTypes.keySet()
-      .removeIf(k -> !(k instanceof Class) || removalPredicate != null && removalPredicate.test(resolvedTypes.get(k)));
+    resolvedTypes.keySet().removeIf(removalPredicate == null ?
+                                    Predicate.not(Types::isClass) :
+                                    k -> !isClass(k) || removalPredicate.test(resolvedTypes.get(k)));
     return resolvedTypes.isEmpty() ? TypeSet.EMPTY_TYPESET : new TypeSet(resolvedTypes.values());
   }
 
@@ -447,20 +449,20 @@ public final class Types {
                                     final boolean noParameterizedTypes,
                                     final Map<Type, Type> resolvedTypes,
                                     final boolean normalize) {
-    if (normalize && !noParameterizedTypes) {
+    if (normalize) {
       type = normalize(type);
     }
     if (type == null) {
       // Do nothing on purpose
-    } else if (type instanceof Class<?> cls) {
-      toTypes(cls, noParameterizedTypes, resolvedTypes, normalize);
-    } else if (type instanceof ParameterizedType parameterizedType) {
-      toTypes(parameterizedType, noParameterizedTypes, resolvedTypes, normalize);
-    } else if (type instanceof GenericArrayType genericArrayType) {
-      toTypes(genericArrayType, noParameterizedTypes, resolvedTypes, normalize);
-    } else if (type instanceof TypeVariable<?> typeVariable) {
+    } else if (type instanceof Class) {
+      toTypes((Class<?>)type, noParameterizedTypes, resolvedTypes, normalize);
+    } else if (type instanceof ParameterizedType) {
+      toTypes((ParameterizedType)type, noParameterizedTypes, resolvedTypes, normalize);
+    } else if (type instanceof GenericArrayType) {
+      toTypes((GenericArrayType)type, noParameterizedTypes, resolvedTypes, normalize);
+    } else if (type instanceof TypeVariable) {
       // Do nothing on purpose
-    } else if (type instanceof WildcardType wildcardType) {
+    } else if (type instanceof WildcardType) {
       // Do nothing on purpose
     } else {
       throw new IllegalArgumentException("Unexpected type: " + type);
@@ -538,7 +540,7 @@ public final class Types {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @idempotency This method is idempotent.
+   * @idempotency This method is idempotent and deterministic.
    *
    * @see #isPrimitive(Type)
    */
@@ -547,7 +549,7 @@ public final class Types {
     // We don't just blindly look up in wrapperTypes.  We call
     // isPrimitive(Type) first (which will almost certainly be inlined
     // by the JVM) to potentially avoid the Map lookup.
-    return isPrimitive(type) ? (T)wrapperTypes.getOrDefault(type, type) : type;
+    return isPrimitive(type) ? (T)wrapperTypes.getOrDefault(type, (Class<?>)type) : type;
   }
 
   /**
@@ -563,12 +565,39 @@ public final class Types {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @idempotency This method is idempotent.
+   * @idempotency This method is idempotent and deterministic.
    */
   public static final boolean isPrimitive(final Type type) {
-    return type instanceof Class<?> cls && cls.isPrimitive();
+    return type instanceof Class && ((Class<?>)type).isPrimitive();
   }
 
+  /**
+   * Returns {@code true} if the supplied {@link Type} is an instance
+   * of {@link Class}.
+   *
+   * <h2>Design Notes</h2>
+   * 
+   * <p>This prosaic method exists because various {@link Predicate}s
+   * need to exist that test this very thing, and making it {@code
+   * public} does no harm.</p>
+   *
+   * @param type the {@link Type} in question; may be {@code null} in
+   * which case {@code false} will be returned
+   *
+   * @return {@code true} if and only if {@code type} is an instance
+   * of {@link Class}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @since 0.0.5
+   */
+  public static final boolean isClass(final Type type) {
+    return type instanceof Class;
+  }
+  
   /**
    * Returns {@code true} if and only if the supplied {@link Type} is
    * a raw {@link Class}.
@@ -602,7 +631,7 @@ public final class Types {
    * a raw {@link Class}
    */
   public static final boolean isRawClass(final Type type) {
-    return type instanceof Class<?> cls && (isRawClass(cls.getComponentType()) || cls.getTypeParameters().length > 0);
+    return type instanceof Class && (isRawClass(((Class<?>)type).getComponentType()) || ((Class<?>)type).getTypeParameters().length > 0);
   }
 
   /**
@@ -654,16 +683,16 @@ public final class Types {
     final Class<?> returnValue;
     if (type == null) {
       returnValue = null;
-    } else if (type instanceof Class<?> cls) {
-      returnValue = toClass(cls);
-    } else if (type instanceof ParameterizedType parameterizedType) {
-      returnValue = toClass(parameterizedType);
-    } else if (type instanceof GenericArrayType genericArrayType) {
-      returnValue = toClass(genericArrayType);
-    } else if (type instanceof TypeVariable<?> typeVariable) {
-      returnValue = toClass(typeVariable);
-    } else if (type instanceof WildcardType wildcardType) {
-      returnValue = toClass(wildcardType);
+    } else if (type instanceof Class) {
+      returnValue = toClass((Class<?>)type);
+    } else if (type instanceof ParameterizedType) {
+      returnValue = toClass((ParameterizedType)type);
+    } else if (type instanceof GenericArrayType) {
+      returnValue = toClass((GenericArrayType)type);
+    } else if (type instanceof TypeVariable) {
+      returnValue = toClass((TypeVariable<?>)type);
+    } else if (type instanceof WildcardType) {
+      returnValue = toClass((WildcardType)type);
     } else {
       returnValue = null;
     }

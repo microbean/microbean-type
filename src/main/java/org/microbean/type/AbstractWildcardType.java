@@ -57,7 +57,8 @@ abstract class AbstractWildcardType implements WildcardType {
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
-    } else if (other instanceof WildcardType her) {
+    } else if (other instanceof WildcardType) {
+      final WildcardType her = (WildcardType)other;
       return
         Arrays.equals(this.getUpperBounds(), her.getUpperBounds()) &&
         Arrays.equals(this.getLowerBounds(), her.getLowerBounds());
