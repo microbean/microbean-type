@@ -159,143 +159,154 @@
 <span class="sourceLineNo">146</span><a id="line.146">                                      final TypeSet payloadTypeSet) {</a>
 <span class="sourceLineNo">147</span><a id="line.147">    boolean returnValue = false;</a>
 <span class="sourceLineNo">148</span><a id="line.148">    for (final Type payloadType : payloadTypeSet) {</a>
-<span class="sourceLineNo">149</span><a id="line.149">      if (payloadType instanceof ParameterizedType payloadParameterizedType &amp;&amp;</a>
-<span class="sourceLineNo">150</span><a id="line.150">          this.isAssignable0(receiverType, payloadParameterizedType)) {</a>
-<span class="sourceLineNo">151</span><a id="line.151">        returnValue = true;</a>
-<span class="sourceLineNo">152</span><a id="line.152">        break;</a>
-<span class="sourceLineNo">153</span><a id="line.153">      }</a>
-<span class="sourceLineNo">154</span><a id="line.154">    }</a>
-<span class="sourceLineNo">155</span><a id="line.155">    return returnValue;</a>
-<span class="sourceLineNo">156</span><a id="line.156">  }</a>
-<span class="sourceLineNo">157</span><a id="line.157"></a>
-<span class="sourceLineNo">158</span><a id="line.158">  private final boolean isAssignable0(final ParameterizedType receiverType,</a>
-<span class="sourceLineNo">159</span><a id="line.159">                                      final ParameterizedType payloadType) {</a>
-<span class="sourceLineNo">160</span><a id="line.160">    final boolean returnValue;</a>
-<span class="sourceLineNo">161</span><a id="line.161">    if (receiverType.getRawType().equals(payloadType.getRawType())) {</a>
-<span class="sourceLineNo">162</span><a id="line.162">      final Type[] receiverTypeTypeArguments = receiverType.getActualTypeArguments();</a>
-<span class="sourceLineNo">163</span><a id="line.163">      final Type[] payloadTypeTypeArguments = payloadType.getActualTypeArguments();</a>
-<span class="sourceLineNo">164</span><a id="line.164">      if (receiverTypeTypeArguments.length == payloadTypeTypeArguments.length) {</a>
-<span class="sourceLineNo">165</span><a id="line.165">        boolean temp = true;</a>
-<span class="sourceLineNo">166</span><a id="line.166">        for (int i = 0; i &lt; receiverTypeTypeArguments.length; i++) {</a>
-<span class="sourceLineNo">167</span><a id="line.167">          if (!this.getInvariantTypeSemantics().isAssignable(receiverTypeTypeArguments[i], payloadTypeTypeArguments[i])) {</a>
-<span class="sourceLineNo">168</span><a id="line.168">            temp = false;</a>
-<span class="sourceLineNo">169</span><a id="line.169">            break;</a>
-<span class="sourceLineNo">170</span><a id="line.170">          }</a>
-<span class="sourceLineNo">171</span><a id="line.171">        }</a>
-<span class="sourceLineNo">172</span><a id="line.172">        returnValue = temp;</a>
-<span class="sourceLineNo">173</span><a id="line.173">      } else {</a>
-<span class="sourceLineNo">174</span><a id="line.174">        returnValue = false;</a>
-<span class="sourceLineNo">175</span><a id="line.175">      }</a>
-<span class="sourceLineNo">176</span><a id="line.176">    } else {</a>
-<span class="sourceLineNo">177</span><a id="line.177">      returnValue = false;</a>
-<span class="sourceLineNo">178</span><a id="line.178">    }</a>
-<span class="sourceLineNo">179</span><a id="line.179">    return returnValue;</a>
-<span class="sourceLineNo">180</span><a id="line.180">  }</a>
-<span class="sourceLineNo">181</span><a id="line.181"></a>
-<span class="sourceLineNo">182</span><a id="line.182">  @Override</a>
-<span class="sourceLineNo">183</span><a id="line.183">  protected boolean isAssignable(final ParameterizedType receiverType,</a>
-<span class="sourceLineNo">184</span><a id="line.184">                                 final TypeVariable&lt;?&gt; payloadType) {</a>
-<span class="sourceLineNo">185</span><a id="line.185">    boolean returnValue = false;</a>
-<span class="sourceLineNo">186</span><a id="line.186">    for (final Type payloadTypeBound : payloadType.getBounds()) {</a>
-<span class="sourceLineNo">187</span><a id="line.187">      if (this.isAssignable(receiverType, payloadTypeBound)) {</a>
-<span class="sourceLineNo">188</span><a id="line.188">        returnValue = true;</a>
-<span class="sourceLineNo">189</span><a id="line.189">        break;</a>
-<span class="sourceLineNo">190</span><a id="line.190">      }</a>
-<span class="sourceLineNo">191</span><a id="line.191">    }</a>
-<span class="sourceLineNo">192</span><a id="line.192">    return returnValue;</a>
-<span class="sourceLineNo">193</span><a id="line.193">  }</a>
-<span class="sourceLineNo">194</span><a id="line.194"></a>
-<span class="sourceLineNo">195</span><a id="line.195">  @Override</a>
-<span class="sourceLineNo">196</span><a id="line.196">  protected boolean isAssignable(final GenericArrayType receiverType,</a>
-<span class="sourceLineNo">197</span><a id="line.197">                                 final Class&lt;?&gt; payloadType) {</a>
-<span class="sourceLineNo">198</span><a id="line.198">    return this.isAssignable(receiverType.getGenericComponentType(), payloadType.getComponentType());</a>
-<span class="sourceLineNo">199</span><a id="line.199">  }</a>
-<span class="sourceLineNo">200</span><a id="line.200"></a>
-<span class="sourceLineNo">201</span><a id="line.201">  @Override</a>
-<span class="sourceLineNo">202</span><a id="line.202">  protected boolean isAssignable(final TypeVariable&lt;?&gt; receiverType,</a>
-<span class="sourceLineNo">203</span><a id="line.203">                                 final TypeVariable&lt;?&gt; payloadType) {</a>
-<span class="sourceLineNo">204</span><a id="line.204">    // (Note that the Java Language Specification guarantees that if a</a>
-<span class="sourceLineNo">205</span><a id="line.205">    // type variable extends another type variable, then the extended</a>
-<span class="sourceLineNo">206</span><a id="line.206">    // type variable will be its sole bound.)</a>
+<span class="sourceLineNo">149</span><a id="line.149">      if (payloadType instanceof ParameterizedType &amp;&amp; this.isAssignable0(receiverType, (ParameterizedType)payloadType)) {</a>
+<span class="sourceLineNo">150</span><a id="line.150">        returnValue = true;</a>
+<span class="sourceLineNo">151</span><a id="line.151">        break;</a>
+<span class="sourceLineNo">152</span><a id="line.152">      }</a>
+<span class="sourceLineNo">153</span><a id="line.153">    }</a>
+<span class="sourceLineNo">154</span><a id="line.154">    return returnValue;</a>
+<span class="sourceLineNo">155</span><a id="line.155">  }</a>
+<span class="sourceLineNo">156</span><a id="line.156"></a>
+<span class="sourceLineNo">157</span><a id="line.157">  private final boolean isAssignable0(final ParameterizedType receiverType,</a>
+<span class="sourceLineNo">158</span><a id="line.158">                                      final ParameterizedType payloadType) {</a>
+<span class="sourceLineNo">159</span><a id="line.159">    final boolean returnValue;</a>
+<span class="sourceLineNo">160</span><a id="line.160">    if (receiverType.getRawType().equals(payloadType.getRawType())) {</a>
+<span class="sourceLineNo">161</span><a id="line.161">      final Type[] receiverTypeTypeArguments = receiverType.getActualTypeArguments();</a>
+<span class="sourceLineNo">162</span><a id="line.162">      final Type[] payloadTypeTypeArguments = payloadType.getActualTypeArguments();</a>
+<span class="sourceLineNo">163</span><a id="line.163">      if (receiverTypeTypeArguments.length == payloadTypeTypeArguments.length) {</a>
+<span class="sourceLineNo">164</span><a id="line.164">        boolean temp = true;</a>
+<span class="sourceLineNo">165</span><a id="line.165">        for (int i = 0; i &lt; receiverTypeTypeArguments.length; i++) {</a>
+<span class="sourceLineNo">166</span><a id="line.166">          if (!this.getInvariantTypeSemantics().isAssignable(receiverTypeTypeArguments[i], payloadTypeTypeArguments[i])) {</a>
+<span class="sourceLineNo">167</span><a id="line.167">            temp = false;</a>
+<span class="sourceLineNo">168</span><a id="line.168">            break;</a>
+<span class="sourceLineNo">169</span><a id="line.169">          }</a>
+<span class="sourceLineNo">170</span><a id="line.170">        }</a>
+<span class="sourceLineNo">171</span><a id="line.171">        returnValue = temp;</a>
+<span class="sourceLineNo">172</span><a id="line.172">      } else {</a>
+<span class="sourceLineNo">173</span><a id="line.173">        returnValue = false;</a>
+<span class="sourceLineNo">174</span><a id="line.174">      }</a>
+<span class="sourceLineNo">175</span><a id="line.175">    } else {</a>
+<span class="sourceLineNo">176</span><a id="line.176">      returnValue = false;</a>
+<span class="sourceLineNo">177</span><a id="line.177">    }</a>
+<span class="sourceLineNo">178</span><a id="line.178">    return returnValue;</a>
+<span class="sourceLineNo">179</span><a id="line.179">  }</a>
+<span class="sourceLineNo">180</span><a id="line.180"></a>
+<span class="sourceLineNo">181</span><a id="line.181">  @Override</a>
+<span class="sourceLineNo">182</span><a id="line.182">  protected boolean isAssignable(final ParameterizedType receiverType,</a>
+<span class="sourceLineNo">183</span><a id="line.183">                                 final TypeVariable&lt;?&gt; payloadType) {</a>
+<span class="sourceLineNo">184</span><a id="line.184">    boolean returnValue = false;</a>
+<span class="sourceLineNo">185</span><a id="line.185">    for (final Type payloadTypeBound : payloadType.getBounds()) {</a>
+<span class="sourceLineNo">186</span><a id="line.186">      if (this.isAssignable(receiverType, payloadTypeBound)) {</a>
+<span class="sourceLineNo">187</span><a id="line.187">        returnValue = true;</a>
+<span class="sourceLineNo">188</span><a id="line.188">        break;</a>
+<span class="sourceLineNo">189</span><a id="line.189">      }</a>
+<span class="sourceLineNo">190</span><a id="line.190">    }</a>
+<span class="sourceLineNo">191</span><a id="line.191">    return returnValue;</a>
+<span class="sourceLineNo">192</span><a id="line.192">  }</a>
+<span class="sourceLineNo">193</span><a id="line.193"></a>
+<span class="sourceLineNo">194</span><a id="line.194">  @Override</a>
+<span class="sourceLineNo">195</span><a id="line.195">  protected boolean isAssignable(final GenericArrayType receiverType,</a>
+<span class="sourceLineNo">196</span><a id="line.196">                                 final Class&lt;?&gt; payloadType) {</a>
+<span class="sourceLineNo">197</span><a id="line.197">    return this.isAssignable(receiverType.getGenericComponentType(), payloadType.getComponentType());</a>
+<span class="sourceLineNo">198</span><a id="line.198">  }</a>
+<span class="sourceLineNo">199</span><a id="line.199"></a>
+<span class="sourceLineNo">200</span><a id="line.200">  @Override</a>
+<span class="sourceLineNo">201</span><a id="line.201">  protected boolean isAssignable(final TypeVariable&lt;?&gt; receiverType,</a>
+<span class="sourceLineNo">202</span><a id="line.202">                                 final TypeVariable&lt;?&gt; payloadType) {</a>
+<span class="sourceLineNo">203</span><a id="line.203">    // (Note that the Java Language Specification guarantees that if a</a>
+<span class="sourceLineNo">204</span><a id="line.204">    // type variable extends another type variable, then the extended</a>
+<span class="sourceLineNo">205</span><a id="line.205">    // type variable will be its sole bound.)</a>
+<span class="sourceLineNo">206</span><a id="line.206">    /*</a>
 <span class="sourceLineNo">207</span><a id="line.207">    return</a>
 <span class="sourceLineNo">208</span><a id="line.208">      receiverType.equals(payloadType) ||</a>
 <span class="sourceLineNo">209</span><a id="line.209">      payloadType.getBounds()[0] instanceof TypeVariable&lt;?&gt; solePayloadTypeBound &amp;&amp;</a>
 <span class="sourceLineNo">210</span><a id="line.210">      this.isAssignable(receiverType, solePayloadTypeBound);</a>
-<span class="sourceLineNo">211</span><a id="line.211">  }</a>
+<span class="sourceLineNo">211</span><a id="line.211">    */</a>
 <span class="sourceLineNo">212</span><a id="line.212"></a>
-<span class="sourceLineNo">213</span><a id="line.213">  @Override</a>
-<span class="sourceLineNo">214</span><a id="line.214">  protected final boolean isAssignable(final WildcardType receiverType,</a>
-<span class="sourceLineNo">215</span><a id="line.215">                                       final Class&lt;?&gt; payloadType) {</a>
-<span class="sourceLineNo">216</span><a id="line.216">    return this.isAssignable0(receiverType, payloadType);</a>
-<span class="sourceLineNo">217</span><a id="line.217">  }</a>
-<span class="sourceLineNo">218</span><a id="line.218"></a>
-<span class="sourceLineNo">219</span><a id="line.219">  @Override</a>
-<span class="sourceLineNo">220</span><a id="line.220">  protected final boolean isAssignable(final WildcardType receiverType,</a>
-<span class="sourceLineNo">221</span><a id="line.221">                                       final ParameterizedType payloadType) {</a>
-<span class="sourceLineNo">222</span><a id="line.222">    return this.isAssignable0(receiverType, payloadType);</a>
-<span class="sourceLineNo">223</span><a id="line.223">  }</a>
-<span class="sourceLineNo">224</span><a id="line.224"></a>
-<span class="sourceLineNo">225</span><a id="line.225">  @Override</a>
-<span class="sourceLineNo">226</span><a id="line.226">  protected final boolean isAssignable(final WildcardType receiverType,</a>
-<span class="sourceLineNo">227</span><a id="line.227">                                       final GenericArrayType payloadType) {</a>
-<span class="sourceLineNo">228</span><a id="line.228">    return this.isAssignable0(receiverType, payloadType);</a>
-<span class="sourceLineNo">229</span><a id="line.229">  }</a>
-<span class="sourceLineNo">230</span><a id="line.230"></a>
-<span class="sourceLineNo">231</span><a id="line.231">  private final boolean isAssignable0(final WildcardType receiverType,</a>
-<span class="sourceLineNo">232</span><a id="line.232">                                      final Type payloadActualType) {</a>
-<span class="sourceLineNo">233</span><a id="line.233">    final boolean returnValue;</a>
-<span class="sourceLineNo">234</span><a id="line.234">    if (this.isAssignable(receiverType.getUpperBounds()[0], payloadActualType)) {</a>
-<span class="sourceLineNo">235</span><a id="line.235">      final Type[] receiverLowerBounds = receiverType.getLowerBounds();</a>
-<span class="sourceLineNo">236</span><a id="line.236">      // If there are lower bounds, then there will be only one.  See</a>
-<span class="sourceLineNo">237</span><a id="line.237">      // https://stackoverflow.com/a/6645454/208288 and</a>
-<span class="sourceLineNo">238</span><a id="line.238">      // https://github.com/openjdk/jdk/blob/d3d29a4f828053f5961bfd4f4ccd200791a7eeb1/src/java.base/share/classes/java/lang/reflect/WildcardType.java#L80-L82</a>
-<span class="sourceLineNo">239</span><a id="line.239">      returnValue =</a>
-<span class="sourceLineNo">240</span><a id="line.240">        receiverLowerBounds.length &lt;= 0 || this.isAssignable(payloadActualType, receiverLowerBounds[0]);</a>
-<span class="sourceLineNo">241</span><a id="line.241">    } else {</a>
-<span class="sourceLineNo">242</span><a id="line.242">      returnValue = false;</a>
-<span class="sourceLineNo">243</span><a id="line.243">    }</a>
-<span class="sourceLineNo">244</span><a id="line.244">    return returnValue;</a>
-<span class="sourceLineNo">245</span><a id="line.245">  }</a>
-<span class="sourceLineNo">246</span><a id="line.246"></a>
-<span class="sourceLineNo">247</span><a id="line.247">  @Override</a>
-<span class="sourceLineNo">248</span><a id="line.248">  protected final boolean isAssignable(final WildcardType receiverType,</a>
-<span class="sourceLineNo">249</span><a id="line.249">                                       final TypeVariable&lt;?&gt; payloadType) {</a>
-<span class="sourceLineNo">250</span><a id="line.250">    final Type[] receiverLowerBounds = receiverType.getLowerBounds();</a>
-<span class="sourceLineNo">251</span><a id="line.251">    return</a>
-<span class="sourceLineNo">252</span><a id="line.252">      (receiverLowerBounds != null &amp;&amp; receiverLowerBounds.length &gt; 0) ?</a>
-<span class="sourceLineNo">253</span><a id="line.253">      // Why only the first bound? See:</a>
-<span class="sourceLineNo">254</span><a id="line.254">      // https://stackoverflow.com/a/6645454/208288</a>
-<span class="sourceLineNo">255</span><a id="line.255">      // https://github.com/openjdk/jdk/blob/d3d29a4f828053f5961bfd4f4ccd200791a7eeb1/src/java.base/share/classes/java/lang/reflect/WildcardType.java#L80-L82</a>
-<span class="sourceLineNo">256</span><a id="line.256">      this.isAssignable(payloadType, receiverLowerBounds[0]) :</a>
-<span class="sourceLineNo">257</span><a id="line.257">      // The Java Language Specification guarantees that if there</a>
-<span class="sourceLineNo">258</span><a id="line.258">      // aren't lower bounds, then there are upper bounds.  There's</a>
-<span class="sourceLineNo">259</span><a id="line.259">      // also only one; see</a>
-<span class="sourceLineNo">260</span><a id="line.260">      // https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/lang/reflect/WildcardType.html#getUpperBounds()</a>
-<span class="sourceLineNo">261</span><a id="line.261">      this.isAssignable(receiverType.getUpperBounds()[0], payloadType);</a>
-<span class="sourceLineNo">262</span><a id="line.262">  }</a>
-<span class="sourceLineNo">263</span><a id="line.263"></a>
-<span class="sourceLineNo">264</span><a id="line.264">  @Override</a>
-<span class="sourceLineNo">265</span><a id="line.265">  protected final boolean isAssignable(final WildcardType receiverType,</a>
-<span class="sourceLineNo">266</span><a id="line.266">                                       final WildcardType payloadType) {</a>
-<span class="sourceLineNo">267</span><a id="line.267">    final boolean returnValue;</a>
-<span class="sourceLineNo">268</span><a id="line.268">    // There are always upper bounds, and in fact only one; see</a>
-<span class="sourceLineNo">269</span><a id="line.269">    // https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/lang/reflect/WildcardType.html#getUpperBounds()</a>
-<span class="sourceLineNo">270</span><a id="line.270">    final Type receiverUpperBound = receiverType.getUpperBounds()[0];</a>
-<span class="sourceLineNo">271</span><a id="line.271">    if (this.isAssignable(receiverUpperBound, payloadType.getUpperBounds()[0])) {</a>
-<span class="sourceLineNo">272</span><a id="line.272">      final Type[] receiverLowerBounds = receiverType.getLowerBounds();</a>
-<span class="sourceLineNo">273</span><a id="line.273">      if (receiverLowerBounds.length &gt; 0) {</a>
-<span class="sourceLineNo">274</span><a id="line.274">        final Type[] payloadLowerBounds = payloadType.getLowerBounds();</a>
-<span class="sourceLineNo">275</span><a id="line.275">        returnValue = payloadLowerBounds.length &gt; 0 &amp;&amp; this.isAssignable(payloadLowerBounds[0], receiverLowerBounds[0]);</a>
-<span class="sourceLineNo">276</span><a id="line.276">      } else {</a>
-<span class="sourceLineNo">277</span><a id="line.277">        returnValue = payloadType.getLowerBounds().length &lt;= 0 || receiverUpperBound.equals(Object.class);</a>
-<span class="sourceLineNo">278</span><a id="line.278">      }</a>
-<span class="sourceLineNo">279</span><a id="line.279">    } else {</a>
-<span class="sourceLineNo">280</span><a id="line.280">      returnValue = false;</a>
-<span class="sourceLineNo">281</span><a id="line.281">    }</a>
-<span class="sourceLineNo">282</span><a id="line.282">    return returnValue;</a>
-<span class="sourceLineNo">283</span><a id="line.283">  }</a>
-<span class="sourceLineNo">284</span><a id="line.284"></a>
-<span class="sourceLineNo">285</span><a id="line.285">}</a>
+<span class="sourceLineNo">213</span><a id="line.213">    final boolean returnValue;</a>
+<span class="sourceLineNo">214</span><a id="line.214">    if (receiverType.equals(payloadType)) {</a>
+<span class="sourceLineNo">215</span><a id="line.215">      returnValue = true;</a>
+<span class="sourceLineNo">216</span><a id="line.216">    } else {</a>
+<span class="sourceLineNo">217</span><a id="line.217">      final Object solePayloadTypeBound = payloadType.getBounds()[0];</a>
+<span class="sourceLineNo">218</span><a id="line.218">      returnValue = solePayloadTypeBound instanceof TypeVariable &amp;&amp; this.isAssignable(receiverType, (TypeVariable&lt;?&gt;)solePayloadTypeBound);</a>
+<span class="sourceLineNo">219</span><a id="line.219">    }</a>
+<span class="sourceLineNo">220</span><a id="line.220">    return returnValue;</a>
+<span class="sourceLineNo">221</span><a id="line.221">    </a>
+<span class="sourceLineNo">222</span><a id="line.222">  }</a>
+<span class="sourceLineNo">223</span><a id="line.223"></a>
+<span class="sourceLineNo">224</span><a id="line.224">  @Override</a>
+<span class="sourceLineNo">225</span><a id="line.225">  protected final boolean isAssignable(final WildcardType receiverType,</a>
+<span class="sourceLineNo">226</span><a id="line.226">                                       final Class&lt;?&gt; payloadType) {</a>
+<span class="sourceLineNo">227</span><a id="line.227">    return this.isAssignable0(receiverType, payloadType);</a>
+<span class="sourceLineNo">228</span><a id="line.228">  }</a>
+<span class="sourceLineNo">229</span><a id="line.229"></a>
+<span class="sourceLineNo">230</span><a id="line.230">  @Override</a>
+<span class="sourceLineNo">231</span><a id="line.231">  protected final boolean isAssignable(final WildcardType receiverType,</a>
+<span class="sourceLineNo">232</span><a id="line.232">                                       final ParameterizedType payloadType) {</a>
+<span class="sourceLineNo">233</span><a id="line.233">    return this.isAssignable0(receiverType, payloadType);</a>
+<span class="sourceLineNo">234</span><a id="line.234">  }</a>
+<span class="sourceLineNo">235</span><a id="line.235"></a>
+<span class="sourceLineNo">236</span><a id="line.236">  @Override</a>
+<span class="sourceLineNo">237</span><a id="line.237">  protected final boolean isAssignable(final WildcardType receiverType,</a>
+<span class="sourceLineNo">238</span><a id="line.238">                                       final GenericArrayType payloadType) {</a>
+<span class="sourceLineNo">239</span><a id="line.239">    return this.isAssignable0(receiverType, payloadType);</a>
+<span class="sourceLineNo">240</span><a id="line.240">  }</a>
+<span class="sourceLineNo">241</span><a id="line.241"></a>
+<span class="sourceLineNo">242</span><a id="line.242">  private final boolean isAssignable0(final WildcardType receiverType,</a>
+<span class="sourceLineNo">243</span><a id="line.243">                                      final Type payloadActualType) {</a>
+<span class="sourceLineNo">244</span><a id="line.244">    final boolean returnValue;</a>
+<span class="sourceLineNo">245</span><a id="line.245">    if (this.isAssignable(receiverType.getUpperBounds()[0], payloadActualType)) {</a>
+<span class="sourceLineNo">246</span><a id="line.246">      final Type[] receiverLowerBounds = receiverType.getLowerBounds();</a>
+<span class="sourceLineNo">247</span><a id="line.247">      // If there are lower bounds, then there will be only one.  See</a>
+<span class="sourceLineNo">248</span><a id="line.248">      // https://stackoverflow.com/a/6645454/208288 and</a>
+<span class="sourceLineNo">249</span><a id="line.249">      // https://github.com/openjdk/jdk/blob/d3d29a4f828053f5961bfd4f4ccd200791a7eeb1/src/java.base/share/classes/java/lang/reflect/WildcardType.java#L80-L82</a>
+<span class="sourceLineNo">250</span><a id="line.250">      returnValue =</a>
+<span class="sourceLineNo">251</span><a id="line.251">        receiverLowerBounds.length &lt;= 0 || this.isAssignable(payloadActualType, receiverLowerBounds[0]);</a>
+<span class="sourceLineNo">252</span><a id="line.252">    } else {</a>
+<span class="sourceLineNo">253</span><a id="line.253">      returnValue = false;</a>
+<span class="sourceLineNo">254</span><a id="line.254">    }</a>
+<span class="sourceLineNo">255</span><a id="line.255">    return returnValue;</a>
+<span class="sourceLineNo">256</span><a id="line.256">  }</a>
+<span class="sourceLineNo">257</span><a id="line.257"></a>
+<span class="sourceLineNo">258</span><a id="line.258">  @Override</a>
+<span class="sourceLineNo">259</span><a id="line.259">  protected final boolean isAssignable(final WildcardType receiverType,</a>
+<span class="sourceLineNo">260</span><a id="line.260">                                       final TypeVariable&lt;?&gt; payloadType) {</a>
+<span class="sourceLineNo">261</span><a id="line.261">    final Type[] receiverLowerBounds = receiverType.getLowerBounds();</a>
+<span class="sourceLineNo">262</span><a id="line.262">    return</a>
+<span class="sourceLineNo">263</span><a id="line.263">      (receiverLowerBounds != null &amp;&amp; receiverLowerBounds.length &gt; 0) ?</a>
+<span class="sourceLineNo">264</span><a id="line.264">      // Why only the first bound? See:</a>
+<span class="sourceLineNo">265</span><a id="line.265">      // https://stackoverflow.com/a/6645454/208288</a>
+<span class="sourceLineNo">266</span><a id="line.266">      // https://github.com/openjdk/jdk/blob/d3d29a4f828053f5961bfd4f4ccd200791a7eeb1/src/java.base/share/classes/java/lang/reflect/WildcardType.java#L80-L82</a>
+<span class="sourceLineNo">267</span><a id="line.267">      this.isAssignable(payloadType, receiverLowerBounds[0]) :</a>
+<span class="sourceLineNo">268</span><a id="line.268">      // The Java Language Specification guarantees that if there</a>
+<span class="sourceLineNo">269</span><a id="line.269">      // aren't lower bounds, then there are upper bounds.  There's</a>
+<span class="sourceLineNo">270</span><a id="line.270">      // also only one; see</a>
+<span class="sourceLineNo">271</span><a id="line.271">      // https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/lang/reflect/WildcardType.html#getUpperBounds()</a>
+<span class="sourceLineNo">272</span><a id="line.272">      this.isAssignable(receiverType.getUpperBounds()[0], payloadType);</a>
+<span class="sourceLineNo">273</span><a id="line.273">  }</a>
+<span class="sourceLineNo">274</span><a id="line.274"></a>
+<span class="sourceLineNo">275</span><a id="line.275">  @Override</a>
+<span class="sourceLineNo">276</span><a id="line.276">  protected final boolean isAssignable(final WildcardType receiverType,</a>
+<span class="sourceLineNo">277</span><a id="line.277">                                       final WildcardType payloadType) {</a>
+<span class="sourceLineNo">278</span><a id="line.278">    final boolean returnValue;</a>
+<span class="sourceLineNo">279</span><a id="line.279">    // There are always upper bounds, and in fact only one; see</a>
+<span class="sourceLineNo">280</span><a id="line.280">    // https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/lang/reflect/WildcardType.html#getUpperBounds()</a>
+<span class="sourceLineNo">281</span><a id="line.281">    final Type receiverUpperBound = receiverType.getUpperBounds()[0];</a>
+<span class="sourceLineNo">282</span><a id="line.282">    if (this.isAssignable(receiverUpperBound, payloadType.getUpperBounds()[0])) {</a>
+<span class="sourceLineNo">283</span><a id="line.283">      final Type[] receiverLowerBounds = receiverType.getLowerBounds();</a>
+<span class="sourceLineNo">284</span><a id="line.284">      if (receiverLowerBounds.length &gt; 0) {</a>
+<span class="sourceLineNo">285</span><a id="line.285">        final Type[] payloadLowerBounds = payloadType.getLowerBounds();</a>
+<span class="sourceLineNo">286</span><a id="line.286">        returnValue = payloadLowerBounds.length &gt; 0 &amp;&amp; this.isAssignable(payloadLowerBounds[0], receiverLowerBounds[0]);</a>
+<span class="sourceLineNo">287</span><a id="line.287">      } else {</a>
+<span class="sourceLineNo">288</span><a id="line.288">        returnValue = payloadType.getLowerBounds().length &lt;= 0 || receiverUpperBound.equals(Object.class);</a>
+<span class="sourceLineNo">289</span><a id="line.289">      }</a>
+<span class="sourceLineNo">290</span><a id="line.290">    } else {</a>
+<span class="sourceLineNo">291</span><a id="line.291">      returnValue = false;</a>
+<span class="sourceLineNo">292</span><a id="line.292">    }</a>
+<span class="sourceLineNo">293</span><a id="line.293">    return returnValue;</a>
+<span class="sourceLineNo">294</span><a id="line.294">  }</a>
+<span class="sourceLineNo">295</span><a id="line.295"></a>
+<span class="sourceLineNo">296</span><a id="line.296">}</a>
 
 
 
