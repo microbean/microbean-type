@@ -575,7 +575,7 @@ public final class Types {
    * Returns {@code true} if the supplied {@link Type} is an instance
    * of {@link Class}.
    *
-   * <h2>Design Notes</h2>
+   * <h4>Design Notes</h4>
    * 
    * <p>This prosaic method exists because various {@link Predicate}s
    * need to exist that test this very thing, and making it {@code
@@ -592,7 +592,7 @@ public final class Types {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @since 0.0.5
+   * @since 0.0.6
    */
   public static final boolean isClass(final Type type) {
     return type instanceof Class;
