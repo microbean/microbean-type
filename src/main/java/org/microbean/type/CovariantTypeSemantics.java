@@ -200,22 +200,17 @@ public final class CovariantTypeSemantics extends TypeSemantics {
   @Override
   protected boolean isAssignable(final TypeVariable<?> receiverType,
                                  final TypeVariable<?> payloadType) {
-    // (Note that the Java Language Specification guarantees that if a
-    // type variable extends another type variable, then the extended
-    // type variable will be its sole bound.)
-    /*
-    return
-      receiverType.equals(payloadType) ||
-      payloadType.getBounds()[0] instanceof TypeVariable<?> solePayloadTypeBound &&
-      this.isAssignable(receiverType, solePayloadTypeBound);
-    */
-
     final boolean returnValue;
     if (receiverType.equals(payloadType)) {
       returnValue = true;
     } else {
+      // (Note that the Java Language Specification guarantees that if
+      // a type variable extends another type variable, then the
+      // extended type variable will be its sole bound.)
       final Object solePayloadTypeBound = payloadType.getBounds()[0];
-      returnValue = solePayloadTypeBound instanceof TypeVariable && this.isAssignable(receiverType, (TypeVariable<?>)solePayloadTypeBound);
+      returnValue =
+        solePayloadTypeBound instanceof TypeVariable &&
+        this.isAssignable(receiverType, (TypeVariable<?>)solePayloadTypeBound);
     }
     return returnValue;
     
