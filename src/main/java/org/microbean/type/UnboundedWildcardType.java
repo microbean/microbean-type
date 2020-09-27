@@ -33,6 +33,8 @@ import java.lang.reflect.WildcardType;
  */
 public final class UnboundedWildcardType extends AbstractWildcardType {
 
+  private static final long serialVersionUID = 1L;
+  
   /**
    * The sole instance of this class.
    */

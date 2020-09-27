@@ -16,6 +16,11 @@
  */
 package org.microbean.type;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
@@ -31,15 +36,17 @@ import java.util.StringJoiner;
  *
  * @see ParameterizedType
  */
-public final class DefaultParameterizedType implements ParameterizedType {
+public final class DefaultParameterizedType extends AbstractType implements ParameterizedType {
 
-  private final Type ownerType;
+  private static final long serialVersionUID = 1L;
+  
+  private transient Type ownerType;
 
-  private final Type rawType;
+  private transient Type rawType;
 
-  private final Type[] actualTypeArguments;
+  private transient Type[] actualTypeArguments;
 
-  private final int hashCode;
+  private transient int hashCode;
 
   /**
    * Creates a new {@link DefaultParameterizedType}.
@@ -63,7 +70,15 @@ public final class DefaultParameterizedType implements ParameterizedType {
     super();
     this.ownerType = ownerType;
     this.rawType = Objects.requireNonNull(rawType);
-    this.actualTypeArguments = actualTypeArguments;
+    this.actualTypeArguments = actualTypeArguments == null ? EMPTY_TYPE_ARRAY : actualTypeArguments;
+    this.hashCode = this.computeHashCode();
+  }
+
+  public DefaultParameterizedType(final ParameterizedType other) {
+    super();
+    this.ownerType = other.getOwnerType();
+    this.rawType = Objects.requireNonNull(other.getRawType());
+    this.actualTypeArguments = other.getActualTypeArguments();
     this.hashCode = this.computeHashCode();
   }
 
@@ -79,7 +94,7 @@ public final class DefaultParameterizedType implements ParameterizedType {
 
   @Override
   public final Type[] getActualTypeArguments() {
-    return this.actualTypeArguments;
+    return this.actualTypeArguments.clone();
   }
 
   @Override
@@ -171,6 +186,52 @@ public final class DefaultParameterizedType implements ParameterizedType {
       sb.append(stringJoiner.toString());
     }
     return sb.toString();
+  }
+
+  private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
+    stream.defaultReadObject();
+    final Object ownerType = stream.readObject();
+    if (ownerType == null) {
+      this.ownerType = null;
+    } else if (ownerType instanceof Type) {
+      this.ownerType = (Type)ownerType;
+    } else {
+      throw new IOException(new IllegalArgumentException("ownerType: " + ownerType));
+    }
+    final Object rawType = stream.readObject();
+    if (rawType == null) {
+      throw new IOException(new NullPointerException("rawType"));
+    } else if (rawType instanceof Type) {
+      this.rawType = (Type)rawType;
+    } else {
+      throw new IOException(new IllegalArgumentException("rawType: " + rawType));
+    }
+    final Object actualTypeArguments = stream.readObject();
+    assert actualTypeArguments instanceof Serializable[];
+    final Serializable[] serializableActualTypeArguments = (Serializable[])actualTypeArguments;
+    if (serializableActualTypeArguments == null || serializableActualTypeArguments.length <= 0) {
+      this.actualTypeArguments = EMPTY_TYPE_ARRAY;
+    } else {
+      this.actualTypeArguments = new Type[serializableActualTypeArguments.length];
+      System.arraycopy(serializableActualTypeArguments, 0, this.actualTypeArguments, 0, serializableActualTypeArguments.length);
+    }
+    this.hashCode = this.computeHashCode();
+  }
+
+  private final void writeObject(final ObjectOutputStream stream) throws IOException {
+    stream.defaultWriteObject();
+    stream.writeObject(AbstractType.toSerializableType(this.getOwnerType()));
+    stream.writeObject(AbstractType.toSerializableType(this.getRawType()));
+    final Type[] actualTypeArguments = this.getActualTypeArguments();
+    if (actualTypeArguments == null || actualTypeArguments.length <= 0) {
+      stream.writeObject(new Serializable[0]);
+    } else {
+      final Serializable[] newTypeArguments = new Serializable[actualTypeArguments.length];
+      for (int i = 0; i < newTypeArguments.length; i++) {
+        newTypeArguments[i] = AbstractType.toSerializableType(actualTypeArguments[i]);
+      }
+      stream.writeObject(newTypeArguments);
+    }    
   }
 
 }
