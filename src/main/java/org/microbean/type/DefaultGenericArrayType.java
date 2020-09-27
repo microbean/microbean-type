@@ -16,6 +16,11 @@
  */
 package org.microbean.type;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -30,11 +35,13 @@ import java.util.Objects;
  *
  * @see GenericArrayType
  */
-public final class DefaultGenericArrayType implements GenericArrayType {
+public final class DefaultGenericArrayType extends AbstractType implements GenericArrayType {
 
-  private final Type genericComponentType;
+  private static final long serialVersionUID = 1L;
+  
+  private transient Type genericComponentType;
 
-  private final int hashCode;
+  private transient int hashCode;
 
   /**
    * Creates a new {@link DefaultGenericArrayType}.
@@ -80,7 +87,33 @@ public final class DefaultGenericArrayType implements GenericArrayType {
   @Override
   public final String toString() {
     return this.getGenericComponentType().getTypeName() + "[]";
+  }
+  
+  private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
+    stream.defaultReadObject();
+    final Object genericComponentType = stream.readObject();
+    if (genericComponentType == null) {
+      throw new IOException(new NullPointerException("genericComponentType"));
+    } else if (!(genericComponentType instanceof Type)) {
+      throw new IOException(new IllegalArgumentException("genericComponentType: " + genericComponentType));
+    }
+    this.genericComponentType = (Type)genericComponentType;
+    this.hashCode = genericComponentType.hashCode();
+  }
+  
+  private final void writeObject(final ObjectOutputStream stream) throws IOException {
+    stream.defaultWriteObject();
+    stream.writeObject(AbstractType.toSerializableType(this.getGenericComponentType()));
+  }
 
+  public static final DefaultGenericArrayType valueOf(final GenericArrayType genericArrayType) {
+    if (genericArrayType == null) {
+      return null;
+    } else if (genericArrayType instanceof DefaultGenericArrayType) {
+      return (DefaultGenericArrayType)genericArrayType;
+    } else {
+      return new DefaultGenericArrayType(genericArrayType.getGenericComponentType());
+    }
   }
   
 }
