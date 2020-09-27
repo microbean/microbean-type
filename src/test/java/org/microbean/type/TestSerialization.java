@@ -60,7 +60,7 @@ final class TestSerialization {
     assertNotNull(ptypeArguments);
     assertEquals(1, ptypeArguments.length);
     assertEquals(String.class, ptypeArguments[0]);
-    final byte[] bytes = toBytes(AbstractType.toSerializableType(ptype));
+    final byte[] bytes = toBytes(Types.toSerializableType(ptype));
     final DefaultParameterizedType deserializedType = fromBytes(bytes);
     assertNotNull(deserializedType);
     assertNull(deserializedType.getOwnerType());
@@ -89,7 +89,7 @@ final class TestSerialization {
     assertEquals(1, ptypeArguments.length);
     assertEquals(String.class, ptypeArguments[0]);
 
-    final byte[] bytes = toBytes(AbstractType.toSerializableType(ptype));
+    final byte[] bytes = toBytes(Types.toSerializableType(ptype));
     final DefaultParameterizedType deserializedType = fromBytes(bytes);
     
     assertNotNull(deserializedType);
@@ -126,7 +126,7 @@ final class TestSerialization {
     assertNotNull(bounds);
     assertEquals(1, bounds.length);
     assertEquals(Integer.class, bounds[0]);
-    final byte[] bytes = toBytes(AbstractType.toSerializableType(ptype));
+    final byte[] bytes = toBytes(Types.toSerializableType(ptype));
     final DefaultParameterizedType deserializedType = fromBytes(bytes);
     assertNotNull(deserializedType);
     assertNull(deserializedType.getOwnerType());

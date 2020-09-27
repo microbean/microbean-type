@@ -16,6 +16,8 @@
  */
 package org.microbean.type;
 
+import java.io.Serializable;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
@@ -722,6 +724,23 @@ public final class Types {
     return bounds != null && bounds.length > 0 ? toClass(bounds[0]) : Object.class;
   }
 
+  public static final Serializable toSerializableType(final Type type) {
+    final Serializable returnValue;
+    if (type == null || type instanceof Serializable) {
+      returnValue = (Serializable)type;
+    } else if (type instanceof ParameterizedType) {
+      returnValue = new DefaultParameterizedType((ParameterizedType)type);
+    } else if (type instanceof GenericArrayType) {
+      returnValue = DefaultGenericArrayType.valueOf((GenericArrayType)type);
+    } else if (type instanceof TypeVariable) {
+      returnValue = new PartiallyImplementedTypeVariable((TypeVariable<?>)type);
+    } else if (type instanceof WildcardType) {
+      returnValue = new AbstractWildcardType((WildcardType)type);
+    } else {
+      throw new IllegalArgumentException("Unexpected type: " + type);
+    }
+    return returnValue;
+  }
 
   /*
    * Inner and nested classes.

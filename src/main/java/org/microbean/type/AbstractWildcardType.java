@@ -147,7 +147,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     } else {
       final Serializable[] newBounds = new Serializable[originalBounds.length];
       for (int i = 0; i < newBounds.length; i++) {
-        newBounds[i] = AbstractType.toSerializableType(originalBounds[i]);
+        newBounds[i] = Types.toSerializableType(originalBounds[i]);
       }
       stream.writeObject(newBounds);
     }
@@ -157,7 +157,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     } else {
       final Serializable[] newBounds = new Serializable[originalBounds.length];
       for (int i = 0; i < newBounds.length; i++) {
-        newBounds[i] = AbstractType.toSerializableType(originalBounds[i]);
+        newBounds[i] = Types.toSerializableType(originalBounds[i]);
       }
       stream.writeObject(newBounds);
     }

@@ -197,7 +197,7 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
     } else {
       final Serializable[] newBounds = new Serializable[originalBounds.length];
       for (int i = 0; i < newBounds.length; i++) {
-        newBounds[i] = AbstractType.toSerializableType(originalBounds[i]);
+        newBounds[i] = Types.toSerializableType(originalBounds[i]);
       }
       stream.writeObject(newBounds);
     }

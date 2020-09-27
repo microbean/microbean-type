@@ -220,15 +220,15 @@ public final class DefaultParameterizedType extends AbstractType implements Para
 
   private final void writeObject(final ObjectOutputStream stream) throws IOException {
     stream.defaultWriteObject();
-    stream.writeObject(AbstractType.toSerializableType(this.getOwnerType()));
-    stream.writeObject(AbstractType.toSerializableType(this.getRawType()));
+    stream.writeObject(Types.toSerializableType(this.getOwnerType()));
+    stream.writeObject(Types.toSerializableType(this.getRawType()));
     final Type[] actualTypeArguments = this.getActualTypeArguments();
     if (actualTypeArguments == null || actualTypeArguments.length <= 0) {
       stream.writeObject(new Serializable[0]);
     } else {
       final Serializable[] newTypeArguments = new Serializable[actualTypeArguments.length];
       for (int i = 0; i < newTypeArguments.length; i++) {
-        newTypeArguments[i] = AbstractType.toSerializableType(actualTypeArguments[i]);
+        newTypeArguments[i] = Types.toSerializableType(actualTypeArguments[i]);
       }
       stream.writeObject(newTypeArguments);
     }    

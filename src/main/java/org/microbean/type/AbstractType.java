@@ -33,7 +33,7 @@ import java.lang.reflect.WildcardType;
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  */
-public abstract class AbstractType implements Type, Serializable {
+public abstract class AbstractType implements SerializableType {
 
   private static final long serialVersionUID = 1L;
   
@@ -49,24 +49,6 @@ public abstract class AbstractType implements Type, Serializable {
 
   protected AbstractType() {
     super();
-  }
-
-  protected static final Serializable toSerializableType(final Type type) {
-    final Serializable returnValue;
-    if (type == null || type instanceof Serializable) {
-      returnValue = (Serializable)type;
-    } else if (type instanceof ParameterizedType) {
-      returnValue = new DefaultParameterizedType((ParameterizedType)type);
-    } else if (type instanceof GenericArrayType) {
-      returnValue = DefaultGenericArrayType.valueOf((GenericArrayType)type);
-    } else if (type instanceof TypeVariable) {
-      returnValue = new PartiallyImplementedTypeVariable((TypeVariable<?>)type);
-    } else if (type instanceof WildcardType) {
-      returnValue = new AbstractWildcardType((WildcardType)type);
-    } else {
-      throw new IllegalArgumentException("Unexpected type: " + type);
-    }
-    return returnValue;
   }
 
 }

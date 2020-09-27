@@ -103,7 +103,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
   
   private final void writeObject(final ObjectOutputStream stream) throws IOException {
     stream.defaultWriteObject();
-    stream.writeObject(AbstractType.toSerializableType(this.getGenericComponentType()));
+    stream.writeObject(Types.toSerializableType(this.getGenericComponentType()));
   }
 
   public static final DefaultGenericArrayType valueOf(final GenericArrayType genericArrayType) {
