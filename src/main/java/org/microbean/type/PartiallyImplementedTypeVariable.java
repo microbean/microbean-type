@@ -36,6 +36,11 @@ import java.util.Objects;
  * interface suitable only for use cases that involve checking
  * {@linkplain #getBounds()} and no other.
  *
+ * <p>Specifically, instances of this class return a {@link
+ * NonexistentGenericDeclaration} instance from the {@link
+ * #getGenericDeclaration()} method, and contain no annotation
+ * information.</p>
+ *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  *
@@ -69,6 +74,19 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
    */
 
 
+  /**
+   * Creates a new {@link PartiallyImplementedTypeVariable}.
+   *
+   * @param name the name of this {@link
+   * PartiallyImplementedTypeVariable}; must not be {@code null}
+   *
+   * @param bounds the bounds of this {@link
+   * PartiallyImplementedTypeVariable}; may be {@code null} or
+   * zero-length in which case {@link AbstractType#OBJECT} will be
+   * used instead
+   *
+   * @exception NullPointerException if {@code name} is {@code null}
+   */
   public PartiallyImplementedTypeVariable(final String name,
                                           final Type[] bounds) {
     super();
@@ -106,46 +124,177 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
    */
 
 
+  /**
+   * Returns the name of this {@link PartiallyImplementedTypeVariable}.
+   *
+   * @return the name of this {@link PartiallyImplementedTypeVariable}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final String getName() {
     return this.name;
   }
 
+  /**
+   * Returns a {@link NonexistentGenericDeclaration} instance when
+   * invoked.
+   *
+   * @return a {@link NonexistentGenericDeclaration} instance when
+   * invoked
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final NonexistentGenericDeclaration getGenericDeclaration() {
     return NonexistentGenericDeclaration.INSTANCE;
   }
 
+  /**
+   * Returns the bounds of this {@link PartiallyImplementedTypeVariable}.
+   *
+   * <p>The bounds returned may be modified by the caller.</p>
+   *
+   * @return the bounds of this {@link PartiallyImplementedTypeVariable}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final Type[] getBounds() {
     return this.bounds.clone();
   }
 
+  /**
+   * Returns a copy of {@link AbstractType#EMPTY_ANNOTATED_TYPE_ARRAY} when invoked.
+   *
+   * @return a copy of {@link AbstractType#EMPTY_ANNOTATED_TYPE_ARRAY}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final AnnotatedType[] getAnnotatedBounds() {
     return AbstractType.EMPTY_ANNOTATED_TYPE_ARRAY.clone();
   }
 
+  /**
+   * Returns {@code null} when invoked.
+   *
+   * @param annotationClass ignored
+   *
+   * @return {@code null} in all cases
+   *
+   * @nullability This method always returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final <T extends Annotation> T getAnnotation(final Class<T> annotationClass) {
     return null;
   }
 
+  /**
+   * Returns a copy of {@link AbstractType#EMPTY_ANNOTATION_ARRAY} when invoked.
+   *
+   * @return a copy of {@link AbstractType#EMPTY_ANNOTATION_ARRAY}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final Annotation[] getAnnotations() {
     return EMPTY_ANNOTATION_ARRAY.clone();
   }
 
+  /**
+   * Returns a copy of {@link AbstractType#EMPTY_ANNOTATION_ARRAY} when invoked.
+   *
+   * @return a copy of {@link AbstractType#EMPTY_ANNOTATION_ARRAY}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final Annotation[] getDeclaredAnnotations() {
     return EMPTY_ANNOTATION_ARRAY.clone();
   }
 
+  /**
+   * Returns a hashcode for this {@link
+   * PartiallyImplementedTypeVariable}.
+   *
+   * @return a hashcode for this {@link
+   * PartiallyImplementedTypeVariable}
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final int hashCode() {
     return this.hashCode;
   }
 
+  /**
+   * Returns {@code true} if the supplied {@link Object} is equal to
+   * this {@link PartiallyImplementedTypeVariable}; {@code false}
+   * otherwise.
+   *
+   * <p>An arbitrary {@link Object} is equal to this {@link
+   * PartiallyImplementedTypeVariable} if it is an instance of {@link
+   * TypeVariable} and its {@linkplain TypeVariable#getName() name}
+   * {@linkplain String#equals(Object) is equal to} this {@link
+   * PartiallyImplementedTypeVariable}'s {@linkplain #getName() name}
+   * and if its {@linkplain TypeVariable#getBounds() bounds}
+   * {@linkplain Arrays#equals(Object[], Object[]) are equal to} this
+   * {@link PartiallyImplementedTypeVariable}'s {@linkplain
+   * #getBounds() bounds}.  Note that this definition of equality is
+   * deliberately different from that honored by the default
+   * JDK-supplied implementation of {@link TypeVariable}.</p>
+   *
+   * @param other the {@link Object} to test; may be {@code null} in
+   * which case {@code false} will be returned
+   *
+   * @return {@code true} if the supplied {@link Object} is equal to
+   * this {@link PartiallyImplementedTypeVariable}; {@code false}
+   * otherwise
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final boolean equals(final Object other) {
     if (other == this) {
@@ -160,6 +309,18 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
     }
   }
 
+  /**
+   * Returns the return value of invoking the {@link #getName()} method.
+   *
+   * @return the return value of invoking the {@link #getName()} method
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   @Override
   public final String toString() {
     return this.getName();

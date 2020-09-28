@@ -37,11 +37,29 @@ import java.util.Objects;
  */
 public final class DefaultGenericArrayType extends AbstractType implements GenericArrayType {
 
+
+  /*
+   * Static fields.
+   */
+
+
   private static final long serialVersionUID = 1L;
-  
+
+
+  /*
+   * Instance fields.
+   */
+
+
   private transient Type genericComponentType;
 
   private transient int hashCode;
+
+
+  /*
+   * Constructors.
+   */
+
 
   /**
    * Creates a new {@link DefaultGenericArrayType}.
@@ -61,6 +79,12 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
                                       rawType,
                                       actualTypeArguments));
   }
+
+
+  /*
+   * Instance methods.
+   */
+
 
   @Override
   public final Type getGenericComponentType() {
@@ -88,7 +112,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
   public final String toString() {
     return this.getGenericComponentType().getTypeName() + "[]";
   }
-  
+
   private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
     stream.defaultReadObject();
     final Object genericComponentType = stream.readObject();
@@ -100,7 +124,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
     this.genericComponentType = (Type)genericComponentType;
     this.hashCode = genericComponentType.hashCode();
   }
-  
+
   private final void writeObject(final ObjectOutputStream stream) throws IOException {
     stream.defaultWriteObject();
     stream.writeObject(Types.toSerializableType(this.getGenericComponentType()));
@@ -115,5 +139,5 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
       return new DefaultGenericArrayType(genericArrayType.getGenericComponentType());
     }
   }
-  
+
 }

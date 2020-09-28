@@ -38,8 +38,20 @@ import java.util.StringJoiner;
  */
 public final class DefaultParameterizedType extends AbstractType implements ParameterizedType {
 
+
+  /*
+   * Static fields.
+   */
+
+
   private static final long serialVersionUID = 1L;
-  
+
+
+  /*
+   * Instance fields.
+   */
+
+
   private transient Type ownerType;
 
   private transient Type rawType;
@@ -47,6 +59,12 @@ public final class DefaultParameterizedType extends AbstractType implements Para
   private transient Type[] actualTypeArguments;
 
   private transient int hashCode;
+
+
+  /*
+   * Constructors.
+   */
+
 
   /**
    * Creates a new {@link DefaultParameterizedType}.
@@ -81,6 +99,12 @@ public final class DefaultParameterizedType extends AbstractType implements Para
     this.actualTypeArguments = other.getActualTypeArguments();
     this.hashCode = this.computeHashCode();
   }
+
+
+  /*
+   * Instance methods.
+   */
+
 
   @Override
   public final Type getOwnerType() {
@@ -231,7 +255,7 @@ public final class DefaultParameterizedType extends AbstractType implements Para
         newTypeArguments[i] = Types.toSerializableType(actualTypeArguments[i]);
       }
       stream.writeObject(newTypeArguments);
-    }    
+    }
   }
 
 }
