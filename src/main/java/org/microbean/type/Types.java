@@ -578,7 +578,7 @@ public final class Types {
    * of {@link Class}.
    *
    * <h4>Design Notes</h4>
-   * 
+   *
    * <p>This prosaic method exists because various {@link Predicate}s
    * need to exist that test this very thing, and making it {@code
    * public} does no harm.</p>
@@ -599,7 +599,7 @@ public final class Types {
   public static final boolean isClass(final Type type) {
     return type instanceof Class;
   }
-  
+
   /**
    * Returns {@code true} if and only if the supplied {@link Type} is
    * a raw {@link Class}.
@@ -640,7 +640,13 @@ public final class Types {
    * Does what is necessary to extract a {@link Class} from the
    * supplied {@link Type} if at all possible.
    *
+   * <p><strong>Please read closely</strong> if you intend to supply
+   * either a {@link TypeVariable} or a {@link WildcardType} as an
+   * argument.</p>
+   *
    * <ul>
+   *
+   * <li>If {@code null} is supplied, {@code null} is returned.</li>
    *
    * <li>If a {@link Class} is supplied, the {@link Class} is simply
    * returned.</li>
@@ -650,20 +656,21 @@ public final class Types {
    * ParameterizedType#getRawType() raw type} is returned.</li>
    *
    * <li>If a {@link GenericArrayType} is supplied, the result of
-   * invoking {@link #toClass(Type)} on its {@linkplain
-   * GenericArrayType#getGenericComponentType() generic component
-   * type} is returned.</li>
+   * invoking {@link Array#newInstance(Class, int)} with the return
+   * value of an invocation of{@link #toClass(Type)} on its
+   * {@linkplain GenericArrayType#getGenericComponentType() generic
+   * component type} and {@code 0} as its arguments is returned.</li>
    *
    * <li>If a {@link TypeVariable} is supplied, the result of invoking
-   * {@link #toClass(Type)} on its {@linkplain
-   * TypeVariable#getBounds() first bound} is returned (if it has one)
-   * or {@link Object Object.class} if it does not.  <strong>Any other
-   * bounds are ignored.</strong></li>
+   * {@link #toClass(Type)} <strong>on its {@linkplain
+   * TypeVariable#getBounds() first bound}</strong> is returned (if it
+   * has one) or {@link Object Object.class} if it does not.
+   * <strong>Any other bounds are ignored.</strong></li>
    *
    * <li>If a {@link WildcardType} is supplied, the result of invoking
-   * {@link #toClass(Type)} on its {@linkplain
-   * WildcardType#getUpperBounds() first upper bound} is returned.
-   * <strong>Any other bounds are ignored.</strong></li>
+   * {@link #toClass(Type)} <strong>on its {@linkplain
+   * WildcardType#getUpperBounds() first upper bound}</strong> is
+   * returned.  <strong>Any other bounds are ignored.</strong></li>
    *
    * </ul>
    *
