@@ -10,7 +10,7 @@ instances.
 
 # Requirements
 
-microBean™ Type requires a Java runtime of version 14 or higher.
+microBean™ Type requires a Java runtime of version 11 or higher.
 
 # Installation
 
@@ -22,8 +22,8 @@ as a Maven dependency:
 <dependency>
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
-  <!-- See https://search.maven.org/artifact/org.microbean/microbean-type for available versions. -->
-  <version>0.0.6</version>
+  <!-- Always check https://search.maven.org/artifact/org.microbean/microbean-type for up-to-date available versions. -->
+  <version>0.0.8</version>
 </dependency>
 ```
 

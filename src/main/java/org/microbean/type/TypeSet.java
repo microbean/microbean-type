@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
  */
 package org.microbean.type;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import java.util.AbstractSet;
@@ -62,7 +63,11 @@ public class TypeSet extends AbstractSet<Type> {
 
   private volatile SortedSet<Class<?>> classes;
 
+  private volatile SortedSet<Type> genericClasses;
+
   private volatile SortedSet<Class<?>> interfaces;
+
+  private volatile SortedSet<Type> genericInterfaces;
 
   private volatile SortedSet<Class<?>> rawTypes;
 
@@ -211,6 +216,7 @@ public class TypeSet extends AbstractSet<Type> {
       } else {
         classes = new TreeSet<>(Types.typeNameComparator);
         for (final Type type : this) {
+          // TODO: shouldn't we ignore any Type that is not either a Class or a ParameterizedType?
           Class<?> rawType = Types.toClass(type);
           while (rawType != null) {
             if (!rawType.isInterface()) {
@@ -229,6 +235,56 @@ public class TypeSet extends AbstractSet<Type> {
       this.classes = classes;
     }
     return classes;
+  }
+
+  /**
+   * Returns a non-{@code null}, {@linkplain
+   * Collections#unmodifiableSet(Set) unmodifiable} {@link SortedSet}
+   * of all {@link Type}s representing classes (not interfaces)
+   * contained directly or indirectly by this {@link TypeSet}.
+   *
+   * <p>{@link Type}s contained directly or indirectly by this {@link
+   * TypeSet} that are not instances of either {@link Class} or {@link
+   * ParameterizedType} are deliberately ignored.</p>
+   *
+   * @return a non-{@code null}, {@linkplain
+   * Collections#unmodifiableSet(Set) unmodifiable} {@link Set} of all
+   * {@link Type}s representing classes (not interfaces) contained
+   * directly or indirectly by this {@link TypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.  The
+   * {@link Set} that is returned consists of elements in a
+   * particular, but deliberately unspecified, order that is not
+   * dependent upon the ordering of the {@link Set} of {@link Type}s
+   * initially supplied to this {@link TypeSet}.
+   */
+  public final SortedSet<Type> getGenericClasses() {
+    SortedSet<Type> genericClasses = this.genericClasses;
+    if (genericClasses == null) {
+      if (this.isEmpty()) {
+        genericClasses = Collections.emptySortedSet();
+      } else {
+        genericClasses = new TreeSet<>(Types.typeNameComparator);
+        for (Type type : this) {
+          while (type != null) {
+            type = addClass(type, genericClasses);
+          }
+        }
+        if (genericClasses.isEmpty()) {
+          genericClasses = Collections.emptySortedSet();
+        } else {
+          genericClasses = Collections.unmodifiableSortedSet(genericClasses);
+        }
+      }
+      assert genericClasses != null;
+      this.genericClasses = genericClasses;
+    }
+    return genericClasses;
   }
 
   /**
@@ -261,7 +317,7 @@ public class TypeSet extends AbstractSet<Type> {
       } else {
         interfaces = new TreeSet<>(Types.typeNameComparator);
         for (final Type type : this) {
-          TypeSet.getInterfaces(type, interfaces); // adds to interfaces
+          addInterfaces(type, interfaces);
         }
         if (interfaces.isEmpty()) {
           interfaces = Collections.emptySortedSet();
@@ -270,6 +326,53 @@ public class TypeSet extends AbstractSet<Type> {
         }
       }
       this.interfaces = interfaces;
+    }
+    return interfaces;
+  }
+
+  /**
+   * Returns a non-{@code null}, {@linkplain
+   * Collections#unmodifiableSet(Set) unmodifiable} {@link Set} of all
+   * {@link Type}s representing interfaces contained directly or
+   * indirectly by this {@link TypeSet}.
+   *
+   * <p>{@link Type}s contained directly or indirectly by this {@link
+   * TypeSet} that are not instances of either {@link Class} or {@link
+   * ParameterizedType} are deliberately ignored.</p>
+   *
+   * @return a non-{@code null}, {@linkplain
+   * Collections#unmodifiableSet(Set) unmodifiable} {@link Set} of all
+   * {@link Type}s representing interfaces contained directly or
+   * indirectly by this {@link TypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.  The
+   * {@link Set} that is returned consists of elements in a
+   * particular, but deliberately unspecified, order that is not
+   * dependent upon the ordering of the {@link Set} of {@link Type}s
+   * initially supplied to this {@link TypeSet}.
+   */
+  public final SortedSet<Type> getGenericInterfaces() {
+    SortedSet<Type> interfaces = this.genericInterfaces;
+    if (interfaces == null) {
+      if (this.isEmpty()) {
+        interfaces = Collections.emptySortedSet();
+      } else {
+        interfaces = new TreeSet<>(Types.typeNameComparator);
+        for (final Type type : this) {
+          addGenericInterfaces(type, interfaces); // adds to interfaces
+        }
+        if (interfaces.isEmpty()) {
+          interfaces = Collections.emptySortedSet();
+        } else {
+          interfaces = Collections.unmodifiableSortedSet(interfaces);
+        }
+      }
+      this.genericInterfaces = interfaces;
     }
     return interfaces;
   }
@@ -527,18 +630,77 @@ public class TypeSet extends AbstractSet<Type> {
    */
 
 
-  private static final void getInterfaces(final Type type, final Set<Class<?>> interfaces) {
-    Class<?> cls = Types.toClass(type);
-    if (cls.isInterface()) {
-      interfaces.add(cls);
+  private static final Type addClass(final Type type, final SortedSet<Type> set) {
+    final Type returnValue;
+    if (type == null) {
+      returnValue = null;
+    } else if (type instanceof Class) {
+      final Class<?> c = (Class<?>)type;
+      if (c.isInterface()) {
+        returnValue = null;
+      } else {
+        set.add(type);
+        returnValue = c.getGenericSuperclass();
+      }
+    } else if (type instanceof ParameterizedType) {
+      returnValue = addClass(((ParameterizedType)type).getRawType(), set); // XXX recursive
+    } else {
+      returnValue = null;
     }
-    while (cls != null) {
+    return returnValue;
+  }
+
+  private static final void addInterfaces(final Type type, final Set<Class<?>> interfaces) {
+    if (type == null) {
+      // do nothing
+    } else if (type instanceof Class) {
+      final Class<?> cls = (Class<?>)type;
+      final Type superclass;
+      if (cls.isInterface()) {
+        interfaces.add(cls);
+        superclass = null;
+      } else {
+        superclass = cls.getGenericSuperclass();
+      }
       for (final Class<?> intrface : cls.getInterfaces()) {
         if (interfaces.add(intrface)) {
-          TypeSet.getInterfaces(intrface, interfaces); // XXX recursive
+          addInterfaces(intrface, interfaces); // XXX recursive
         }
       }
-      cls = cls.getSuperclass();
+      if (superclass != null) {
+        addInterfaces(superclass, interfaces); // XXX recursive
+      }
+    } else if (type instanceof ParameterizedType) {
+      addInterfaces(((ParameterizedType)type).getRawType(), interfaces); // XXX recursive
+    } else {
+      // do nothing
+    }
+  }
+
+  private static final void addGenericInterfaces(final Type type, final Set<Type> interfaces) {
+    if (type == null) {
+      // do nothing
+    } else if (type instanceof Class) {
+      Class<?> c = (Class<?>)type;
+      final Type superclass;
+      if (c.isInterface()) {
+        interfaces.add(c);
+        superclass = null;
+      } else {
+        superclass = c.getGenericSuperclass();
+      }
+      for (final Type intrface : c.getGenericInterfaces()) {
+        if (interfaces.add(intrface)) {
+          addGenericInterfaces(intrface, interfaces); // XXX recursive
+        }
+      }
+      if (superclass != null) {
+        addGenericInterfaces(superclass, interfaces); // XXX recursive
+      }
+    } else if (type instanceof ParameterizedType) {
+      addGenericInterfaces(((ParameterizedType)type).getRawType(), interfaces); // XXX recursive
+    } else {
+      // do nothing
     }
   }
 

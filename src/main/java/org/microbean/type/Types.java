@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -577,7 +577,7 @@ public final class Types {
    * Returns {@code true} if the supplied {@link Type} is an instance
    * of {@link Class}.
    *
-   * <h4>Design Notes</h4>
+   * <h2>Design Notes</h2>
    *
    * <p>This prosaic method exists because various {@link Predicate}s
    * need to exist that test this very thing, and making it {@code
