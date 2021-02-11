@@ -73,7 +73,11 @@ public class TypeSet extends AbstractSet<Type> {
 
   private volatile Class<?> mostSpecializedInterface;
 
+  private volatile Type mostSpecializedGenericInterface;
+
   private volatile Class<?> mostSpecializedClass;
+
+  private volatile Type mostSpecializedGenericClass;
 
 
   /*
@@ -231,7 +235,6 @@ public class TypeSet extends AbstractSet<Type> {
           classes = Collections.unmodifiableSortedSet(classes);
         }
       }
-      assert classes != null;
       this.classes = classes;
     }
     return classes;
@@ -281,7 +284,6 @@ public class TypeSet extends AbstractSet<Type> {
           genericClasses = Collections.unmodifiableSortedSet(genericClasses);
         }
       }
-      assert genericClasses != null;
       this.genericClasses = genericClasses;
     }
     return genericClasses;
@@ -439,6 +441,70 @@ public class TypeSet extends AbstractSet<Type> {
   }
 
   /**
+   * Returns an arbitrarily selected {@link Type} that is guaranteed
+   * to be a {@link Type} representing the most specialized interface
+   * in its type hierarchy drawn from the {@linkplain
+   * #getGenericInterfaces() interfaces} in this {@link TypeSet}, or
+   * {@code null} if this {@link TypeSet} contains no interfaces.
+   *
+   * <p>The {@link Class} that is represented indirectly by the return
+   * value is guaranteed to return {@code true} from its {@link
+   * Class#isInterface()} method.</p>
+   *
+   * <p>For example, if a {@link TypeSet} contains {@link
+   * java.io.Closeable Closeable.class} and {@link AutoCloseable
+   * AutoCloseable.class}, then this method will return {@link
+   * java.io.Closeable Closeable.class}.  If a {@link TypeSet}
+   * contains {@link AutoCloseable AutoCloseable.class} and {@link
+   * java.io.Serializable Serializable.class}, then either {@link
+   * AutoCloseable AutoCloseable.class} or {@link java.io.Serializable
+   * Serializable.class} will be returned.</p>
+   *
+   * @return an arbitrarily selected {@link Type} that is guaranteed
+   * to be a {@link Type} representing the most specialized interface
+   * in its type hierarchy drawn from the {@linkplain
+   * #getGenericInterfaces() interfaces} in this {@link TypeSet}, or
+   * {@code null}; the {@link Type} returned is guaranteed to be
+   * either a {@link Class} or a {@link ParameterizedType}
+   *
+   * @nullability This method may return {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #getMostSpecializedClass()
+   */
+  public final Type getMostSpecializedGenericInterface() {
+    final Type mostSpecializedInterface = this.mostSpecializedInterface;
+    final Type returnValue;
+    if (mostSpecializedInterface == null) {
+      final Set<Type> interfaces = this.getGenericInterfaces();
+      if (interfaces == null || interfaces.isEmpty()) {
+        this.mostSpecializedInterface = Object.class; // marker
+        returnValue = null;
+      } else {
+        final Iterator<? extends Type> interfacesIterator = interfaces.iterator();
+        Type candidate = interfacesIterator.next();
+        while (interfacesIterator.hasNext()) {
+          Type intrface = interfacesIterator.next();
+          if (isAssignableFrom(candidate, intrface)) {
+            candidate = intrface;
+          }
+        }
+        this.mostSpecializedGenericInterface = returnValue = candidate;
+      }
+    } else if (mostSpecializedGenericInterface.equals(Object.class)) {
+      // marker
+      returnValue = null;
+    } else {
+      returnValue = mostSpecializedGenericInterface;
+    }
+    return returnValue;
+  }
+
+  /**
    * Returns an arbitrarily selected {@link Class} that is guaranteed
    * to be the most specialized subclass in its type hierarchy drawn
    * from the {@linkplain #getClasses() classes} in this {@link
@@ -478,14 +544,9 @@ public class TypeSet extends AbstractSet<Type> {
         this.mostSpecializedClass = returnValue = Object.class;
       } else {
         final Iterator<? extends Class<?>> classesIterator = classes.iterator();
-        assert classesIterator.hasNext();
         Class<?> candidateClass = classesIterator.next();
-        assert candidateClass != null;
-        assert !candidateClass.isInterface();
         while (classesIterator.hasNext()) {
           final Class<?> cls = classesIterator.next();
-          assert cls != null;
-          assert !cls.isInterface();
           if (candidateClass.isAssignableFrom(cls)) {
             candidateClass = cls;
           }
@@ -495,7 +556,63 @@ public class TypeSet extends AbstractSet<Type> {
     } else {
       returnValue = mostSpecializedClass;
     }
-    assert returnValue != null;
+    return returnValue;
+  }
+
+  /**
+   * Returns an arbitrarily selected {@link Type} that is guaranteed
+   * to represent the most specialized subclass in its type hierarchy
+   * drawn from the {@linkplain #getGenericClasses() classes} in this
+   * {@link TypeSet}.
+   *
+   * <p>For example, if a {@link TypeSet} contains {@link Integer
+   * Integer.class}, {@link Number Number.class} and {@link Object
+   * Object.class}, then this method will return {@link Integer
+   * Integer.class}.  If a {@link TypeSet} contains {@link Integer
+   * Integer.class} and {@link String String.class}, then either
+   * {@link Integer Integer.class} or {@link String String.class} will
+   * be returned.</p>
+   *
+   * <p>In practice, most {@link TypeSet}s in normal use contain
+   * classes from a single inheritance hierarchy.</p>
+   *
+   * @return an arbitrarily selected {@link Type} that is guaranteed
+   * to represent the most specialized subclass in its type hierarchy
+   * drawn from the {@linkplain #getClasses() classes} in this {@link
+   * TypeSet}; never {@code null}; the {@link Type} returned is
+   * guaranteed to be either a {@link Class} or a {@link
+   * ParameterizedType}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #getMostSpecializedInterface()
+   */
+  public final Type getMostSpecializedGenericClass() {
+    final Type mostSpecializedClass = this.mostSpecializedGenericClass;
+    final Type returnValue;
+    if (mostSpecializedClass == null) {
+      final Set<Type> classes = this.getGenericClasses();
+      if (classes == null || classes.isEmpty()) {
+        this.mostSpecializedGenericClass = returnValue = Object.class;
+      } else {
+        final Iterator<? extends Type> classesIterator = classes.iterator();
+        Type candidateClass = classesIterator.next();
+        while (classesIterator.hasNext()) {
+          final Type cls = classesIterator.next();
+          if (isAssignableFrom(candidateClass, cls)) {
+            candidateClass = cls;
+          }
+        }
+        this.mostSpecializedGenericClass = returnValue = candidateClass;
+      }
+    } else {
+      returnValue = mostSpecializedGenericClass;
+    }
     return returnValue;
   }
 
@@ -701,6 +818,24 @@ public class TypeSet extends AbstractSet<Type> {
       addGenericInterfaces(((ParameterizedType)type).getRawType(), interfaces); // XXX recursive
     } else {
       // do nothing
+    }
+  }
+
+  private static final boolean isAssignableFrom(final Type receiverType, final Type payloadType) {
+    if (receiverType == null || payloadType == null) {
+      return false;
+    } else if (receiverType instanceof Class) {
+      if (payloadType instanceof Class) {
+        return ((Class<?>)receiverType).isAssignableFrom((Class<?>)payloadType);
+      } else if (payloadType instanceof ParameterizedType) {
+        return isAssignableFrom(receiverType, ((ParameterizedType)payloadType).getRawType());
+      } else {
+        throw new IllegalArgumentException("Unexpected or unhandled payloadType: " + payloadType);
+      }
+    } else if (receiverType instanceof ParameterizedType) {
+      return isAssignableFrom(((ParameterizedType)receiverType).getRawType(), payloadType);
+    } else {
+      throw new IllegalArgumentException("Unexpected or unhandled receiverType: " + receiverType);
     }
   }
 
