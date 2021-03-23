@@ -423,8 +423,8 @@
 <span class="sourceLineNo">413</span><a id="line.413">   * @see #getMostSpecializedClass()</a>
 <span class="sourceLineNo">414</span><a id="line.414">   */</a>
 <span class="sourceLineNo">415</span><a id="line.415">  public final Class&lt;?&gt; getMostSpecializedInterface() {</a>
-<span class="sourceLineNo">416</span><a id="line.416">    final Class&lt;?&gt; mostSpecializedInterface = this.mostSpecializedInterface;</a>
-<span class="sourceLineNo">417</span><a id="line.417">    final Class&lt;?&gt; returnValue;</a>
+<span class="sourceLineNo">416</span><a id="line.416">    final Class&lt;?&gt; returnValue;</a>
+<span class="sourceLineNo">417</span><a id="line.417">    final Class&lt;?&gt; mostSpecializedInterface = this.mostSpecializedInterface;</a>
 <span class="sourceLineNo">418</span><a id="line.418">    if (mostSpecializedInterface == null) {</a>
 <span class="sourceLineNo">419</span><a id="line.419">      final Set&lt;Class&lt;?&gt;&gt; interfaces = this.getInterfaces();</a>
 <span class="sourceLineNo">420</span><a id="line.420">      if (interfaces == null || interfaces.isEmpty()) {</a>
@@ -603,8 +603,8 @@
 <span class="sourceLineNo">593</span><a id="line.593">   * @see #getMostSpecializedInterface()</a>
 <span class="sourceLineNo">594</span><a id="line.594">   */</a>
 <span class="sourceLineNo">595</span><a id="line.595">  public final Type getMostSpecializedGenericClass() {</a>
-<span class="sourceLineNo">596</span><a id="line.596">    final Type mostSpecializedClass = this.mostSpecializedGenericClass;</a>
-<span class="sourceLineNo">597</span><a id="line.597">    final Type returnValue;</a>
+<span class="sourceLineNo">596</span><a id="line.596">    final Type returnValue;</a>
+<span class="sourceLineNo">597</span><a id="line.597">    final Type mostSpecializedClass = this.mostSpecializedGenericClass;</a>
 <span class="sourceLineNo">598</span><a id="line.598">    if (mostSpecializedClass == null) {</a>
 <span class="sourceLineNo">599</span><a id="line.599">      final Set&lt;Type&gt; classes = this.getGenericClasses();</a>
 <span class="sourceLineNo">600</span><a id="line.600">      if (classes == null || classes.isEmpty()) {</a>
@@ -770,102 +770,133 @@
 <span class="sourceLineNo">760</span><a id="line.760">        returnValue = c.getGenericSuperclass();</a>
 <span class="sourceLineNo">761</span><a id="line.761">      }</a>
 <span class="sourceLineNo">762</span><a id="line.762">    } else if (type instanceof ParameterizedType) {</a>
-<span class="sourceLineNo">763</span><a id="line.763">      returnValue = addClass(((ParameterizedType)type).getRawType(), set); // XXX recursive</a>
-<span class="sourceLineNo">764</span><a id="line.764">    } else {</a>
-<span class="sourceLineNo">765</span><a id="line.765">      returnValue = null;</a>
-<span class="sourceLineNo">766</span><a id="line.766">    }</a>
-<span class="sourceLineNo">767</span><a id="line.767">    return returnValue;</a>
-<span class="sourceLineNo">768</span><a id="line.768">  }</a>
-<span class="sourceLineNo">769</span><a id="line.769"></a>
-<span class="sourceLineNo">770</span><a id="line.770">  private static final void addInterfaces(final Type type, final Set&lt;Class&lt;?&gt;&gt; interfaces) {</a>
-<span class="sourceLineNo">771</span><a id="line.771">    if (type == null) {</a>
-<span class="sourceLineNo">772</span><a id="line.772">      // do nothing</a>
-<span class="sourceLineNo">773</span><a id="line.773">    } else if (type instanceof Class) {</a>
-<span class="sourceLineNo">774</span><a id="line.774">      final Class&lt;?&gt; cls = (Class&lt;?&gt;)type;</a>
-<span class="sourceLineNo">775</span><a id="line.775">      final Type superclass;</a>
-<span class="sourceLineNo">776</span><a id="line.776">      if (cls.isInterface()) {</a>
-<span class="sourceLineNo">777</span><a id="line.777">        interfaces.add(cls);</a>
-<span class="sourceLineNo">778</span><a id="line.778">        superclass = null;</a>
-<span class="sourceLineNo">779</span><a id="line.779">      } else {</a>
-<span class="sourceLineNo">780</span><a id="line.780">        superclass = cls.getGenericSuperclass();</a>
-<span class="sourceLineNo">781</span><a id="line.781">      }</a>
-<span class="sourceLineNo">782</span><a id="line.782">      for (final Class&lt;?&gt; intrface : cls.getInterfaces()) {</a>
-<span class="sourceLineNo">783</span><a id="line.783">        if (interfaces.add(intrface)) {</a>
-<span class="sourceLineNo">784</span><a id="line.784">          addInterfaces(intrface, interfaces); // XXX recursive</a>
-<span class="sourceLineNo">785</span><a id="line.785">        }</a>
-<span class="sourceLineNo">786</span><a id="line.786">      }</a>
-<span class="sourceLineNo">787</span><a id="line.787">      if (superclass != null) {</a>
-<span class="sourceLineNo">788</span><a id="line.788">        addInterfaces(superclass, interfaces); // XXX recursive</a>
-<span class="sourceLineNo">789</span><a id="line.789">      }</a>
-<span class="sourceLineNo">790</span><a id="line.790">    } else if (type instanceof ParameterizedType) {</a>
-<span class="sourceLineNo">791</span><a id="line.791">      addInterfaces(((ParameterizedType)type).getRawType(), interfaces); // XXX recursive</a>
-<span class="sourceLineNo">792</span><a id="line.792">    } else {</a>
-<span class="sourceLineNo">793</span><a id="line.793">      // do nothing</a>
-<span class="sourceLineNo">794</span><a id="line.794">    }</a>
-<span class="sourceLineNo">795</span><a id="line.795">  }</a>
-<span class="sourceLineNo">796</span><a id="line.796"></a>
-<span class="sourceLineNo">797</span><a id="line.797">  private static final void addGenericInterfaces(final Type type, final Set&lt;Type&gt; interfaces) {</a>
-<span class="sourceLineNo">798</span><a id="line.798">    if (type == null) {</a>
-<span class="sourceLineNo">799</span><a id="line.799">      // do nothing</a>
-<span class="sourceLineNo">800</span><a id="line.800">    } else if (type instanceof Class) {</a>
-<span class="sourceLineNo">801</span><a id="line.801">      Class&lt;?&gt; c = (Class&lt;?&gt;)type;</a>
-<span class="sourceLineNo">802</span><a id="line.802">      final Type superclass;</a>
-<span class="sourceLineNo">803</span><a id="line.803">      if (c.isInterface()) {</a>
-<span class="sourceLineNo">804</span><a id="line.804">        interfaces.add(c);</a>
-<span class="sourceLineNo">805</span><a id="line.805">        superclass = null;</a>
-<span class="sourceLineNo">806</span><a id="line.806">      } else {</a>
-<span class="sourceLineNo">807</span><a id="line.807">        superclass = c.getGenericSuperclass();</a>
-<span class="sourceLineNo">808</span><a id="line.808">      }</a>
-<span class="sourceLineNo">809</span><a id="line.809">      for (final Type intrface : c.getGenericInterfaces()) {</a>
-<span class="sourceLineNo">810</span><a id="line.810">        if (interfaces.add(intrface)) {</a>
-<span class="sourceLineNo">811</span><a id="line.811">          addGenericInterfaces(intrface, interfaces); // XXX recursive</a>
-<span class="sourceLineNo">812</span><a id="line.812">        }</a>
-<span class="sourceLineNo">813</span><a id="line.813">      }</a>
-<span class="sourceLineNo">814</span><a id="line.814">      if (superclass != null) {</a>
-<span class="sourceLineNo">815</span><a id="line.815">        addGenericInterfaces(superclass, interfaces); // XXX recursive</a>
-<span class="sourceLineNo">816</span><a id="line.816">      }</a>
-<span class="sourceLineNo">817</span><a id="line.817">    } else if (type instanceof ParameterizedType) {</a>
-<span class="sourceLineNo">818</span><a id="line.818">      addGenericInterfaces(((ParameterizedType)type).getRawType(), interfaces); // XXX recursive</a>
-<span class="sourceLineNo">819</span><a id="line.819">    } else {</a>
-<span class="sourceLineNo">820</span><a id="line.820">      // do nothing</a>
-<span class="sourceLineNo">821</span><a id="line.821">    }</a>
-<span class="sourceLineNo">822</span><a id="line.822">  }</a>
-<span class="sourceLineNo">823</span><a id="line.823"></a>
-<span class="sourceLineNo">824</span><a id="line.824">  private static final boolean isAssignableFrom(final Type receiverType, final Type payloadType) {</a>
-<span class="sourceLineNo">825</span><a id="line.825">    if (receiverType == null || payloadType == null) {</a>
-<span class="sourceLineNo">826</span><a id="line.826">      return false;</a>
-<span class="sourceLineNo">827</span><a id="line.827">    } else if (receiverType instanceof Class) {</a>
-<span class="sourceLineNo">828</span><a id="line.828">      if (payloadType instanceof Class) {</a>
-<span class="sourceLineNo">829</span><a id="line.829">        return ((Class&lt;?&gt;)receiverType).isAssignableFrom((Class&lt;?&gt;)payloadType);</a>
-<span class="sourceLineNo">830</span><a id="line.830">      } else if (payloadType instanceof ParameterizedType) {</a>
-<span class="sourceLineNo">831</span><a id="line.831">        return isAssignableFrom(receiverType, ((ParameterizedType)payloadType).getRawType());</a>
-<span class="sourceLineNo">832</span><a id="line.832">      } else {</a>
-<span class="sourceLineNo">833</span><a id="line.833">        throw new IllegalArgumentException("Unexpected or unhandled payloadType: " + payloadType);</a>
-<span class="sourceLineNo">834</span><a id="line.834">      }</a>
-<span class="sourceLineNo">835</span><a id="line.835">    } else if (receiverType instanceof ParameterizedType) {</a>
-<span class="sourceLineNo">836</span><a id="line.836">      return isAssignableFrom(((ParameterizedType)receiverType).getRawType(), payloadType);</a>
-<span class="sourceLineNo">837</span><a id="line.837">    } else {</a>
-<span class="sourceLineNo">838</span><a id="line.838">      throw new IllegalArgumentException("Unexpected or unhandled receiverType: " + receiverType);</a>
-<span class="sourceLineNo">839</span><a id="line.839">    }</a>
-<span class="sourceLineNo">840</span><a id="line.840">  }</a>
-<span class="sourceLineNo">841</span><a id="line.841"></a>
-<span class="sourceLineNo">842</span><a id="line.842">  /**</a>
-<span class="sourceLineNo">843</span><a id="line.843">   * Returns {@link #EMPTY_TYPESET} when invoked.</a>
-<span class="sourceLineNo">844</span><a id="line.844">   *</a>
-<span class="sourceLineNo">845</span><a id="line.845">   * @return {@link #EMPTY_TYPESET}</a>
-<span class="sourceLineNo">846</span><a id="line.846">   *</a>
-<span class="sourceLineNo">847</span><a id="line.847">   * @nullability This method never returns {@code null}.</a>
-<span class="sourceLineNo">848</span><a id="line.848">   *</a>
-<span class="sourceLineNo">849</span><a id="line.849">   * @idempotency This method is deterministic and idempotent.</a>
-<span class="sourceLineNo">850</span><a id="line.850">   *</a>
-<span class="sourceLineNo">851</span><a id="line.851">   * @threadsafety This method is safe for concurrent use by multiple</a>
-<span class="sourceLineNo">852</span><a id="line.852">   * threads.</a>
-<span class="sourceLineNo">853</span><a id="line.853">   */</a>
-<span class="sourceLineNo">854</span><a id="line.854">  public static final TypeSet emptyTypeSet() {</a>
-<span class="sourceLineNo">855</span><a id="line.855">    return EMPTY_TYPESET;</a>
-<span class="sourceLineNo">856</span><a id="line.856">  }</a>
-<span class="sourceLineNo">857</span><a id="line.857"></a>
-<span class="sourceLineNo">858</span><a id="line.858">}</a>
+<span class="sourceLineNo">763</span><a id="line.763">      final Type rawType = ((ParameterizedType)type).getRawType();</a>
+<span class="sourceLineNo">764</span><a id="line.764">      if (rawType instanceof Class) {</a>
+<span class="sourceLineNo">765</span><a id="line.765">        final Class&lt;?&gt; c = (Class&lt;?&gt;)rawType;</a>
+<span class="sourceLineNo">766</span><a id="line.766">        if (c.isInterface()) {</a>
+<span class="sourceLineNo">767</span><a id="line.767">          returnValue = null;</a>
+<span class="sourceLineNo">768</span><a id="line.768">        } else {</a>
+<span class="sourceLineNo">769</span><a id="line.769">          set.add(type);</a>
+<span class="sourceLineNo">770</span><a id="line.770">          returnValue = c.getGenericSuperclass();</a>
+<span class="sourceLineNo">771</span><a id="line.771">        }</a>
+<span class="sourceLineNo">772</span><a id="line.772">      } else {</a>
+<span class="sourceLineNo">773</span><a id="line.773">        returnValue = null;</a>
+<span class="sourceLineNo">774</span><a id="line.774">      }</a>
+<span class="sourceLineNo">775</span><a id="line.775">    } else {</a>
+<span class="sourceLineNo">776</span><a id="line.776">      returnValue = null;</a>
+<span class="sourceLineNo">777</span><a id="line.777">    }</a>
+<span class="sourceLineNo">778</span><a id="line.778">    return returnValue;</a>
+<span class="sourceLineNo">779</span><a id="line.779">  }</a>
+<span class="sourceLineNo">780</span><a id="line.780"></a>
+<span class="sourceLineNo">781</span><a id="line.781">  private static final void addInterfaces(final Type type, final Set&lt;Class&lt;?&gt;&gt; interfaces) {</a>
+<span class="sourceLineNo">782</span><a id="line.782">    if (type == null) {</a>
+<span class="sourceLineNo">783</span><a id="line.783">      // do nothing</a>
+<span class="sourceLineNo">784</span><a id="line.784">    } else if (type instanceof Class) {</a>
+<span class="sourceLineNo">785</span><a id="line.785">      final Class&lt;?&gt; cls = (Class&lt;?&gt;)type;</a>
+<span class="sourceLineNo">786</span><a id="line.786">      final Type superclass;</a>
+<span class="sourceLineNo">787</span><a id="line.787">      if (cls.isInterface()) {</a>
+<span class="sourceLineNo">788</span><a id="line.788">        interfaces.add(cls);</a>
+<span class="sourceLineNo">789</span><a id="line.789">        superclass = null;</a>
+<span class="sourceLineNo">790</span><a id="line.790">      } else {</a>
+<span class="sourceLineNo">791</span><a id="line.791">        superclass = cls.getGenericSuperclass();</a>
+<span class="sourceLineNo">792</span><a id="line.792">      }</a>
+<span class="sourceLineNo">793</span><a id="line.793">      for (final Class&lt;?&gt; intrface : cls.getInterfaces()) {</a>
+<span class="sourceLineNo">794</span><a id="line.794">        if (interfaces.add(intrface)) {</a>
+<span class="sourceLineNo">795</span><a id="line.795">          addInterfaces(intrface, interfaces); // XXX recursive</a>
+<span class="sourceLineNo">796</span><a id="line.796">        }</a>
+<span class="sourceLineNo">797</span><a id="line.797">      }</a>
+<span class="sourceLineNo">798</span><a id="line.798">      if (superclass != null) {</a>
+<span class="sourceLineNo">799</span><a id="line.799">        addInterfaces(superclass, interfaces); // XXX recursive</a>
+<span class="sourceLineNo">800</span><a id="line.800">      }</a>
+<span class="sourceLineNo">801</span><a id="line.801">    } else if (type instanceof ParameterizedType) {</a>
+<span class="sourceLineNo">802</span><a id="line.802">      addInterfaces(((ParameterizedType)type).getRawType(), interfaces); // XXX recursive</a>
+<span class="sourceLineNo">803</span><a id="line.803">    } else {</a>
+<span class="sourceLineNo">804</span><a id="line.804">      // do nothing</a>
+<span class="sourceLineNo">805</span><a id="line.805">    }</a>
+<span class="sourceLineNo">806</span><a id="line.806">  }</a>
+<span class="sourceLineNo">807</span><a id="line.807"></a>
+<span class="sourceLineNo">808</span><a id="line.808">  private static final void addGenericInterfaces(final Type type, final Set&lt;Type&gt; interfaces) {</a>
+<span class="sourceLineNo">809</span><a id="line.809">    if (type == null) {</a>
+<span class="sourceLineNo">810</span><a id="line.810">      // do nothing</a>
+<span class="sourceLineNo">811</span><a id="line.811">    } else if (type instanceof Class) {</a>
+<span class="sourceLineNo">812</span><a id="line.812">      final Class&lt;?&gt; c = (Class&lt;?&gt;)type;</a>
+<span class="sourceLineNo">813</span><a id="line.813">      final Type superclass;</a>
+<span class="sourceLineNo">814</span><a id="line.814">      if (c.isInterface()) {</a>
+<span class="sourceLineNo">815</span><a id="line.815">        interfaces.add(type);</a>
+<span class="sourceLineNo">816</span><a id="line.816">        superclass = null;</a>
+<span class="sourceLineNo">817</span><a id="line.817">      } else {</a>
+<span class="sourceLineNo">818</span><a id="line.818">        superclass = c.getGenericSuperclass();</a>
+<span class="sourceLineNo">819</span><a id="line.819">      }</a>
+<span class="sourceLineNo">820</span><a id="line.820">      for (final Type intrface : c.getGenericInterfaces()) {</a>
+<span class="sourceLineNo">821</span><a id="line.821">        if (interfaces.add(intrface)) {</a>
+<span class="sourceLineNo">822</span><a id="line.822">          addGenericInterfaces(intrface, interfaces); // XXX recursive</a>
+<span class="sourceLineNo">823</span><a id="line.823">        }</a>
+<span class="sourceLineNo">824</span><a id="line.824">      }</a>
+<span class="sourceLineNo">825</span><a id="line.825">      if (superclass != null) {</a>
+<span class="sourceLineNo">826</span><a id="line.826">        addGenericInterfaces(superclass, interfaces); // XXX recursive</a>
+<span class="sourceLineNo">827</span><a id="line.827">      }</a>
+<span class="sourceLineNo">828</span><a id="line.828">    } else if (type instanceof ParameterizedType) {</a>
+<span class="sourceLineNo">829</span><a id="line.829">      final Type rawType = ((ParameterizedType)type).getRawType();</a>
+<span class="sourceLineNo">830</span><a id="line.830">      if (rawType instanceof Class) {</a>
+<span class="sourceLineNo">831</span><a id="line.831">        final Class&lt;?&gt; c = (Class&lt;?&gt;)rawType;</a>
+<span class="sourceLineNo">832</span><a id="line.832">        final Type superclass;</a>
+<span class="sourceLineNo">833</span><a id="line.833">        if (c.isInterface()) {</a>
+<span class="sourceLineNo">834</span><a id="line.834">          interfaces.add(type);</a>
+<span class="sourceLineNo">835</span><a id="line.835">          superclass = null;</a>
+<span class="sourceLineNo">836</span><a id="line.836">        } else {</a>
+<span class="sourceLineNo">837</span><a id="line.837">          superclass = c.getGenericSuperclass();</a>
+<span class="sourceLineNo">838</span><a id="line.838">        }</a>
+<span class="sourceLineNo">839</span><a id="line.839">        for (final Type intrface : c.getGenericInterfaces()) {</a>
+<span class="sourceLineNo">840</span><a id="line.840">          if (interfaces.add(intrface)) {</a>
+<span class="sourceLineNo">841</span><a id="line.841">            addGenericInterfaces(intrface, interfaces); // XXX recursive</a>
+<span class="sourceLineNo">842</span><a id="line.842">          }</a>
+<span class="sourceLineNo">843</span><a id="line.843">        }</a>
+<span class="sourceLineNo">844</span><a id="line.844">        if (superclass != null) {</a>
+<span class="sourceLineNo">845</span><a id="line.845">          addGenericInterfaces(superclass, interfaces); // XXX recursive</a>
+<span class="sourceLineNo">846</span><a id="line.846">        }</a>
+<span class="sourceLineNo">847</span><a id="line.847">      } else {</a>
+<span class="sourceLineNo">848</span><a id="line.848">        // do nothing</a>
+<span class="sourceLineNo">849</span><a id="line.849">      }</a>
+<span class="sourceLineNo">850</span><a id="line.850">    } else {</a>
+<span class="sourceLineNo">851</span><a id="line.851">      // do nothing</a>
+<span class="sourceLineNo">852</span><a id="line.852">    }</a>
+<span class="sourceLineNo">853</span><a id="line.853">  }</a>
+<span class="sourceLineNo">854</span><a id="line.854"></a>
+<span class="sourceLineNo">855</span><a id="line.855">  private static final boolean isAssignableFrom(final Type receiverType, final Type payloadType) {</a>
+<span class="sourceLineNo">856</span><a id="line.856">    if (receiverType == null || payloadType == null) {</a>
+<span class="sourceLineNo">857</span><a id="line.857">      return false;</a>
+<span class="sourceLineNo">858</span><a id="line.858">    } else if (receiverType instanceof Class) {</a>
+<span class="sourceLineNo">859</span><a id="line.859">      if (payloadType instanceof Class) {</a>
+<span class="sourceLineNo">860</span><a id="line.860">        return ((Class&lt;?&gt;)receiverType).isAssignableFrom((Class&lt;?&gt;)payloadType);</a>
+<span class="sourceLineNo">861</span><a id="line.861">      } else if (payloadType instanceof ParameterizedType) {</a>
+<span class="sourceLineNo">862</span><a id="line.862">        return isAssignableFrom(receiverType, ((ParameterizedType)payloadType).getRawType());</a>
+<span class="sourceLineNo">863</span><a id="line.863">      } else {</a>
+<span class="sourceLineNo">864</span><a id="line.864">        throw new IllegalArgumentException("Unexpected or unhandled payloadType: " + payloadType);</a>
+<span class="sourceLineNo">865</span><a id="line.865">      }</a>
+<span class="sourceLineNo">866</span><a id="line.866">    } else if (receiverType instanceof ParameterizedType) {</a>
+<span class="sourceLineNo">867</span><a id="line.867">      return isAssignableFrom(((ParameterizedType)receiverType).getRawType(), payloadType);</a>
+<span class="sourceLineNo">868</span><a id="line.868">    } else {</a>
+<span class="sourceLineNo">869</span><a id="line.869">      throw new IllegalArgumentException("Unexpected or unhandled receiverType: " + receiverType);</a>
+<span class="sourceLineNo">870</span><a id="line.870">    }</a>
+<span class="sourceLineNo">871</span><a id="line.871">  }</a>
+<span class="sourceLineNo">872</span><a id="line.872"></a>
+<span class="sourceLineNo">873</span><a id="line.873">  /**</a>
+<span class="sourceLineNo">874</span><a id="line.874">   * Returns {@link #EMPTY_TYPESET} when invoked.</a>
+<span class="sourceLineNo">875</span><a id="line.875">   *</a>
+<span class="sourceLineNo">876</span><a id="line.876">   * @return {@link #EMPTY_TYPESET}</a>
+<span class="sourceLineNo">877</span><a id="line.877">   *</a>
+<span class="sourceLineNo">878</span><a id="line.878">   * @nullability This method never returns {@code null}.</a>
+<span class="sourceLineNo">879</span><a id="line.879">   *</a>
+<span class="sourceLineNo">880</span><a id="line.880">   * @idempotency This method is deterministic and idempotent.</a>
+<span class="sourceLineNo">881</span><a id="line.881">   *</a>
+<span class="sourceLineNo">882</span><a id="line.882">   * @threadsafety This method is safe for concurrent use by multiple</a>
+<span class="sourceLineNo">883</span><a id="line.883">   * threads.</a>
+<span class="sourceLineNo">884</span><a id="line.884">   */</a>
+<span class="sourceLineNo">885</span><a id="line.885">  public static final TypeSet emptyTypeSet() {</a>
+<span class="sourceLineNo">886</span><a id="line.886">    return EMPTY_TYPESET;</a>
+<span class="sourceLineNo">887</span><a id="line.887">  }</a>
+<span class="sourceLineNo">888</span><a id="line.888"></a>
+<span class="sourceLineNo">889</span><a id="line.889">}</a>
 
 
 
