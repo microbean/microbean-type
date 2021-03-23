@@ -413,8 +413,8 @@ public class TypeSet extends AbstractSet<Type> {
    * @see #getMostSpecializedClass()
    */
   public final Class<?> getMostSpecializedInterface() {
-    final Class<?> mostSpecializedInterface = this.mostSpecializedInterface;
     final Class<?> returnValue;
+    final Class<?> mostSpecializedInterface = this.mostSpecializedInterface;
     if (mostSpecializedInterface == null) {
       final Set<Class<?>> interfaces = this.getInterfaces();
       if (interfaces == null || interfaces.isEmpty()) {
@@ -593,8 +593,8 @@ public class TypeSet extends AbstractSet<Type> {
    * @see #getMostSpecializedInterface()
    */
   public final Type getMostSpecializedGenericClass() {
-    final Type mostSpecializedClass = this.mostSpecializedGenericClass;
     final Type returnValue;
+    final Type mostSpecializedClass = this.mostSpecializedGenericClass;
     if (mostSpecializedClass == null) {
       final Set<Type> classes = this.getGenericClasses();
       if (classes == null || classes.isEmpty()) {
@@ -760,7 +760,18 @@ public class TypeSet extends AbstractSet<Type> {
         returnValue = c.getGenericSuperclass();
       }
     } else if (type instanceof ParameterizedType) {
-      returnValue = addClass(((ParameterizedType)type).getRawType(), set); // XXX recursive
+      final Type rawType = ((ParameterizedType)type).getRawType();
+      if (rawType instanceof Class) {
+        final Class<?> c = (Class<?>)rawType;
+        if (c.isInterface()) {
+          returnValue = null;
+        } else {
+          set.add(type);
+          returnValue = c.getGenericSuperclass();
+        }
+      } else {
+        returnValue = null;
+      }
     } else {
       returnValue = null;
     }
@@ -798,10 +809,10 @@ public class TypeSet extends AbstractSet<Type> {
     if (type == null) {
       // do nothing
     } else if (type instanceof Class) {
-      Class<?> c = (Class<?>)type;
+      final Class<?> c = (Class<?>)type;
       final Type superclass;
       if (c.isInterface()) {
-        interfaces.add(c);
+        interfaces.add(type);
         superclass = null;
       } else {
         superclass = c.getGenericSuperclass();
@@ -815,7 +826,27 @@ public class TypeSet extends AbstractSet<Type> {
         addGenericInterfaces(superclass, interfaces); // XXX recursive
       }
     } else if (type instanceof ParameterizedType) {
-      addGenericInterfaces(((ParameterizedType)type).getRawType(), interfaces); // XXX recursive
+      final Type rawType = ((ParameterizedType)type).getRawType();
+      if (rawType instanceof Class) {
+        final Class<?> c = (Class<?>)rawType;
+        final Type superclass;
+        if (c.isInterface()) {
+          interfaces.add(type);
+          superclass = null;
+        } else {
+          superclass = c.getGenericSuperclass();
+        }
+        for (final Type intrface : c.getGenericInterfaces()) {
+          if (interfaces.add(intrface)) {
+            addGenericInterfaces(intrface, interfaces); // XXX recursive
+          }
+        }
+        if (superclass != null) {
+          addGenericInterfaces(superclass, interfaces); // XXX recursive
+        }
+      } else {
+        // do nothing
+      }
     } else {
       // do nothing
     }
