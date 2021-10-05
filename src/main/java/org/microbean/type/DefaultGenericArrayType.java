@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,11 +67,14 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
    * @param genericComponentType the generic component type; must not
    * be {@code null}; should almost certainly be a {@link
    * ParameterizedType}
+   *
+   * @exception NullPointerException if {@code genericComponentType}
+   * is {@code null}
    */
   public DefaultGenericArrayType(final Type genericComponentType) {
     super();
-    this.genericComponentType = Objects.requireNonNull(genericComponentType);
-    this.hashCode = genericComponentType.hashCode();
+    this.genericComponentType = genericComponentType;
+    this.hashCode = this.computeHashCode();
   }
 
   DefaultGenericArrayType(final Class<?> rawType, final Type... actualTypeArguments) {
@@ -96,13 +99,16 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
     return this.hashCode;
   }
 
+  private final int computeHashCode() {
+    return this.getGenericComponentType().hashCode();
+  }
+
   @Override
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
     } else if (other instanceof GenericArrayType) {
-      final GenericArrayType her = (GenericArrayType)other;
-      return this.getGenericComponentType().equals(her.getGenericComponentType());
+      return this.getGenericComponentType().equals(((GenericArrayType)other).getGenericComponentType());
     } else {
       return false;
     }
@@ -122,7 +128,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
       throw new IOException(new IllegalArgumentException("genericComponentType: " + genericComponentType));
     }
     this.genericComponentType = (Type)genericComponentType;
-    this.hashCode = genericComponentType.hashCode();
+    this.hashCode = this.computeHashCode();
   }
 
   private final void writeObject(final ObjectOutputStream stream) throws IOException {

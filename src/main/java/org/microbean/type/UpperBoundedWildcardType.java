@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import java.lang.reflect.Type;
 public final class UpperBoundedWildcardType extends AbstractWildcardType {
 
   private static final long serialVersionUID = 1L;
-  
+
   /**
    * Creates a new {@link UpperBoundedWildcardType}.
    *

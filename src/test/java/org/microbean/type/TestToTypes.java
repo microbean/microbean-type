@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -209,13 +209,18 @@ final class TestToTypes {
     final Type[] actualTypeArguments = ((ParameterizedType)barType).getActualTypeArguments();
     assertNotNull(actualTypeArguments);
     assertEquals(1, actualTypeArguments.length);
-    assertTrue(actualTypeArguments[0] instanceof TypeVariable);
     final TypeVariable<?> b = (TypeVariable<?>)actualTypeArguments[0];
-    
+    assertEquals("B", b.getName());
+
     Set<Type> allTypes = Types.toTypes(barType);
-    System.out.println("allTypes: " + allTypes);
+    assertNotNull(allTypes);
+    assertEquals(3, allTypes.size());
+    assertTrue(allTypes.contains(Object.class));
+    assertFalse(allTypes.contains(Bar.class)); // think about this one
+    assertEquals(new HierarchyDiscovery(barType).getTypeClosure(), allTypes);
+    assertEquals(new HierarchyDiscovery(Bar.class).getTypeClosure(), Types.toTypes(Bar.class));    
   }
-  
+
   @Test
   final void testBravo() {
     Set<Type> allTypes = Types.toTypes(Bravo.class);

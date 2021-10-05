@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public final class CovariantTypeSemantics extends TypeSemantics {
    * Instance fields.
    */
 
-  
+
   private final InvariantTypeSemantics invariantTypeSemantics;
 
 
@@ -64,7 +64,12 @@ public final class CovariantTypeSemantics extends TypeSemantics {
     this.invariantTypeSemantics = new InvariantTypeSemantics(box) {
         @Override
         protected final TypeSemantics getSemanticsFor(final Type receiverType, final Type payloadType) {
-          return receiverType instanceof WildcardType || payloadType instanceof WildcardType ? CovariantTypeSemantics.this : null;
+          // Wildcards are always compared covariantly.
+          if (receiverType instanceof WildcardType || payloadType instanceof WildcardType) {
+            return CovariantTypeSemantics.this;
+          } else {
+            return super.getSemanticsFor(receiverType, payloadType);
+          }
         }
       };
   }
@@ -73,7 +78,7 @@ public final class CovariantTypeSemantics extends TypeSemantics {
   /*
    * Instance methods.
    */
-  
+
 
   /**
    * Returns a {@link TypeSemantics} used for certain cases where
@@ -130,7 +135,7 @@ public final class CovariantTypeSemantics extends TypeSemantics {
                                  final Class<?> payloadType) {
     return
       this.isAssignable(receiverType.getRawType(), payloadType) &&
-      (!Types.normalize(payloadType).equals(payloadType) || // TODO: won't this ALWAYS return false?
+      (!Types.normalize(payloadType).equals(payloadType) ||
        this.isAssignable0(receiverType, Types.toTypes(payloadType)));
   }
 
@@ -138,12 +143,11 @@ public final class CovariantTypeSemantics extends TypeSemantics {
   protected boolean isAssignable(final ParameterizedType receiverType,
                                  final ParameterizedType payloadType) {
     return
-      this.isAssignable0(receiverType, payloadType) ||
       this.isAssignable0(receiverType, Types.toTypes(payloadType));
   }
 
   private final boolean isAssignable0(final ParameterizedType receiverType,
-                                      final TypeSet payloadTypeSet) {
+                                      final Iterable<? extends Type> payloadTypeSet) {
     boolean returnValue = false;
     for (final Type payloadType : payloadTypeSet) {
       if (payloadType instanceof ParameterizedType && this.isAssignable0(receiverType, (ParameterizedType)payloadType)) {
@@ -213,7 +217,7 @@ public final class CovariantTypeSemantics extends TypeSemantics {
         this.isAssignable(receiverType, (TypeVariable<?>)solePayloadTypeBound);
     }
     return returnValue;
-    
+
   }
 
   @Override

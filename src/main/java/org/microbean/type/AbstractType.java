@@ -78,16 +78,6 @@ public abstract class AbstractType implements Serializable, Type {
    */
   public static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
 
-  /**
-   * An array whose sole element is {@link Object Object.class}.
-   *
-   * <p>Undefined behavior may result if the contents of this field
-   * are modified in any way.</p>
-   *
-   * @nullability This field is never {@code null}.
-   */
-  protected static final Type[] OBJECT = new Type[] { Object.class };
-
 
   /*
    * Constructors.

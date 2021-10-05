@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@ import java.lang.reflect.TypeVariable;
 import java.util.List;
 import java.util.Set;
 
+import jakarta.enterprise.util.TypeLiteral;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -36,6 +39,26 @@ final class TestTypeNormalization {
 
   private TestTypeNormalization() {
     super();
+  }
+
+  @Test
+  final void testIsRawType() {
+    assertFalse(Types.isRawType(Integer.class));
+    assertTrue(Types.isRawType(List.class));
+    assertFalse(Types.isRawType(new TypeLiteral<List<String>>() {}.getType()));
+    assertTrue(Types.isRawType(Outer.class)); // see below
+    assertTrue(Types.isRawType(Outer.class.getDeclaredClasses()[0]));
+    assertTrue(Types.isRawType(Outer.Inner.class));
+  }
+
+  @Test
+  final void testGenericArray() {
+    final GenericArrayType gat = (GenericArrayType)new TypeLiteral<List<String>[]>() {}.getType();
+    assertSame(List.class, ((ParameterizedType)gat.getGenericComponentType()).getRawType());
+    assertSame(gat, Types.normalize(gat));
+    @SuppressWarnings("rawtypes")
+    final Class<?> c = (Class<?>)new TypeLiteral<List[]>() {}.getType();
+    assertTrue(c.isArray());
   }
 
   @Test
@@ -90,6 +113,24 @@ final class TestTypeNormalization {
     assertEquals(1, bounds.length);
     assertEquals(Object.class, bounds[0]);
 
+  }
+
+  private static final class Outer<T> {
+
+    private T t;
+
+    private Outer() {
+      super();
+    }
+
+    final class Inner {
+
+      final T setOuterT(final T t1) {
+        t = t1;
+        return t;
+      }
+
+    }
   }
 
 }

@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,16 +199,14 @@ public abstract class TypeSemantics {
    */
   public final boolean anyIsAssignable(final Type receiverType,
                                        final Collection<? extends Type> payloadTypes) {
-    boolean returnValue = false;
-    if (payloadTypes != null && !payloadTypes.isEmpty()) {
+    if (payloadTypes != null) {
       for (final Type payloadType : payloadTypes) {
         if (this.isAssignable(receiverType, payloadType)) {
-          returnValue = true;
-          break;
+          return true;
         }
       }
     }
-    return returnValue;
+    return false;
   }
 
   /**
@@ -288,7 +286,7 @@ public abstract class TypeSemantics {
                                      final Type payloadType,
                                      final TypeSemantics semantics) {
     final boolean returnValue;
-    if (semantics == null || semantics == this) {
+    if (semantics == this || semantics == null) {
       if (receiverType == null || payloadType == null) {
         returnValue = false;
       } else if (receiverType instanceof Class) {

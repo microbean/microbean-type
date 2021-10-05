@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import java.util.StringJoiner;
 class AbstractWildcardType extends AbstractType implements WildcardType {
 
   private static final long serialVersionUID = 1L;
-  
+
   private transient Type[] upperBounds;
 
   private transient Type[] lowerBounds;
@@ -39,17 +39,21 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
 
   AbstractWildcardType(final Type[] upperBounds, final Type[] lowerBounds) {
     super();
-    this.upperBounds = upperBounds == null || upperBounds.length <= 0 ? OBJECT : upperBounds;
-    this.lowerBounds = lowerBounds == null ? EMPTY_TYPE_ARRAY : lowerBounds;
-    this.hashCode = Arrays.hashCode(this.getUpperBounds()) ^ Arrays.hashCode(this.getLowerBounds());
+    if (upperBounds == null || upperBounds.length <= 0) {
+      this.upperBounds = new Type[] { Object.class };
+    } else {
+      this.upperBounds = upperBounds.clone();
+    }
+    if (lowerBounds == null || lowerBounds.length <= 0) {
+      this.lowerBounds = EMPTY_TYPE_ARRAY;
+    } else {
+      this.lowerBounds = lowerBounds.clone();
+    }
+    this.hashCode = this.computeHashCode();
   }
 
   AbstractWildcardType(final WildcardType other) {
-    super();
-    final Type[] upperBounds = other.getUpperBounds();
-    this.upperBounds = upperBounds == null ? OBJECT : upperBounds;
-    final Type[] lowerBounds = other.getLowerBounds();
-    this.lowerBounds = lowerBounds == null ? EMPTY_TYPE_ARRAY : lowerBounds;
+    this(other.getUpperBounds(), other.getLowerBounds());
   }
 
   @Override
@@ -67,6 +71,10 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     return this.hashCode;
   }
 
+  private final int computeHashCode() {
+    return Arrays.hashCode(this.upperBounds) ^ Arrays.hashCode(this.lowerBounds);
+  }
+
   @Override
   public final boolean equals(final Object other) {
     if (other == this) {
@@ -74,20 +82,20 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     } else if (other instanceof WildcardType) {
       final WildcardType her = (WildcardType)other;
       return
-        Arrays.equals(this.getUpperBounds(), her.getUpperBounds()) &&
-        Arrays.equals(this.getLowerBounds(), her.getLowerBounds());
+        Arrays.equals(this.upperBounds, her.getUpperBounds()) &&
+        Arrays.equals(this.lowerBounds, her.getLowerBounds());
     } else {
       return false;
     }
   }
-  
+
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder("?");
-    Type[] bounds = this.getLowerBounds();
+    Type[] bounds = this.lowerBounds;
     if (bounds == null || bounds.length <= 0) {
       // Upper bounds only.
-      bounds = this.getUpperBounds();
+      bounds = this.upperBounds;
       if (bounds == null || bounds.length <= 0 || Object.class.equals(bounds[0])) {
         bounds = null;
       } else {
@@ -123,11 +131,11 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     assert upperBounds instanceof Serializable[];
     serializableBounds = (Serializable[])upperBounds;
     if (serializableBounds == null || serializableBounds.length <= 0) {
-      this.upperBounds = OBJECT;
+      this.upperBounds = new Type[] { Object.class };
     } else if (serializableBounds.length == 1) {
       final Object bound = serializableBounds[0];
       if (bound == null || Object.class.equals(bound)) {
-        this.upperBounds = OBJECT;
+        this.upperBounds = new Type[] { Object.class };
       } else {
         assert bound instanceof Type;
         this.upperBounds = new Type[] { (Type)bound };
@@ -136,12 +144,14 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
       this.upperBounds = new Type[serializableBounds.length];
       System.arraycopy(serializableBounds, 0, this.upperBounds, 0, serializableBounds.length);
     }
-    this.hashCode = Arrays.hashCode(this.getUpperBounds()) ^ Arrays.hashCode(this.getLowerBounds());
+    // Note: we use the instance variables directly, not the
+    // accessors, so we don't compute hashcodes off of clones.
+    this.hashCode = this.computeHashCode();
   }
-  
+
   private final void writeObject(final ObjectOutputStream stream) throws IOException {
     stream.defaultWriteObject();
-    Type[] originalBounds = this.getLowerBounds();
+    Type[] originalBounds = this.lowerBounds;
     if (originalBounds == null || originalBounds.length <= 0) {
       stream.writeObject(new Serializable[0]);
     } else {
@@ -151,7 +161,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
       }
       stream.writeObject(newBounds);
     }
-    originalBounds = this.getUpperBounds();
+    originalBounds = this.upperBounds;
     if (originalBounds == null || originalBounds.length <= 0) {
       stream.writeObject(new Serializable[0]);
     } else {
@@ -160,6 +170,16 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
         newBounds[i] = Types.toSerializableType(originalBounds[i]);
       }
       stream.writeObject(newBounds);
+    }
+  }
+
+  public static final AbstractWildcardType valueOf(final WildcardType type) {
+    if (type == null) {
+      return null;
+    } else if (type instanceof AbstractWildcardType) {
+      return (AbstractWildcardType)type;
+    } else {
+      return new AbstractWildcardType(type);
     }
   }
 

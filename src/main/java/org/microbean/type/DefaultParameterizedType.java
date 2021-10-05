@@ -74,12 +74,13 @@ public final class DefaultParameterizedType extends AbstractType implements Para
    * if non-{@code null} is most commonly a {@link Class} as in all
    * JDKs through at least 13
    *
-   * @param rawType the raw type; must not be {@code null}; is most commonly a {@link Class} as in all
-   * JDKs through at least 13
+   * @param rawType the raw type; must not be {@code null}; is most
+   * commonly a {@link Class} as in all JDKs through at least 13
    *
    * @param actualTypeArguments the actual {@linkplain
    * #getActualTypeArguments() actual type arguments} of this {@link
-   * DefaultParameterizedType}; may be {@code null}
+   * DefaultParameterizedType}; may be {@code null}; will be cloned if
+   * non-{@code null}
    *
    * @exception NullPointerException if {@code rawType} is {@code
    * null}
@@ -87,17 +88,27 @@ public final class DefaultParameterizedType extends AbstractType implements Para
   public DefaultParameterizedType(final Type ownerType, final Type rawType, final Type... actualTypeArguments) {
     super();
     this.ownerType = ownerType;
-    this.rawType = Objects.requireNonNull(rawType);
-    this.actualTypeArguments = actualTypeArguments == null ? EMPTY_TYPE_ARRAY : actualTypeArguments;
+    this.rawType = Objects.requireNonNull(rawType, "rawType");
+    if (actualTypeArguments == null || actualTypeArguments.length <= 0) {
+      this.actualTypeArguments = EMPTY_TYPE_ARRAY;
+    } else {
+      this.actualTypeArguments = actualTypeArguments.clone();
+    }
     this.hashCode = this.computeHashCode();
   }
 
+  /**
+   * Creates a new {@link DefaultParameterizedType}.
+   *
+   * @param other the {@link ParameterizedType} to copy information
+   * from; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code other} is {@code null}
+   *
+   * @see #DefaultParameterizedType(Type, Type, Type...)
+   */
   public DefaultParameterizedType(final ParameterizedType other) {
-    super();
-    this.ownerType = other.getOwnerType();
-    this.rawType = Objects.requireNonNull(other.getRawType());
-    this.actualTypeArguments = other.getActualTypeArguments();
-    this.hashCode = this.computeHashCode();
+    this(other.getOwnerType(), other.getRawType(), other.getActualTypeArguments());
   }
 
 
@@ -127,21 +138,8 @@ public final class DefaultParameterizedType extends AbstractType implements Para
   }
 
   private final int computeHashCode() {
-    int hashCode = 17;
-
-    final Object ownerType = this.getOwnerType();
-    int c = ownerType == null ? 0 : ownerType.hashCode();
-    hashCode = 37 * hashCode + c;
-
-    final Object rawType = this.getRawType();
-    c = rawType == null ? 0 : rawType.hashCode();
-    hashCode = 37 * hashCode + c;
-
-    final Type[] actualTypeArguments = this.getActualTypeArguments();
-    c = Arrays.hashCode(actualTypeArguments);
-    hashCode = 37 * hashCode + c;
-
-    return hashCode;
+    return
+      Arrays.hashCode(this.actualTypeArguments) ^ Objects.hashCode(this.ownerType) ^ Objects.hashCode(this.rawType);
   }
 
   @Override
@@ -150,31 +148,10 @@ public final class DefaultParameterizedType extends AbstractType implements Para
       return true;
     } else if (other instanceof ParameterizedType) {
       final ParameterizedType her = (ParameterizedType)other;
-
-      final Object ownerType = this.getOwnerType();
-      if (ownerType == null) {
-        if (her.getOwnerType() != null) {
-          return false;
-        }
-      } else if (!ownerType.equals(her.getOwnerType())) {
-        return false;
-      }
-
-      final Object rawType = this.getRawType();
-      if (rawType == null) {
-        if (her.getRawType() != null) {
-          return false;
-        }
-      } else if (!rawType.equals(her.getRawType())) {
-        return false;
-      }
-
-      final Type[] actualTypeArguments = this.getActualTypeArguments();
-      if (!Arrays.equals(actualTypeArguments, her.getActualTypeArguments())) {
-        return false;
-      }
-
-      return true;
+      return
+        Objects.equals(this.ownerType, her.getOwnerType()) &&
+        Objects.equals(this.rawType, her.getRawType()) &&
+        Arrays.equals(this.actualTypeArguments, her.getActualTypeArguments());
     } else {
       return false;
     }
@@ -183,24 +160,21 @@ public final class DefaultParameterizedType extends AbstractType implements Para
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
-    final Type rawType = this.getRawType();
-    final Type ownerType = this.getOwnerType();
+    final Type ownerType = this.ownerType;
     if (ownerType == null) {
-      sb.append(rawType.getTypeName());
+      sb.append(this.rawType.getTypeName());
     } else {
       sb.append(ownerType.getTypeName()).append("$");
+      final Type rawType = this.rawType;
       if (ownerType instanceof ParameterizedType) {
-        final ParameterizedType ownerPType = (ParameterizedType)ownerType;
-        final Type ownerRawType = ownerPType.getRawType();
-        sb.append(rawType.getTypeName().replace(ownerRawType.getTypeName() + "$", ""));
+        sb.append(rawType.getTypeName().replace(((ParameterizedType)ownerType).getRawType().getTypeName() + "$", ""));
       } else if (rawType instanceof Class) {
         sb.append(((Class<?>)rawType).getSimpleName());
       } else {
         sb.append(rawType.getTypeName());
       }
     }
-
-    final Type[] actualTypeArguments = this.getActualTypeArguments();
+    final Type[] actualTypeArguments = this.actualTypeArguments;
     if (actualTypeArguments != null && actualTypeArguments.length > 0) {
       final StringJoiner stringJoiner = new StringJoiner(", ", "<", ">");
       stringJoiner.setEmptyValue("");
@@ -244,9 +218,9 @@ public final class DefaultParameterizedType extends AbstractType implements Para
 
   private final void writeObject(final ObjectOutputStream stream) throws IOException {
     stream.defaultWriteObject();
-    stream.writeObject(Types.toSerializableType(this.getOwnerType()));
-    stream.writeObject(Types.toSerializableType(this.getRawType()));
-    final Type[] actualTypeArguments = this.getActualTypeArguments();
+    stream.writeObject(Types.toSerializableType(this.ownerType));
+    stream.writeObject(Types.toSerializableType(this.rawType));
+    final Type[] actualTypeArguments = this.actualTypeArguments;
     if (actualTypeArguments == null || actualTypeArguments.length <= 0) {
       stream.writeObject(new Serializable[0]);
     } else {
@@ -257,5 +231,22 @@ public final class DefaultParameterizedType extends AbstractType implements Para
       stream.writeObject(newTypeArguments);
     }
   }
+
+
+  /*
+   * Static methods.
+   */
+
+
+  public static final DefaultParameterizedType valueOf(final ParameterizedType type) {
+    if (type == null) {
+      return null;
+    } else if (type instanceof DefaultParameterizedType) {
+      return (DefaultParameterizedType)type;
+    } else {
+      return new DefaultParameterizedType(type);
+    }
+  }
+
 
 }

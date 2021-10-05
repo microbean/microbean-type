@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,8 +82,8 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
    *
    * @param bounds the bounds of this {@link
    * PartiallyImplementedTypeVariable}; may be {@code null} or
-   * zero-length in which case {@link AbstractType#OBJECT} will be
-   * used instead
+   * zero-length in which case a new {@link Type} array consisting of
+   * a single {@link Object Object.class} element will be used instead
    *
    * @exception NullPointerException if {@code name} is {@code null}
    */
@@ -91,10 +91,12 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
                                           final Type[] bounds) {
     super();
     this.name = Objects.requireNonNull(name, "name");
-    this.bounds = bounds == null || bounds.length <= 0 ? OBJECT : bounds;
-    this.hashCode =
-      Objects.hash(this.getName(),
-                   this.getBounds());
+    if (bounds == null || bounds.length <= 0) {
+      this.bounds = new Type[] { Object.class };
+    } else {
+      this.bounds = bounds.clone();
+    }
+    this.hashCode = this.computeHashCode();
   }
 
   PartiallyImplementedTypeVariable(final TypeVariable<? extends GenericDeclaration> other) {
@@ -113,9 +115,7 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
       }
     }
     this.bounds = realVariable.getBounds();
-    this.hashCode =
-      Objects.hash(this.getName(),
-                   this.getBounds());
+    this.hashCode = this.computeHashCode();
   }
 
 
@@ -266,6 +266,10 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
     return this.hashCode;
   }
 
+  private final int computeHashCode() {
+    return Objects.hash(this.name, this.bounds);
+  }
+  
   /**
    * Returns {@code true} if the supplied {@link Object} is equal to
    * this {@link PartiallyImplementedTypeVariable}; {@code false}
@@ -279,9 +283,10 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
    * and if its {@linkplain TypeVariable#getBounds() bounds}
    * {@linkplain Arrays#equals(Object[], Object[]) are equal to} this
    * {@link PartiallyImplementedTypeVariable}'s {@linkplain
-   * #getBounds() bounds}.  Note that this definition of equality is
-   * deliberately different from that honored by the default
-   * JDK-supplied implementation of {@link TypeVariable}.</p>
+   * #getBounds() bounds}.  <strong>Note that this definition of
+   * equality is deliberately different from that honored by the
+   * default JDK-supplied implementation of {@link
+   * TypeVariable}.</strong></p>
    *
    * @param other the {@link Object} to test; may be {@code null} in
    * which case {@code false} will be returned
@@ -302,17 +307,19 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
     } else if (other instanceof TypeVariable<?>) {
       final TypeVariable<?> her = (TypeVariable<?>)other;
       return
-        Objects.equals(this.getName(), her.getName()) &&
-        Arrays.equals(this.getBounds(), her.getBounds());
+        Objects.equals(this.name, her.getName()) &&
+        Arrays.equals(this.bounds, her.getBounds());
     } else {
       return false;
     }
   }
 
   /**
-   * Returns the return value of invoking the {@link #getName()} method.
+   * Returns the return value of invoking the {@link #getName()}
+   * method.
    *
-   * @return the return value of invoking the {@link #getName()} method
+   * @return the return value of invoking the {@link #getName()}
+   * method
    *
    * @nullability This method never returns {@code null}.
    *
@@ -328,31 +335,26 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
 
   private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
     stream.defaultReadObject();
-    final Object bounds = stream.readObject();
-    assert bounds instanceof Serializable[];
-    final Serializable[] serializableBounds = (Serializable[])bounds;
+    final Serializable[] serializableBounds = (Serializable[])stream.readObject();
     if (serializableBounds == null || serializableBounds.length <= 0) {
-      this.bounds = OBJECT;
+      this.bounds = new Type[] { Object.class };
     } else if (serializableBounds.length == 1) {
       final Object bound = serializableBounds[0];
-      if (bound == null || Object.class.equals(bound)) {
-        this.bounds = OBJECT;
+      if (bound == null) {
+        this.bounds = new Type[] { Object.class };
       } else {
-        assert bound instanceof Type;
         this.bounds = new Type[] { (Type)bound };
       }
     } else {
       this.bounds = new Type[serializableBounds.length];
       System.arraycopy(serializableBounds, 0, this.bounds, 0, serializableBounds.length);
     }
-    this.hashCode =
-      Objects.hash(this.getName(),
-                   this.getBounds());
+    this.hashCode = this.computeHashCode();
   }
-  
+
   private final void writeObject(final ObjectOutputStream stream) throws IOException {
     stream.defaultWriteObject();
-    final Type[] originalBounds = this.getBounds();
+    final Type[] originalBounds = this.bounds;
     if (originalBounds.length <= 0) {
       stream.writeObject(new Serializable[0]);
     } else {
@@ -361,6 +363,16 @@ public final class PartiallyImplementedTypeVariable extends AbstractType impleme
         newBounds[i] = Types.toSerializableType(originalBounds[i]);
       }
       stream.writeObject(newBounds);
+    }
+  }
+
+  public static final PartiallyImplementedTypeVariable valueOf(final TypeVariable<? extends GenericDeclaration> type) {
+    if (type == null) {
+      return null;
+    } else if (type instanceof PartiallyImplementedTypeVariable) {
+      return (PartiallyImplementedTypeVariable)type;
+    } else {
+      return new PartiallyImplementedTypeVariable(type);
     }
   }
 

@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,12 +34,12 @@ import java.lang.reflect.WildcardType;
 public final class UnboundedWildcardType extends AbstractWildcardType {
 
   private static final long serialVersionUID = 1L;
-  
+
   /**
    * The sole instance of this class.
    */
   public static final WildcardType INSTANCE = new UnboundedWildcardType();
-  
+
   private UnboundedWildcardType() {
     super(null, null);
   }

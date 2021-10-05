@@ -125,7 +125,7 @@ public class TypeSet extends AbstractSet<Type> {
     if (types == null || types.isEmpty()) {
       this.typeSet = Collections.emptySortedSet();
     } else {
-      final SortedSet<Type> sortedTypeSet = new TreeSet<>(Types.typeNameComparator);
+      final SortedSet<Type> sortedTypeSet = new TreeSet<>(Types.typeComparator);
       sortedTypeSet.addAll(types);
       this.typeSet = Collections.unmodifiableSortedSet(sortedTypeSet);
     }
@@ -180,7 +180,7 @@ public class TypeSet extends AbstractSet<Type> {
       } else if (interfaces.isEmpty()) {
         rawTypes = classes;
       } else {
-        final SortedSet<Class<?>> target = new TreeSet<>(Types.typeNameComparator);
+        final SortedSet<Class<?>> target = new TreeSet<>(Types.typeComparator);
         target.addAll(classes);
         target.addAll(interfaces);
         rawTypes = Collections.unmodifiableSortedSet(target);
@@ -218,7 +218,7 @@ public class TypeSet extends AbstractSet<Type> {
       if (this.isEmpty()) {
         classes = Collections.emptySortedSet();
       } else {
-        classes = new TreeSet<>(Types.typeNameComparator);
+        classes = new TreeSet<>(Types.typeComparator);
         for (final Type type : this) {
           // TODO: shouldn't we ignore any Type that is not either a Class or a ParameterizedType?
           Class<?> rawType = Types.toClass(type);
@@ -272,7 +272,7 @@ public class TypeSet extends AbstractSet<Type> {
       if (this.isEmpty()) {
         genericClasses = Collections.emptySortedSet();
       } else {
-        genericClasses = new TreeSet<>(Types.typeNameComparator);
+        genericClasses = new TreeSet<>(Types.typeComparator);
         for (Type type : this) {
           while (type != null) {
             type = addClass(type, genericClasses);
@@ -317,7 +317,7 @@ public class TypeSet extends AbstractSet<Type> {
       if (this.isEmpty()) {
         interfaces = Collections.emptySortedSet();
       } else {
-        interfaces = new TreeSet<>(Types.typeNameComparator);
+        interfaces = new TreeSet<>(Types.typeComparator);
         for (final Type type : this) {
           addInterfaces(type, interfaces);
         }
@@ -364,7 +364,7 @@ public class TypeSet extends AbstractSet<Type> {
       if (this.isEmpty()) {
         interfaces = Collections.emptySortedSet();
       } else {
-        interfaces = new TreeSet<>(Types.typeNameComparator);
+        interfaces = new TreeSet<>(Types.typeComparator);
         for (final Type type : this) {
           addGenericInterfaces(type, interfaces); // adds to interfaces
         }
