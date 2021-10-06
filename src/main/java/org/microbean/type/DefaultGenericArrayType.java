@@ -100,7 +100,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
   }
 
   private final int computeHashCode() {
-    return this.getGenericComponentType().hashCode();
+    return Types.hashCode(this);
   }
 
   @Override
@@ -108,7 +108,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
     if (other == this) {
       return true;
     } else if (other instanceof GenericArrayType) {
-      return this.getGenericComponentType().equals(((GenericArrayType)other).getGenericComponentType());
+      return Types.equals(this, (GenericArrayType)other);
     } else {
       return false;
     }
@@ -124,8 +124,6 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
     final Object genericComponentType = stream.readObject();
     if (genericComponentType == null) {
       throw new IOException(new NullPointerException("genericComponentType"));
-    } else if (!(genericComponentType instanceof Type)) {
-      throw new IOException(new IllegalArgumentException("genericComponentType: " + genericComponentType));
     }
     this.genericComponentType = (Type)genericComponentType;
     this.hashCode = this.computeHashCode();

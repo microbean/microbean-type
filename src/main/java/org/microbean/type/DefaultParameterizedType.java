@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,8 +138,7 @@ public final class DefaultParameterizedType extends AbstractType implements Para
   }
 
   private final int computeHashCode() {
-    return
-      Arrays.hashCode(this.actualTypeArguments) ^ Objects.hashCode(this.ownerType) ^ Objects.hashCode(this.rawType);
+    return Types.hashCode(this);
   }
 
   @Override
@@ -191,22 +190,16 @@ public final class DefaultParameterizedType extends AbstractType implements Para
     final Object ownerType = stream.readObject();
     if (ownerType == null) {
       this.ownerType = null;
-    } else if (ownerType instanceof Type) {
-      this.ownerType = (Type)ownerType;
     } else {
-      throw new IOException(new IllegalArgumentException("ownerType: " + ownerType));
+      this.ownerType = (Type)ownerType;
     }
     final Object rawType = stream.readObject();
     if (rawType == null) {
       throw new IOException(new NullPointerException("rawType"));
-    } else if (rawType instanceof Type) {
-      this.rawType = (Type)rawType;
     } else {
-      throw new IOException(new IllegalArgumentException("rawType: " + rawType));
+      this.rawType = (Type)rawType;
     }
-    final Object actualTypeArguments = stream.readObject();
-    assert actualTypeArguments instanceof Serializable[];
-    final Serializable[] serializableActualTypeArguments = (Serializable[])actualTypeArguments;
+    final Serializable[] serializableActualTypeArguments = (Serializable[])stream.readObject();
     if (serializableActualTypeArguments == null || serializableActualTypeArguments.length <= 0) {
       this.actualTypeArguments = EMPTY_TYPE_ARRAY;
     } else {

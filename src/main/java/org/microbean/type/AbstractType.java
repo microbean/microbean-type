@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import java.lang.reflect.WildcardType;
 /**
  * A common abstract superclass for {@link Type} implementations.
  *
- * <p>All {@link AbstractType} implementations must be at least
- * lossily {@linkplain Serializable serializable}.</p>
+ * <p>All {@link AbstractType} implementations are at least lossily
+ * {@linkplain Serializable serializable}.</p>
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>

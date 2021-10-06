@@ -221,7 +221,7 @@ public class TypeSet extends AbstractSet<Type> {
         classes = new TreeSet<>(Types.typeComparator);
         for (final Type type : this) {
           // TODO: shouldn't we ignore any Type that is not either a Class or a ParameterizedType?
-          Class<?> rawType = Types.toClass(type);
+          Class<?> rawType = Types.erase(type);
           while (rawType != null) {
             if (!rawType.isInterface()) {
               classes.add(rawType);

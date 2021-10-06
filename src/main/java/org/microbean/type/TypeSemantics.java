@@ -30,9 +30,10 @@ import org.microbean.development.annotation.Experimental;
  * An object representing {@link Type} compatibility and assignability
  * semantics.
  *
- * <p>Subclasses that do not override anything essentially return
- * {@code false} for all assignability tests and are rarely
- * appropriate for much.</p>
+ * <p>Unless otherwise documented, a method declared in this class
+ * with the name {@code isAssignable} returns {@code false} for all
+ * arguments. It follows that meaningful subclasses should override
+ * the methods of interest.</p>
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
@@ -289,6 +290,8 @@ public abstract class TypeSemantics {
     if (semantics == this || semantics == null) {
       if (receiverType == null || payloadType == null) {
         returnValue = false;
+      } else if (receiverType == payloadType) {
+        returnValue = true;
       } else if (receiverType instanceof Class) {
         if (payloadType instanceof Class) {
           returnValue = this.isAssignable((Class<?>)receiverType, (Class<?>)payloadType);
@@ -493,4 +496,35 @@ public abstract class TypeSemantics {
     return false;
   }
 
+  // Sort of like least upper bound (lub()) in the JLS; see
+  // https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.10.4
+  public final Type getNearestAncestor(final Type t0, final Type t1) {
+    if (t0 == null) {
+      return t1 == null ? null : t1;
+    } else if (t1 == null) {
+      return t0;
+    } else if (t0 == t1 || Types.equals(t0, t1)) {
+      return t0;
+    } else if (this.isAssignable(t0, t1)) {
+      assert !this.isAssignable(t1, t0);
+      return t0;
+    } else if (this.isAssignable(t1, t0)) {
+      return t1;
+    } else {
+      final Class<?> c0 = Types.erase(t0);
+      final Class<?> c1 = Types.erase(t1);
+      if (c0 == null || c1 == null) {
+        return null;
+      } else {
+        assert !c0.isAssignableFrom(c1);
+        assert !c1.isAssignableFrom(c0);
+        if (this.isBoxing() || (!c0.isPrimitive() && !c1.isPrimitive())) {
+          return Object.class;
+        } else {
+          return null;
+        }
+      }
+    }
+  }
+  
 }

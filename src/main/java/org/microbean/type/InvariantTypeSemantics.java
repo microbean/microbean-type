@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,15 +28,17 @@ import org.microbean.development.annotation.Experimental;
  * An abstract {@link TypeSemantics} that, in general, compares {@link
  * Type}s using invariant semantics.
  *
- * <p>Normally {@link java.lang.reflect.WildcardType} instances would
+ * <p>Normally {@link java.lang.reflect.WildcardType} instances should
  * be compared using covariant semantics so often subclasses will
- * override the {@link #getSemanticsFor(Type, Type)}
+ * override the {@link #getSemanticsFor(Type, Type)} method
  * appropriately.</p>
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  *
  * @see CovariantTypeSemantics
+ *
+ * @see CovariantTypeSemantics#getInvariantTypeSemantics()
  *
  * @see TypeSemantics
  */
@@ -60,38 +62,85 @@ public abstract class InvariantTypeSemantics extends TypeSemantics {
    * Instance methods.
    */
 
-  
+
+  /**
+   * Returns {@code true} if {@code receiverType} {@linkplain
+   * Class#equals(Object) equals} {@code payloadType} and in no other
+   * circumstances.
+   *
+   * @param receiverType the receiver {@link Class}; must not be
+   * {@code null}
+   *
+   * @param payloadType the payload {@link Class}; must not be {@code
+   * null}
+   *
+   * @return {@code true} if the two {@link Class}es are {@linkplain
+   * Class#equals(Object) equal}; {@code false} otherwise
+   */
   @Override
   protected final boolean isAssignable(final Class<?> receiverType,
                                        final Class<?> payloadType) {
     return this.box(receiverType).equals(this.box(payloadType));
   }
 
+  /**
+   * Returns {@code true} if the {@code receiverType}'s {@linkplain
+   * ParameterizedType#getRawType() raw type} equals that of the
+   * {@code payloadType} and if each of the {@code payloadType}'s
+   * {@linkplain ParameterizedType#getActualTypeArguments() actual
+   * type arguments} is assignable invariantly to the corresponding
+   * actual type argument of the {@code receiverType} and in no other
+   * circumstances.
+   *
+   * @param receiverType the receiver {@link ParameterizedType}; must
+   * not be {@code null}
+   *
+   * @param payloadType the payload {@link ParameterizedType}; must
+   * not be {@code null}
+   *
+   * @return {@code true} if the {@code receiverType}'s {@linkplain
+   * ParameterizedType#getRawType() raw type} equals that of the
+   * {@code payloadType} and if each of the {@code payloadType}'s
+   * {@linkplain ParameterizedType#getActualTypeArguments() actual
+   * type arguments} is assignable invariantly to the corresponding
+   * actual type argument of the {@code receiverType} and in no other
+   * circumstances
+   *
+   * @see #isAssignable(TypeVariable, TypeVariable)
+   */
   @Override
   protected final boolean isAssignable(final ParameterizedType receiverType,
                                        final ParameterizedType payloadType) {
-    final boolean returnValue;
     if (receiverType.getRawType().equals(payloadType.getRawType())) {
       final Type[] receiverActualTypeArguments = receiverType.getActualTypeArguments();
       final Type[] payloadActualTypeArguments = payloadType.getActualTypeArguments();
       if (receiverActualTypeArguments.length == payloadActualTypeArguments.length) {
-        boolean temp = true;
         for (int i = 0; i < receiverActualTypeArguments.length; i++) {
           if (!this.isAssignable(receiverActualTypeArguments[i], payloadActualTypeArguments[i])) {
-            temp = false;
-            break;
+            return false;
           }
         }
-        returnValue = false;
-      } else {
-        returnValue = false;
+        return true;
       }
-    } else {
-      returnValue = false;
     }
-    return returnValue;
+    return false;
   }
 
+  /**
+   * Returns {@code true} if the {@code receiverType} {@linkplain
+   * Object#equals(Object) equals} the {@code payloadType} and in no
+   * other circumstances.
+   *
+   * @param receiverType the receiver {@link TypeVariable}; must not
+   * be {@code null}
+   *
+   * @param payloadType the payload {@link TypeVariable}; must not be
+   * {@code null}
+   *
+   * @return {@code true} if the {@code receiverType} {@linkplain
+   * Object#equals(Object) equals} the {@code payloadType} and in no
+   * other circumstances
+   */
   @Override
   protected final boolean isAssignable(final TypeVariable<?> receiverType,
                                        final TypeVariable<?> payloadType) {

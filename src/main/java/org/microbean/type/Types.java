@@ -29,6 +29,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -180,7 +181,7 @@ public final class Types {
   private static final boolean isRawType(final Class<?> c) {
     if (c == null) {
       return false;
-    } else if (isRawType(c.getComponentType()) || c.getTypeParameters().length > 0) {
+    } else if (isGeneric(c) || isRawType(c.getComponentType())) {
       return true;
     } else {
       // See https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8
@@ -191,6 +192,64 @@ public final class Types {
     }
   }
 
+  /**
+   * Returns {@code true} if and only if the supplied {@link Class} is
+   * <em>generic</em> according to <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2"
+   * target="_parent">the rules of the Java Language
+   * Specification</a>.
+   *
+   * @param cls the {@link Class} in question; may be {@code null} in
+   * which case {@code false} will be returned
+   *
+   * @return {@code true} if the supplied {@link Class} is non-{@code
+   * null} and returns an array with more than zero elements from an
+   * invocation of its {@link Class#getTypeParameters()} method;
+   * {@code false} otherwise
+   *
+   * @see Class#getTypeParameters()
+   *
+   * @see <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2"
+   * target="_parent">The Java Language Specification Section
+   * 8.1.2</a>
+   */
+  // https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2
+  // "A class is generic if the class declaration declares one or more
+  // type variables (§4.4)."
+  public static final boolean isGeneric(final Class<?> cls) {
+    return cls != null && cls.getTypeParameters().length > 0;
+  }
+
+  /**
+   * Returns {@code true} if and only if the supplied {@link Type}
+   * represents a <em>reference type</em> according to <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
+   * target="_parent">the rules of the Java Language
+   * Specification</a>.
+   *
+   * @param type the {@link Type} in question; may be {@code null} in which case
+   * {@code false} will be returned
+   *
+   * @return {@code true} if and only if the supplied {@link Type}
+   * represents a <em>reference type</em> according to <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
+   * target="_parent">the rules of the Java Language
+   * Specification</a>
+   *
+   * @see <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
+   * target="_parent">The Java Language Specification Section 4.3</a>
+   */
+  public static final boolean isReferenceType(final Type type) {
+    return
+      (type instanceof Class && !((Class<?>)type).isPrimitive()) ||
+      type instanceof ParameterizedType ||
+      type instanceof GenericArrayType ||
+      type instanceof TypeVariable ||
+      type instanceof WildcardType; // wildcard types in the JLS are unsound type variables
+  }
+
 
   /*
    * Bookmark: resolve(Type)
@@ -198,7 +257,14 @@ public final class Types {
 
 
   /**
-   * Resolves the supplied {@link Type} and returns the result.
+   * Resolves the supplied {@link Type} and returns the result, or
+   * the {@link Type} itself if the {@link Type} could not be resolved.
+   *
+   * <p>Type resolution is delegated to the supplied {@link Function}
+   * which is most commonly a method reference to the {@link
+   * Map#get(Object)} method of a {@link Map Map&lt;Type, Type&gt;}.
+   * Generally speaking, however, the type resolver may take any
+   * side-effect-free action it wishes.</p>
    *
    * @param type the {@link Type} to resolve; may be {@code null}
    *
@@ -206,11 +272,16 @@ public final class Types {
    * Function#apply(Object)} method will be called on, among other
    * things, {@link ParameterizedType} {@linkplain
    * ParameterizedType#getActualTypeArguments() type arguments}; must
-   * not be {@code null}
+   * not be {@code null}; may return {@code null}; will never be
+   * supplied with a {@code null} {@link Type}
    *
    * @return the resolved {@link Type}, or {@code null}
    *
-   * @nullability This method may return {@code null}.
+   * @exception NullPointerException if {@code typeResolver} is {@code
+   * null}
+   *
+   * @nullability This method will return {@code null} only when the
+   * supplied {@link Type} is {@code null}.
    *
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
@@ -219,7 +290,9 @@ public final class Types {
    */
   public static final Type resolve(Type type,
                                    final Function<? super Type, ? extends Type> typeResolver) {
-    if (type instanceof Class) {
+    if (type == null) {
+      return null;
+    } else if (type instanceof Class) {
       return resolve((Class<?>)type, typeResolver);
     } else if (type instanceof ParameterizedType) {
       return resolve((ParameterizedType)type, typeResolver);
@@ -228,7 +301,6 @@ public final class Types {
     } else if (type instanceof TypeVariable) {
       return resolve((TypeVariable<?>)type, typeResolver);
     } else if (type instanceof WildcardType) {
-      // (No-op.)
       return resolve((WildcardType)type, typeResolver);
     } else {
       // (Unknown type, so we don't know how to resolve it.)
@@ -275,9 +347,7 @@ public final class Types {
     if (candidate == null) {
       final Type genericComponentType = type.getGenericComponentType();
       final Type resolvedComponentType = resolve(genericComponentType, typeResolver); // XXX recursive
-      if (resolvedComponentType == null) {
-        throw new IllegalStateException();
-      } else if (resolvedComponentType == genericComponentType) {
+      if (resolvedComponentType == null || resolvedComponentType == genericComponentType) {
         // Identity means that basically resolution was a no-op, so the
         // genericComponentType was whatever it was, and so we are going
         // to be a no-op as well.
@@ -333,10 +403,9 @@ public final class Types {
    * @param type the {@link Type} whose type closure should be
    * computed; may be {@code null}
    *
-   * @return a non-{@code null} {@link TypeSet} <code>Set</code>} of
-   * {@link Type}s; the supplied {@link Type} will be one of its
-   * elements unless it is a {@link TypeVariable} or a {@link
-   * WildcardType}
+   * @return a non-{@code null} {@link TypeSet}; the supplied {@link
+   * Type} will be one of its elements unless it is a {@link
+   * TypeVariable} or a {@link WildcardType}
    *
    * @nullability This method never returns {@code null}.
    *
@@ -370,8 +439,8 @@ public final class Types {
    * remove some {@link Type}s from the computed {@link TypeSet}; may
    * be {@code null}
    *
-   * @return a non-{@code null} {@link TypeSet} <code>Set</code>} of
-   * {@link Type}s, filtered by the supplied {@link Predicate}
+   * @return a non-{@code null} {@link TypeSet}, filtered by the
+   * supplied {@link Predicate}
    *
    * @nullability This method never returns {@code null}.
    *
@@ -382,7 +451,7 @@ public final class Types {
    */
   public static final TypeSet toTypes(final Type type, Predicate<? super Type> removalPredicate) {
     final Map<Type, Type> resolvedTypes = new HashMap<>();
-    toTypes(type, isRawClass(type), resolvedTypes);
+    toTypes(type, isRawType(type), resolvedTypes);
     resolvedTypes.keySet().removeIf(removalPredicate == null ?
                                     Predicate.not(Types::isClass) :
                                     k -> !isClass(k) || removalPredicate.test(resolvedTypes.get(k)));
@@ -415,18 +484,18 @@ public final class Types {
     resolvedTypes.put(cls, resolve(cls, resolvedTypes::get));
     final Type superclass = noParameterizedTypes ? cls.getSuperclass() : cls.getGenericSuperclass();
     if (superclass != null) {
-      toTypes(superclass, noParameterizedTypes || isRawClass(superclass), resolvedTypes);
+      toTypes(superclass, noParameterizedTypes || isRawType(superclass), resolvedTypes);
     }
     final Type[] interfaces = noParameterizedTypes ? cls.getInterfaces() : cls.getGenericInterfaces();
     for (final Type iface : interfaces) {
-      toTypes(iface, noParameterizedTypes || isRawClass(iface), resolvedTypes);
+      toTypes(iface, noParameterizedTypes || isRawType(iface), resolvedTypes);
     }
   }
 
   private static final void toTypes(final ParameterizedType parameterizedType,
                                     final boolean noParameterizedTypes,
                                     final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = toClass(parameterizedType);
+    final Class<?> rawType = erase(parameterizedType);
     if (rawType != null) {
       if (!noParameterizedTypes) {
         final TypeVariable<?>[] typeVariables = rawType.getTypeParameters();
@@ -444,9 +513,9 @@ public final class Types {
   private static final void toTypes(final GenericArrayType genericArrayType,
                                     final boolean noParameterizedTypes,
                                     final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = toClass(genericArrayType);
+    final Class<?> rawType = erase(genericArrayType);
     if (rawType != null) {
-      assert rawType.isArray() : "Not an array type; check toClass(GenericArrayType): " + rawType;
+      assert rawType.isArray() : "Not an array type; check erase(GenericArrayType): " + rawType;
       resolvedTypes.put(rawType, genericArrayType);
       toTypes(rawType, noParameterizedTypes, resolvedTypes);
     }
@@ -505,6 +574,8 @@ public final class Types {
    * Returns {@code true} if and only if {@code type} is a {@link
    * Class} and {@linkplain Class#isPrimitive() is primitive}.
    *
+   * <h2>Design Notes</h2>
+   *
    * <p>This prosaic method exists because various {@link Predicate}s
    * need to exist that test this very thing, and making it {@code
    * public} does no harm.</p>
@@ -552,90 +623,48 @@ public final class Types {
   }
 
   /**
-   * Returns {@code true} if and only if the supplied {@link Type} is
-   * a raw {@link Class}.
-   *
-   * <p>This method returns {@code true} if:</p>
-   *
-   * <ul>
-   *
-   * <li>The supplied {@link Type} is an instance of {@link Class},
-   * <strong>and any</strong> of the following conditions is true:
-   *
-   * <ul>
-   *
-   * <li>The return value of invoking this method on the {@linkplain
-   * Class class}'s {@linkplain Class#getComponentType() component
-   * type} is {@code true}</li>
-   *
-   * <li>The {@linkplain Class class} {@linkplain
-   * Class#getTypeParameters() has type parameters}</li>
-   *
-   * </ul>
-   *
-   * </li>
-   *
-   * </ul>
-   *
-   * @param type the {@link Type} in question; may be {@code null} in
-   * which case {@code false} will be returned
-   *
-   * @return {@code true} if and only if the supplied {@link Type} is
-   * a raw {@link Class}
-   *
-   * @deprecated The terminology is wrong here; please use {@link
-   * #isRawType(Type)} instead.  This method may be removed in a
-   * future release.
-   */
-  @Deprecated
-  public static final boolean isRawClass(final Type type) {
-    return isRawType(type);
-  }
-
-  /**
-   * Does what is necessary to extract a {@link Class} from the
-   * supplied {@link Type} if at all possible.
-   *
-   * <p><strong>Please read closely</strong> if you intend to supply
-   * either a {@link TypeVariable} or a {@link WildcardType} as an
-   * argument.</p>
+   * Returns the type erasure for the supplied {@link Type} according
+   * to <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6"
+   * target="_parent">the rules of the Java Language
+   * Specification</a>.
    *
    * <ul>
    *
    * <li>If {@code null} is supplied, {@code null} is returned.</li>
    *
-   * <li>If a {@link Class} is supplied, the {@link Class} is simply
-   * returned.</li>
+   * <li>If a {@link Class} is supplied, the {@link Class} is returned.</li>
    *
    * <li>If a {@link ParameterizedType} is supplied, the result of
-   * invoking {@link #toClass(Type)} on its {@linkplain
+   * invoking {@link #erase(Type)} on its {@linkplain
    * ParameterizedType#getRawType() raw type} is returned.</li>
    *
    * <li>If a {@link GenericArrayType} is supplied, the result of
-   * invoking {@link Array#newInstance(Class, int)} with the return
-   * value of an invocation of{@link #toClass(Type)} on its
-   * {@linkplain GenericArrayType#getGenericComponentType() generic
-   * component type} and {@code 0} as its arguments is returned.</li>
+   * invoking {@link Object#getClass()} on an invocation of {@link
+   * Array#newInstance(Class, int)} with the return value of an
+   * invocation of {@link #erase(Type)} on its {@linkplain
+   * GenericArrayType#getGenericComponentType() generic component
+   * type} and {@code 0} as its arguments is returned.</li>
    *
    * <li>If a {@link TypeVariable} is supplied, the result of invoking
-   * {@link #toClass(Type)} <strong>on its {@linkplain
-   * TypeVariable#getBounds() first bound}</strong> is returned (if it
-   * has one) or {@link Object Object.class} if it does not.
-   * <strong>Any other bounds are ignored.</strong></li>
+   * {@link #erase(Type)} <strong>on its {@linkplain
+   * TypeVariable#getBounds() first (leftmost) bound}</strong> is
+   * returned (if it has one) or {@link Object Object.class} if it
+   * does not.  <strong>Any other bounds are ignored.</strong></li>
    *
    * <li>If a {@link WildcardType} is supplied, the result of invoking
-   * {@link #toClass(Type)} <strong>on its {@linkplain
+   * {@link #erase(Type)} <strong>on its {@linkplain
    * WildcardType#getUpperBounds() first upper bound}</strong> is
    * returned.  <strong>Any other bounds are ignored.</strong></li>
    *
    * </ul>
    *
-   * @param type the {@link Type} for which a {@link Class} is to be
-   * returned; may be {@code null} in which case {@code null} will be
-   * returned
+   * @param type the {@link Type} for which the corresponding type
+   * erasure is to be returned; may be {@code null} in which case
+   * {@code null} will be returned
    *
-   * @return a {@link Class}, or {@code null} if a suitable raw type
-   * could not be determined
+   * @return a {@link Class}, or {@code null} if a suitable type
+   * erasure could not be determined
    *
    * @nullability This method may return {@code null}.
    *
@@ -644,64 +673,211 @@ public final class Types {
    *
    * @idempotency This method is idempotent and deterministic.
    */
-  public static final Class<?> toClass(final Type type) {
+  // Trying to implement
+  // https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.6.
+  public static final Class<?> erase(final Type type) {
     final Class<?> returnValue;
     if (type == null) {
       return null;
     } else if (type instanceof Class) {
-      return toClass((Class<?>)type);
+      return erase((Class<?>)type);
     } else if (type instanceof ParameterizedType) {
-      return toClass((ParameterizedType)type);
+      return erase((ParameterizedType)type);
     } else if (type instanceof GenericArrayType) {
-      return toClass((GenericArrayType)type);
+      return erase((GenericArrayType)type);
     } else if (type instanceof TypeVariable) {
-      return toClass((TypeVariable<?>)type);
+      return erase((TypeVariable<?>)type);
     } else if (type instanceof WildcardType) {
-      return toClass((WildcardType)type);
+      return erase((WildcardType)type);
     } else {
       return null;
     }
   }
 
-  private static final Class<?> toClass(final Class<?> type) {
+  private static final Class<?> erase(final Class<?> type) {
     return type;
   }
 
-  private static final Class<?> toClass(final ParameterizedType type) {
-    return type == null ? null : toClass(type.getRawType());
+  private static final Class<?> erase(final ParameterizedType type) {
+    return type == null ? null : erase(type.getRawType());
   }
 
-  private static final Class<?> toClass(final GenericArrayType type) {
-    final Class<?> candidate = type == null ? null : toClass(type.getGenericComponentType());
+  private static final Class<?> erase(final GenericArrayType type) {
+    final Class<?> candidate = type == null ? null : erase(type.getGenericComponentType());
     return candidate == null ? null : (Class<?>)Array.newInstance(candidate, 0).getClass();
   }
 
-  private static final Class<?> toClass(final TypeVariable<?> type) {
+  private static final Class<?> erase(final TypeVariable<?> type) {
     final Type[] bounds = type == null ? null : type.getBounds();
-    return bounds != null && bounds.length > 0 ? toClass(bounds[0]) : Object.class;
+    return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
   }
 
-  private static final Class<?> toClass(final WildcardType type) {
+  private static final Class<?> erase(final WildcardType type) {
     final Type[] bounds = type == null ? null : type.getUpperBounds();
-    return bounds != null && bounds.length > 0 ? toClass(bounds[0]) : Object.class;
+    return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
   }
 
-  public static final Serializable toSerializableType(final Type type) {
+  /**
+   * Returns the <em>effective bounds</em> of the supplied {@link
+   * TypeVariable}.
+   *
+   * <p>The effective bounds of a {@link TypeVariable} are one of the
+   * following:</p>
+   *
+   * <ul>
+   *
+   * <li>The (recursive) effective bounds of its sole {@link
+   * TypeVariable}-typed bound</li>
+   *
+   * <li>Its non-{@link TypeVariable}-typed bounds</li>
+   *
+   * </ul>
+   *
+   * @param type the {@link TypeVariable} in question; must not be {@code null}
+   *
+   * @return a non-{@code null} array of {@link Type}s representing
+   * the supplied {@link TypeVariable}'s effective bounds with one or
+   * more elements
+   *
+   * @exception NullPointerException if {@code type} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
+  public static final Type[] getEffectiveBounds(final TypeVariable<?> type) {
+    final Type[] bounds = type.getBounds();
+    if (bounds == null || bounds.length <= 0) {
+      return new Type[] { Object.class };
+    } else if (bounds.length == 1) {
+      final Type soleBound = bounds[0];
+      if (soleBound instanceof TypeVariable) {
+        return getEffectiveBounds((TypeVariable<?>)soleBound);
+      } else {
+        return new Type[] { soleBound };
+      }
+    } else {
+      return bounds.clone();
+    }
+  }
+
+  /**
+   * Returns a {@link Serializable} {@link Type} that represents the
+   * supplied {@link Type}.
+   *
+   * @param <T> a {@link Serializable} {@link Type}
+   *
+   * @param type the {@link Type} in question; may be {@code null} in
+   * which case {@code null} will be returned
+   *
+   * @return a {@link Serializable} version of the supplied {@link
+   * Type}
+   *
+   * @exception IllegalArgumentException if {@code type} is non-{@code
+   * null} and is not an instance of {@link Serializable}, {@link
+   * ParameterizedType}, {@link GenericArrayType}, {@link
+   * TypeVariable} or {@link WildcardType}
+   *
+   * @nullability This method will return {@code null} only when the
+   * supplied {@link Type} is {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
+  @SuppressWarnings("unchecked")
+  public static final <T extends Serializable & Type> T toSerializableType(final Type type) {
     if (type == null || type instanceof Serializable) {
-      return (Serializable)type;
+      return (T)type;
     } else if (type instanceof ParameterizedType) {
-      return DefaultParameterizedType.valueOf((ParameterizedType)type);
+      return (T)DefaultParameterizedType.valueOf((ParameterizedType)type);
     } else if (type instanceof GenericArrayType) {
-      return DefaultGenericArrayType.valueOf((GenericArrayType)type);
+      return (T)DefaultGenericArrayType.valueOf((GenericArrayType)type);
     } else if (type instanceof TypeVariable) {
-      return PartiallyImplementedTypeVariable.valueOf((TypeVariable<? extends GenericDeclaration>)type);
+      return (T)DefaultTypeVariable.valueOf((TypeVariable<? extends GenericDeclaration>)type);
     } else if (type instanceof WildcardType) {
-      return AbstractWildcardType.valueOf((WildcardType)type);
+      return (T)AbstractWildcardType.valueOf((WildcardType)type);
     } else {
       throw new IllegalArgumentException("Unexpected type: " + type);
     }
   }
 
+  /**
+   * Computes and returns a hashcode for the supplied {@link Type} independent of
+   * its implementation.
+   *
+   * @param type the {@link Type} in question; may be {@code null} in
+   * which case {@code 0} will be returned
+   *
+   * @return a hashcode for the supplied {@link Type}
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
+  public static final int hashCode(final Type type) {
+    if (type == null) {
+      return 0;
+    } else if (type instanceof Class<?>) {
+      return hashCode((Class<?>)type);
+    } else if (type instanceof ParameterizedType) {
+      return hashCode((ParameterizedType)type);
+    } else if (type instanceof GenericArrayType) {
+      return hashCode((GenericArrayType)type);
+    } else if (type instanceof TypeVariable) {
+      return hashCode((TypeVariable<?>)type);
+    } else if (type instanceof WildcardType) {
+      return hashCode((WildcardType)type);
+    } else {
+      return type.hashCode();
+    }
+  }
+
+  private static final int hashCode(final Class<?> type) {
+    return type == null ? 0 : type.hashCode();
+  }
+
+  private static final int hashCode(final ParameterizedType type) {
+    if (type == null) {
+      return 0;
+    } else {
+      return Arrays.hashCode(type.getActualTypeArguments()) ^ hashCode(type.getOwnerType()) ^ hashCode(type.getRawType());
+    }
+  }
+
+  private static final int hashCode(final GenericArrayType type) {
+    return type == null ? 0 : Objects.hashCode(type.getGenericComponentType());
+  }
+
+  private static final int hashCode(final TypeVariable<?> type) {
+    return type == null ? 0 : type.hashCode();
+  }
+
+  private static final int hashCode(final WildcardType type) {
+    return type == null ? 0 : Arrays.hashCode(type.getUpperBounds()) ^ Arrays.hashCode(type.getLowerBounds());
+  }
+
+  /**
+   * Tests two {@link Type}s for equality in a manner that is
+   * independent of their implementations.
+   *
+   * @param type0 the first {@link Type}; may be {@code null}
+   *
+   * @param type1 the second {@link Type}; may be {@code null}
+   *
+   * @return {@code true} if the two {@link Type}s are equal; {@code
+   * false} otherwise
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   public static final boolean equals(final Type type0, final Type type1) {
     if (type0 == null) {
       return type1 == null;
@@ -844,6 +1020,25 @@ public final class Types {
     }
   }
 
+  /**
+   * Returns a {@link String} representation of the supplied {@link
+   * Type} that is independent of its implementation.
+   *
+   * <p>This method never returns {@code null}.</p>
+   *
+   * @param type the {@link Type} in question; may be {@code null} in which
+   * case "{@code null}" will be returned
+   *
+   * @return a non-{@code null} {@link String} representation of the
+   * supplied {@link Type}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   public static final String toString(final Type type) {
     if (type == null) {
       return "null";

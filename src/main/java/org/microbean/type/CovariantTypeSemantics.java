@@ -22,8 +22,6 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
-import java.util.Objects;
-
 import org.microbean.development.annotation.Experimental;
 
 /**
@@ -85,11 +83,17 @@ public final class CovariantTypeSemantics extends TypeSemantics {
    * invariant type assignability semantics are called for, such as
    * when comparing {@link ParameterizedType} type arguments.
    *
+   * <p>It is worth noting that {@link WildcardType}s should always be
+   * compared covariantly and the {@link TypeSemantics} returned by
+   * this method is guaranteed to do so.</p>
+   *
    * @return a {@link TypeSemantics} used for certain cases where
    * invariant type assignability semantics are called for; never
    * {@code null}
    *
    * @nullability This method never returns {@code null}.
+   *
+   * @see #isAssignable(ParameterizedType, ParameterizedType)
    *
    * @see InvariantTypeSemantics
    */
@@ -113,21 +117,19 @@ public final class CovariantTypeSemantics extends TypeSemantics {
   protected boolean isAssignable(final Class<?> receiverType,
                                  final GenericArrayType payloadType) {
     return
-      receiverType.equals(Object.class) ||
+      receiverType == Object.class ||
       this.isAssignable(receiverType.getComponentType(), payloadType.getGenericComponentType());
   }
 
   @Override
   protected boolean isAssignable(final Class<?> receiverType,
                                  final TypeVariable<?> payloadType) {
-    boolean returnValue = false;
     for (final Type payloadTypeBound : payloadType.getBounds()) {
       if (this.isAssignable(receiverType, payloadTypeBound)) {
-        returnValue = true;
-        break;
+        return true;
       }
     }
-    return returnValue;
+    return false;
   }
 
   @Override
@@ -142,57 +144,47 @@ public final class CovariantTypeSemantics extends TypeSemantics {
   @Override
   protected boolean isAssignable(final ParameterizedType receiverType,
                                  final ParameterizedType payloadType) {
-    return
-      this.isAssignable0(receiverType, Types.toTypes(payloadType));
+    return this.isAssignable0(receiverType, Types.toTypes(payloadType));
   }
 
   private final boolean isAssignable0(final ParameterizedType receiverType,
                                       final Iterable<? extends Type> payloadTypeSet) {
-    boolean returnValue = false;
     for (final Type payloadType : payloadTypeSet) {
       if (payloadType instanceof ParameterizedType && this.isAssignable0(receiverType, (ParameterizedType)payloadType)) {
-        returnValue = true;
-        break;
+        return true;
       }
     }
-    return returnValue;
+    return false;
   }
 
   private final boolean isAssignable0(final ParameterizedType receiverType,
                                       final ParameterizedType payloadType) {
-    final boolean returnValue;
     if (receiverType.getRawType().equals(payloadType.getRawType())) {
       final Type[] receiverTypeTypeArguments = receiverType.getActualTypeArguments();
       final Type[] payloadTypeTypeArguments = payloadType.getActualTypeArguments();
       if (receiverTypeTypeArguments.length == payloadTypeTypeArguments.length) {
-        boolean temp = true;
+        // The TypeSemantics used here are invariant except for wildcards.
+        final TypeSemantics invariantTypeSemantics = this.getInvariantTypeSemantics();
         for (int i = 0; i < receiverTypeTypeArguments.length; i++) {
-          if (!this.getInvariantTypeSemantics().isAssignable(receiverTypeTypeArguments[i], payloadTypeTypeArguments[i])) {
-            temp = false;
-            break;
+          if (!invariantTypeSemantics.isAssignable(receiverTypeTypeArguments[i], payloadTypeTypeArguments[i])) {
+            return false;
           }
         }
-        returnValue = temp;
-      } else {
-        returnValue = false;
+        return true;
       }
-    } else {
-      returnValue = false;
     }
-    return returnValue;
+    return false;
   }
 
   @Override
   protected boolean isAssignable(final ParameterizedType receiverType,
                                  final TypeVariable<?> payloadType) {
-    boolean returnValue = false;
     for (final Type payloadTypeBound : payloadType.getBounds()) {
       if (this.isAssignable(receiverType, payloadTypeBound)) {
-        returnValue = true;
-        break;
+        return true;
       }
     }
-    return returnValue;
+    return false;
   }
 
   @Override
@@ -213,11 +205,9 @@ public final class CovariantTypeSemantics extends TypeSemantics {
       // extended type variable will be its sole bound.)
       final Object solePayloadTypeBound = payloadType.getBounds()[0];
       returnValue =
-        solePayloadTypeBound instanceof TypeVariable &&
-        this.isAssignable(receiverType, (TypeVariable<?>)solePayloadTypeBound);
+        solePayloadTypeBound instanceof TypeVariable && this.isAssignable(receiverType, (TypeVariable<?>)solePayloadTypeBound);
     }
     return returnValue;
-
   }
 
   @Override
@@ -240,18 +230,15 @@ public final class CovariantTypeSemantics extends TypeSemantics {
 
   private final boolean isAssignable0(final WildcardType receiverType,
                                       final Type payloadActualType) {
-    final boolean returnValue;
     if (this.isAssignable(receiverType.getUpperBounds()[0], payloadActualType)) {
       final Type[] receiverLowerBounds = receiverType.getLowerBounds();
       // If there are lower bounds, then there will be only one.  See
       // https://stackoverflow.com/a/6645454/208288 and
       // https://github.com/openjdk/jdk/blob/d3d29a4f828053f5961bfd4f4ccd200791a7eeb1/src/java.base/share/classes/java/lang/reflect/WildcardType.java#L80-L82
-      returnValue =
-        receiverLowerBounds.length <= 0 || this.isAssignable(payloadActualType, receiverLowerBounds[0]);
+      return receiverLowerBounds.length <= 0 || this.isAssignable(payloadActualType, receiverLowerBounds[0]);
     } else {
-      returnValue = false;
+      return false;
     }
-    return returnValue;
   }
 
   @Override
@@ -274,7 +261,6 @@ public final class CovariantTypeSemantics extends TypeSemantics {
   @Override
   protected final boolean isAssignable(final WildcardType receiverType,
                                        final WildcardType payloadType) {
-    final boolean returnValue;
     // There are always upper bounds, and in fact only one; see
     // https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/lang/reflect/WildcardType.html#getUpperBounds()
     final Type receiverUpperBound = receiverType.getUpperBounds()[0];
@@ -282,14 +268,12 @@ public final class CovariantTypeSemantics extends TypeSemantics {
       final Type[] receiverLowerBounds = receiverType.getLowerBounds();
       if (receiverLowerBounds.length > 0) {
         final Type[] payloadLowerBounds = payloadType.getLowerBounds();
-        returnValue = payloadLowerBounds.length > 0 && this.isAssignable(payloadLowerBounds[0], receiverLowerBounds[0]);
+        return payloadLowerBounds.length > 0 && this.isAssignable(payloadLowerBounds[0], receiverLowerBounds[0]);
       } else {
-        returnValue = payloadType.getLowerBounds().length <= 0 || receiverUpperBound.equals(Object.class);
+        return payloadType.getLowerBounds().length <= 0 || receiverUpperBound.equals(Object.class);
       }
-    } else {
-      returnValue = false;
     }
-    return returnValue;
+    return false;
   }
 
 }

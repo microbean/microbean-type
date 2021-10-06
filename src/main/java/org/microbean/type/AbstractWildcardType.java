@@ -72,7 +72,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
   }
 
   private final int computeHashCode() {
-    return Arrays.hashCode(this.upperBounds) ^ Arrays.hashCode(this.lowerBounds);
+    return Types.hashCode(this);
   }
 
   @Override
@@ -80,10 +80,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     if (other == this) {
       return true;
     } else if (other instanceof WildcardType) {
-      final WildcardType her = (WildcardType)other;
-      return
-        Arrays.equals(this.upperBounds, her.getUpperBounds()) &&
-        Arrays.equals(this.lowerBounds, her.getLowerBounds());
+      return Types.equals(this, (WildcardType)other);
     } else {
       return false;
     }
@@ -118,18 +115,14 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
 
   private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
     stream.defaultReadObject();
-    final Object lowerBounds = stream.readObject();
-    assert lowerBounds instanceof Serializable[];
-    Serializable[] serializableBounds = (Serializable[])lowerBounds;
+    Serializable[] serializableBounds = (Serializable[])stream.readObject();
     if (serializableBounds == null || serializableBounds.length <= 0) {
       this.lowerBounds = EMPTY_TYPE_ARRAY;
     } else {
       this.lowerBounds = new Type[serializableBounds.length];
       System.arraycopy(serializableBounds, 0, this.lowerBounds, 0, serializableBounds.length);
     }
-    final Object upperBounds = stream.readObject();
-    assert upperBounds instanceof Serializable[];
-    serializableBounds = (Serializable[])upperBounds;
+    serializableBounds = (Serializable[])stream.readObject();
     if (serializableBounds == null || serializableBounds.length <= 0) {
       this.upperBounds = new Type[] { Object.class };
     } else if (serializableBounds.length == 1) {
@@ -137,15 +130,12 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
       if (bound == null || Object.class.equals(bound)) {
         this.upperBounds = new Type[] { Object.class };
       } else {
-        assert bound instanceof Type;
         this.upperBounds = new Type[] { (Type)bound };
       }
     } else {
       this.upperBounds = new Type[serializableBounds.length];
       System.arraycopy(serializableBounds, 0, this.upperBounds, 0, serializableBounds.length);
     }
-    // Note: we use the instance variables directly, not the
-    // accessors, so we don't compute hashcodes off of clones.
     this.hashCode = this.computeHashCode();
   }
 

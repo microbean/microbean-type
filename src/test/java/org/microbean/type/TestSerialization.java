@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,11 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 final class TestSerialization {
 
@@ -88,10 +90,8 @@ final class TestSerialization {
     assertNotNull(ptypeArguments);
     assertEquals(1, ptypeArguments.length);
     assertEquals(String.class, ptypeArguments[0]);
-
     final byte[] bytes = toBytes(Types.toSerializableType(ptype));
     final DefaultParameterizedType deserializedType = fromBytes(bytes);
-    
     assertNotNull(deserializedType);
     assertNull(deserializedType.getOwnerType());
     assertEquals(List.class, deserializedType.getRawType());
@@ -110,32 +110,32 @@ final class TestSerialization {
 
   @Test
   final <T extends Integer> void testSerializeTypeVariable() throws ClassNotFoundException, IOException {
-    final ParameterizedType ptype = (ParameterizedType)new TypeLiteral<List<T>>() {}.getType();
+    final ParameterizedType ptype = (ParameterizedType)new TypeLiteral<Uninitializable<T>>() {}.getType();
     assertFalse(ptype instanceof Serializable);
-    assertNull(ptype.getOwnerType());
-    assertEquals(List.class, ptype.getRawType());
+    assertSame(this.getClass(), ptype.getOwnerType());
+    assertEquals(Uninitializable.class, ptype.getRawType());
     final Type[] ptypeArguments = ptype.getActualTypeArguments();
     assertNotNull(ptypeArguments);
     assertEquals(1, ptypeArguments.length);
-    assertTrue(ptypeArguments[0] instanceof TypeVariable);
     TypeVariable<?> tv = (TypeVariable<?>)ptypeArguments[0];
     GenericDeclaration gd = tv.getGenericDeclaration();
     assertTrue(gd instanceof java.lang.reflect.Method);
     assertEquals("T", tv.getName());
     Type[] bounds = tv.getBounds();
+    assertNotSame(bounds, tv.getBounds());
     assertNotNull(bounds);
     assertEquals(1, bounds.length);
     assertEquals(Integer.class, bounds[0]);
     final byte[] bytes = toBytes(Types.toSerializableType(ptype));
     final DefaultParameterizedType deserializedType = fromBytes(bytes);
     assertNotNull(deserializedType);
-    assertNull(deserializedType.getOwnerType());
-    assertEquals(List.class, deserializedType.getRawType());
+    assertSame(this.getClass(), deserializedType.getOwnerType());
+    assertEquals(Uninitializable.class, deserializedType.getRawType());
     final Type[] deserializedTypeArguments = deserializedType.getActualTypeArguments();
     assertNotNull(deserializedTypeArguments);
     assertEquals(1, deserializedTypeArguments.length);
     final Type t = deserializedTypeArguments[0];
-    assertTrue(t instanceof PartiallyImplementedTypeVariable);
+    assertTrue(t instanceof DefaultTypeVariable);
     tv = (TypeVariable<?>)t;
     assertEquals("T", tv.getName());
     bounds = tv.getBounds();
@@ -144,32 +144,36 @@ final class TestSerialization {
     assertEquals(Integer.class, bounds[0]);
     gd = tv.getGenericDeclaration();
     assertNotNull(gd);
-    assertSame(NonexistentGenericDeclaration.INSTANCE, gd);
   }
-  
+
   private static final byte[] toBytes(final Serializable object) throws IOException {
-    Objects.requireNonNull(object, "object");
-    byte[] returnValue = null;
-    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    assertNotNull(object);
     try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
          final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(baos);
          final ObjectOutputStream out = new ObjectOutputStream(bufferedOutputStream)) {
       out.writeObject(object);
       out.flush();
-      returnValue = baos.toByteArray();
+      return baos.toByteArray();
     }
-    return returnValue;
   }
 
+  @SuppressWarnings("unchecked")
   private static final <T extends Serializable> T fromBytes(final byte[] bytes) throws ClassNotFoundException, IOException {
-    Objects.requireNonNull(bytes, "bytes");
-    T returnValue = null;
     try (final ObjectInputStream stream = new ObjectInputStream(new BufferedInputStream(new ByteArrayInputStream(bytes)))) {
-      @SuppressWarnings("unchecked")
-      final T temp = (T)stream.readObject();
-      returnValue = temp;
+      return (T)stream.readObject();
     }
-    return returnValue;
   }
-  
+
+  private static final class Uninitializable<T> {
+
+    static {
+      // This proves during deserialization that even static
+      // initializers don't run.  See testSerializeTypeVariable()
+      // above.  So deserialization of types as we do in this library
+      // cannot run unexpected code.
+      fail();
+    }
+
+  }
+
 }

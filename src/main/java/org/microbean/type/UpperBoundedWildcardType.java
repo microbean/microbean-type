@@ -39,7 +39,8 @@ public final class UpperBoundedWildcardType extends AbstractWildcardType {
    *
    * @param upperBound the sole {@linkplain
    * java.lang.reflect.WildcardType#getUpperBounds() upper bound}; may
-   * be {@code null}
+   * be {@code null} in which case an array consisting solely of
+   * {@link Object Object.class} will be used instead
    */
   public UpperBoundedWildcardType(final Type upperBound) {
     super(upperBound == null ? (Type[])null : new Type[] { upperBound }, null);
