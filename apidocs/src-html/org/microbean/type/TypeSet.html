@@ -135,7 +135,7 @@
 <span class="sourceLineNo">125</span><a id="line.125">    if (types == null || types.isEmpty()) {</a>
 <span class="sourceLineNo">126</span><a id="line.126">      this.typeSet = Collections.emptySortedSet();</a>
 <span class="sourceLineNo">127</span><a id="line.127">    } else {</a>
-<span class="sourceLineNo">128</span><a id="line.128">      final SortedSet&lt;Type&gt; sortedTypeSet = new TreeSet&lt;&gt;(Types.typeNameComparator);</a>
+<span class="sourceLineNo">128</span><a id="line.128">      final SortedSet&lt;Type&gt; sortedTypeSet = new TreeSet&lt;&gt;(Types.typeComparator);</a>
 <span class="sourceLineNo">129</span><a id="line.129">      sortedTypeSet.addAll(types);</a>
 <span class="sourceLineNo">130</span><a id="line.130">      this.typeSet = Collections.unmodifiableSortedSet(sortedTypeSet);</a>
 <span class="sourceLineNo">131</span><a id="line.131">    }</a>
@@ -190,7 +190,7 @@
 <span class="sourceLineNo">180</span><a id="line.180">      } else if (interfaces.isEmpty()) {</a>
 <span class="sourceLineNo">181</span><a id="line.181">        rawTypes = classes;</a>
 <span class="sourceLineNo">182</span><a id="line.182">      } else {</a>
-<span class="sourceLineNo">183</span><a id="line.183">        final SortedSet&lt;Class&lt;?&gt;&gt; target = new TreeSet&lt;&gt;(Types.typeNameComparator);</a>
+<span class="sourceLineNo">183</span><a id="line.183">        final SortedSet&lt;Class&lt;?&gt;&gt; target = new TreeSet&lt;&gt;(Types.typeComparator);</a>
 <span class="sourceLineNo">184</span><a id="line.184">        target.addAll(classes);</a>
 <span class="sourceLineNo">185</span><a id="line.185">        target.addAll(interfaces);</a>
 <span class="sourceLineNo">186</span><a id="line.186">        rawTypes = Collections.unmodifiableSortedSet(target);</a>
@@ -228,10 +228,10 @@
 <span class="sourceLineNo">218</span><a id="line.218">      if (this.isEmpty()) {</a>
 <span class="sourceLineNo">219</span><a id="line.219">        classes = Collections.emptySortedSet();</a>
 <span class="sourceLineNo">220</span><a id="line.220">      } else {</a>
-<span class="sourceLineNo">221</span><a id="line.221">        classes = new TreeSet&lt;&gt;(Types.typeNameComparator);</a>
+<span class="sourceLineNo">221</span><a id="line.221">        classes = new TreeSet&lt;&gt;(Types.typeComparator);</a>
 <span class="sourceLineNo">222</span><a id="line.222">        for (final Type type : this) {</a>
 <span class="sourceLineNo">223</span><a id="line.223">          // TODO: shouldn't we ignore any Type that is not either a Class or a ParameterizedType?</a>
-<span class="sourceLineNo">224</span><a id="line.224">          Class&lt;?&gt; rawType = Types.toClass(type);</a>
+<span class="sourceLineNo">224</span><a id="line.224">          Class&lt;?&gt; rawType = Types.erase(type);</a>
 <span class="sourceLineNo">225</span><a id="line.225">          while (rawType != null) {</a>
 <span class="sourceLineNo">226</span><a id="line.226">            if (!rawType.isInterface()) {</a>
 <span class="sourceLineNo">227</span><a id="line.227">              classes.add(rawType);</a>
@@ -282,7 +282,7 @@
 <span class="sourceLineNo">272</span><a id="line.272">      if (this.isEmpty()) {</a>
 <span class="sourceLineNo">273</span><a id="line.273">        genericClasses = Collections.emptySortedSet();</a>
 <span class="sourceLineNo">274</span><a id="line.274">      } else {</a>
-<span class="sourceLineNo">275</span><a id="line.275">        genericClasses = new TreeSet&lt;&gt;(Types.typeNameComparator);</a>
+<span class="sourceLineNo">275</span><a id="line.275">        genericClasses = new TreeSet&lt;&gt;(Types.typeComparator);</a>
 <span class="sourceLineNo">276</span><a id="line.276">        for (Type type : this) {</a>
 <span class="sourceLineNo">277</span><a id="line.277">          while (type != null) {</a>
 <span class="sourceLineNo">278</span><a id="line.278">            type = addClass(type, genericClasses);</a>
@@ -327,7 +327,7 @@
 <span class="sourceLineNo">317</span><a id="line.317">      if (this.isEmpty()) {</a>
 <span class="sourceLineNo">318</span><a id="line.318">        interfaces = Collections.emptySortedSet();</a>
 <span class="sourceLineNo">319</span><a id="line.319">      } else {</a>
-<span class="sourceLineNo">320</span><a id="line.320">        interfaces = new TreeSet&lt;&gt;(Types.typeNameComparator);</a>
+<span class="sourceLineNo">320</span><a id="line.320">        interfaces = new TreeSet&lt;&gt;(Types.typeComparator);</a>
 <span class="sourceLineNo">321</span><a id="line.321">        for (final Type type : this) {</a>
 <span class="sourceLineNo">322</span><a id="line.322">          addInterfaces(type, interfaces);</a>
 <span class="sourceLineNo">323</span><a id="line.323">        }</a>
@@ -374,7 +374,7 @@
 <span class="sourceLineNo">364</span><a id="line.364">      if (this.isEmpty()) {</a>
 <span class="sourceLineNo">365</span><a id="line.365">        interfaces = Collections.emptySortedSet();</a>
 <span class="sourceLineNo">366</span><a id="line.366">      } else {</a>
-<span class="sourceLineNo">367</span><a id="line.367">        interfaces = new TreeSet&lt;&gt;(Types.typeNameComparator);</a>
+<span class="sourceLineNo">367</span><a id="line.367">        interfaces = new TreeSet&lt;&gt;(Types.typeComparator);</a>
 <span class="sourceLineNo">368</span><a id="line.368">        for (final Type type : this) {</a>
 <span class="sourceLineNo">369</span><a id="line.369">          addGenericInterfaces(type, interfaces); // adds to interfaces</a>
 <span class="sourceLineNo">370</span><a id="line.370">        }</a>
