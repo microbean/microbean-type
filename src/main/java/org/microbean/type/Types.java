@@ -127,12 +127,16 @@ public final class Types {
       if (typeParameters.length <= 0) {
         final Type componentType = cls.getComponentType();
         if (componentType == null) {
+          assert !isGeneric(cls);
+          assert !isRawType(cls);
           return type;
         } else {
           final Type normalizedComponentType = normalize(componentType); // XXX recursive
           return componentType == normalizedComponentType ? type : new DefaultGenericArrayType(normalizedComponentType);
         }
       } else {
+        assert !cls.isArray();
+        assert isGeneric(cls);
         return new DefaultParameterizedType(cls.getDeclaringClass(), cls, typeParameters);
       }
     } else {
@@ -142,9 +146,10 @@ public final class Types {
 
   /**
    * Returns {@code true} if and only if the supplied {@link Type} is
-   * a <a
+   * a <em>raw type</em> according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8"
-   * target="_parent">raw type</a>.
+   * target="_parent">the rules of the Java Language
+   * Specification</a>.
    *
    * <p>This method returns {@code true} if:</p>
    *
@@ -173,6 +178,10 @@ public final class Types {
    *
    * @return {@code true} if and only if the supplied {@link Type} is
    * a raw {@link Class}
+   *
+   * @see <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8"
+   * target="_parent">The Java Language Specification Section 4.8</a>
    */
   public static final boolean isRawType(final Type type) {
     return type instanceof Class && isRawType((Class<?>)type);
@@ -535,7 +544,7 @@ public final class Types {
 
   /**
    * Returns the result of <a
-   * href="https://docs.oracle.com/javase/specs/jls/se13/html/jls-5.html#jls-5.1.7">boxing
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.7">boxing
    * conversion</a> on the supplied {@link Type}.
    *
    * <p>In most cases this means the supplied {@link Type} is returned
@@ -561,6 +570,10 @@ public final class Types {
    * @idempotency This method is idempotent and deterministic.
    *
    * @see #isPrimitive(Type)
+   *
+   * @see <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.7">The
+   * Java Language Specification Section 5.1.7</a>
    */
   @SuppressWarnings("unchecked")
   public static final <T extends Type> T box(final T type) {
@@ -615,8 +628,6 @@ public final class Types {
    *
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
-   *
-   * @since 0.0.6
    */
   public static final boolean isClass(final Type type) {
     return type instanceof Class;

@@ -37,13 +37,15 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * A {@link TypeVariable} implementation that is also {@link
- * Serializable}.
+ * An {@link AbstractType} and a {@link TypeVariable} implementation.
+ *
+ * @param <T> the kind of {@link GenericDeclaration} that this {@link
+ * DefaultTypeVariable} was declared by
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  */
-final class DefaultTypeVariable<T extends GenericDeclaration> extends AbstractType implements TypeVariable<T> {
+public final class DefaultTypeVariable<T extends GenericDeclaration> extends AbstractType implements TypeVariable<T> {
 
 
   /*
@@ -51,7 +53,7 @@ final class DefaultTypeVariable<T extends GenericDeclaration> extends AbstractTy
    */
 
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
 
 
   /*
@@ -69,16 +71,60 @@ final class DefaultTypeVariable<T extends GenericDeclaration> extends AbstractTy
    */
 
 
-  DefaultTypeVariable(final TypeVariable<? extends T> other) {
+  /**
+   * Creates a new {@link DefaultTypeVariable}.
+   *
+   * @param other a {@link TypeVariable} providing important locating
+   * information; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code other} is {@code null}
+   */
+  public DefaultTypeVariable(final TypeVariable<? extends T> other) {
     this(other.getGenericDeclaration(), tv -> tv.getName().equals(other.getName()));
   }
 
-  DefaultTypeVariable(final T genericDeclaration, final String name) {
+  /**
+   * Creates a new {@link DefaultTypeVariable}.
+   *
+   * @param genericDeclaration a {@link GenericDeclaration} whose
+   * {@linkplain GenericDeclaration#getTypeParameters() type
+   * variables} will be inspected; must not be {@code null}
+   *
+   * @param name the value that the return value of an invocation of
+   * {@link TypeVariable#getName()} must have when invoked on a member
+   * of the array returned by an invocation of {@link
+   * GenericDeclaration#getTypeParameters()} on the supplied {@code
+   * genericDeclaration}; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code genericDeclaration} is
+   * {@code null}
+   *
+   * @exception IllegalArgumentException if the supplied {@code name}
+   * identifies no {@link TypeVariable}s
+   */
+  public DefaultTypeVariable(final T genericDeclaration, final String name) {
     this(genericDeclaration, tv -> tv.getName().equals(name));
   }
 
+  /**
+   * Creates a new {@link DefaultTypeVariable}.
+   *
+   * @param genericDeclaration a {@link GenericDeclaration} whose
+   * {@linkplain GenericDeclaration#getTypeParameters() type
+   * variables} will be inspected; must not be {@code null}
+   *
+   * @param predicate the {@link Predicate} that will identify the
+   * {@link TypeVariable} that this {@link DefaultTypeVariable} will
+   * wrap; must not be {@code null}
+   *
+   * @exception NullPointerException if either {@code
+   * genericDeclaration} or {@code predicate} is {@code null}
+   *
+   * @exception IllegalArgumentException if the supplied {@link
+   * Predicate} identifies no {@link TypeVariable}s
+   */
   @SuppressWarnings("unchecked")
-  DefaultTypeVariable(final T genericDeclaration, final Predicate<? super TypeVariable<?>> predicate) {
+  public DefaultTypeVariable(final T genericDeclaration, final Predicate<? super TypeVariable<?>> predicate) {
     super();
     for (final TypeVariable<?> tv : genericDeclaration.getTypeParameters()) {
       if (predicate.test(tv)) {
@@ -98,6 +144,19 @@ final class DefaultTypeVariable<T extends GenericDeclaration> extends AbstractTy
    */
 
 
+  /**
+   * Returns the {@link TypeVariable} this {@link DefaultTypeVariable} wraps.
+   *
+   * @return the {@link TypeVariable} this {@link DefaultTypeVariable}
+   * wraps; never {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   public final TypeVariable<? extends T> getDelegate() {
     return this.delegate;
   }
@@ -237,6 +296,38 @@ final class DefaultTypeVariable<T extends GenericDeclaration> extends AbstractTy
     stream.writeObject(this.delegate.getName());
   }
 
+  /**
+   * Returns a {@link DefaultTypeVariable} representing the supplied
+   * {@link TypeVariable}.
+   *
+   * <p>If the supplied {@link TypeVariable} is:</p>
+   *
+   * <ul>
+   *
+   * <li>{@code null}: {@code null} is returned</li>
+   *
+   * <li>an instance of {@link DefaultTypeVariable}: the supplied
+   * {@code type} is returned</li>
+   *
+   * <li>anything else: a new {@link DefaultTypeVariable} is returned</li>
+   *
+   * </ul>
+   *
+   * @param <T> the type of {@link GenericDeclaration} that declares
+   * the type variable
+   *
+   * @param type the {@link TypeVariable} in question; may be {@code
+   * null} in which case {@code null} will be returned
+   *
+   * @return a {@link DefaultTypeVariable}, or {@code null}
+   *
+   * @nullability This method may return {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
   public static final <T extends GenericDeclaration> DefaultTypeVariable<T> valueOf(final TypeVariable<T> type) {
     if (type == null) {
       return null;

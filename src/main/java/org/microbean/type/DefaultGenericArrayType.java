@@ -43,7 +43,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
    */
 
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
 
 
   /*

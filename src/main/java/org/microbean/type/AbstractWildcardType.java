@@ -29,7 +29,7 @@ import java.util.StringJoiner;
 
 class AbstractWildcardType extends AbstractType implements WildcardType {
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
 
   private transient Type[] upperBounds;
 

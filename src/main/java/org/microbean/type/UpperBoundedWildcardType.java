@@ -32,7 +32,19 @@ import java.lang.reflect.Type;
  */
 public final class UpperBoundedWildcardType extends AbstractWildcardType {
 
-  private static final long serialVersionUID = 1L;
+
+  /*
+   * Static fields.
+   */
+
+
+  private static final long serialVersionUID = 2L;
+
+
+  /*
+   * Constructors.
+   */
+
 
   /**
    * Creates a new {@link UpperBoundedWildcardType}.

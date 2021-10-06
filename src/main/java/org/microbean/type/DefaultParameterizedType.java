@@ -44,7 +44,7 @@ public final class DefaultParameterizedType extends AbstractType implements Para
    */
 
 
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
 
 
   /*

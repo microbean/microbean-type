@@ -30,8 +30,9 @@ import java.lang.reflect.WildcardType;
 /**
  * A common abstract superclass for {@link Type} implementations.
  *
- * <p>All {@link AbstractType} implementations are at least lossily
- * {@linkplain Serializable serializable}.</p>
+ * <p>All {@link AbstractType} implementations are {@linkplain
+ * Serializable serializable}. Deserialization of serialized {@link
+ * AbstractType} instances is safe.</p>
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
@@ -48,7 +49,7 @@ public abstract class AbstractType implements Serializable, Type {
    * The version of this class for {@linkplain Serializable
    * serialization purposes}.
    */
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
 
   /**
    * A zero-length array of {@link AnnotatedType} instances.

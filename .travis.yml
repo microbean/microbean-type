@@ -1,7 +1,0 @@
-jdk:
-  - openjdk14
-language: java
-cache:
-  directories:
-    - "${HOME}/.m2/repository"
-
