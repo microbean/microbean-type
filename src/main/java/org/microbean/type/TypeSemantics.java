@@ -25,6 +25,7 @@ import java.lang.reflect.WildcardType;
 import java.util.Collection;
 
 import org.microbean.development.annotation.Experimental;
+import org.microbean.development.annotation.Incomplete;
 
 /**
  * An object representing {@link Type} compatibility and assignability
@@ -498,6 +499,8 @@ public abstract class TypeSemantics {
 
   // Sort of like least upper bound (lub()) in the JLS; see
   // https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.10.4
+  @Experimental
+  @Incomplete
   public final Type getNearestAncestor(final Type t0, final Type t1) {
     if (t0 == null) {
       return t1 == null ? null : t1;
@@ -511,20 +514,36 @@ public abstract class TypeSemantics {
     } else if (this.isAssignable(t1, t0)) {
       return t1;
     } else {
-      final Class<?> c0 = Types.erase(t0);
-      final Class<?> c1 = Types.erase(t1);
+      final Class<?> c0 = this.box(Types.erase(t0));
+      final Class<?> c1 = this.box(Types.erase(t1));
       if (c0 == null || c1 == null) {
         return null;
       } else {
         assert !c0.isAssignableFrom(c1);
         assert !c1.isAssignableFrom(c0);
-        if (this.isBoxing() || (!c0.isPrimitive() && !c1.isPrimitive())) {
-          return Object.class;
-        } else {
+        if (c0.isArray()) {
+          if (c1.isArray()) {
+            assert Object[].class.isAssignableFrom(c0);
+            assert Object[].class.isAssignableFrom(c1);
+            return Object[].class;
+          } else {
+            return c1.isPrimitive() ? null : Object.class;
+          }
+        } else if (c0.isPrimitive()) {
           return null;
+        } else if (c1.isArray()) {
+          return Object.class;
+        } else if (c1.isPrimitive()) {
+          return null;
+        } else {
+          // Two scalar reference types not assignable to each other.
+          // TODO: examine superclasses, interfaces, compare
+          return Object.class;
         }
       }
     }
   }
+
+  
   
 }

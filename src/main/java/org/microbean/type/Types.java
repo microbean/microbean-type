@@ -29,6 +29,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -43,6 +45,9 @@ import java.util.StringJoiner;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import org.microbean.development.annotation.Experimental;
+import org.microbean.development.annotation.Incomplete;
 
 /**
  * A hub for Java {@link Type}-related operations.
@@ -102,8 +107,9 @@ public final class Types {
 
   /**
    * For the vast majority of cases, returns the supplied {@link Type}
-   * unchanged, but in the case where a raw {@link Class} is supplied,
-   * returns an equivalent {@link ParameterizedType} whose {@linkplain
+   * unchanged, but in the case where a {@linkplain #isGeneric(Class)
+   * generic} {@link Class} is supplied, returns an equivalent {@link
+   * ParameterizedType} whose {@linkplain
    * ParameterizedType#getActualTypeArguments() actual type arguments}
    * are not resolved.
    *
@@ -151,7 +157,7 @@ public final class Types {
    * target="_parent">the rules of the Java Language
    * Specification</a>.
    *
-   * <p>This method returns {@code true} if:</p>
+   * <p>This method returns {@code true} if and only if:</p>
    *
    * <ul>
    *
@@ -166,6 +172,10 @@ public final class Types {
    *
    * <li>The {@linkplain Class class} {@linkplain
    * Class#getTypeParameters() has type parameters}</li>
+   *
+   * <li>The {@linkplain Class class} is a non-static member class of
+   * a {@linkplain Class#getDeclaringClass() declaring class} that
+   * {@linkplain #isGeneric(Type) is generic}</li>
    *
    * </ul>
    *
@@ -184,37 +194,63 @@ public final class Types {
    * target="_parent">The Java Language Specification Section 4.8</a>
    */
   public static final boolean isRawType(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8
+    // 4.8. Raw Types
+    //
+    // To facilitate interfacing with non-generic legacy code, it is
+    // possible to use as a type the erasure (§4.6) of a parameterized
+    // type (§4.5) or the erasure of an array type (§10.1) whose
+    // element type is a parameterized type. Such a type is called a
+    // raw type. [The erasure "of an array type (§10.1) whose element
+    // type is a parameterized type" is exactly the return value of
+    // erase(someGenericArrayType).]
+    //
+    // More precisely, a raw type is defined to be one of:
+    //
+    // The reference type that is formed by taking the name of a
+    // generic type declaration without an accompanying type argument
+    // list. [More simply: a non-null Class where getTypeParameters()
+    // > 0.  This is exactly the isGeneric(c) test.]
+    //
+    // An array type whose element type is a raw type. [So a Class
+    // whose isArray() method returns true, and for which
+    // isRawType(c.getComponentType()) returns true.  You can make
+    // these classes "by hand" or erase() a GenericArrayType to get
+    // one.]
+    //
+    // A non-static member type of a raw type R that is not inherited
+    // from a superclass or superinterface of R. [So still a Class.]
+    //
+    // A non-generic class or interface type is not a raw type.  [We
+    // covered this already.]
     return type instanceof Class && isRawType((Class<?>)type);
   }
 
   private static final boolean isRawType(final Class<?> c) {
-    if (c == null) {
-      return false;
-    } else if (isGeneric(c) || isRawType(c.getComponentType())) {
-      return true;
-    } else {
-      // See https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8
-      final Class<?> dc = c.getDeclaringClass();
-      // Don't recurse, because it's only the immediate parent that
-      // we're supposed to test
-      return dc != null && dc.getTypeParameters().length > 0;
-    }
+    // We use getDeclaringClass() here as the third test rather than
+    // getEnclosingClass() because getDeclaringClass() skips anonymous
+    // class definitions, which I don't think will satisfy the first
+    // condition.
+    return c != null && (isGeneric(c) || isRawType(c.getComponentType()) || isGeneric(c.getDeclaringClass()));
   }
 
   /**
-   * Returns {@code true} if and only if the supplied {@link Class} is
+   * Returns {@code true} if and only if the supplied {@link Type} is
    * <em>generic</em> according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2"
    * target="_parent">the rules of the Java Language
    * Specification</a>.
    *
-   * @param cls the {@link Class} in question; may be {@code null} in
+   * <p>Only {@link Class}es can be generic. This method will return
+   * {@code false} when passed any other kind of {@link Type}.</p>
+   *
+   * @param type the {@link Type} in question; may be {@code null} in
    * which case {@code false} will be returned
    *
-   * @return {@code true} if the supplied {@link Class} is non-{@code
-   * null} and returns an array with more than zero elements from an
-   * invocation of its {@link Class#getTypeParameters()} method;
-   * {@code false} otherwise
+   * @return {@code true} if the supplied {@link Type} is an instance
+   * of {@link Class} and returns a non-{@code null} array with more
+   * than zero elements from an invocation of its {@link
+   * Class#getTypeParameters()} method; {@code false} otherwise
    *
    * @see Class#getTypeParameters()
    *
@@ -223,10 +259,15 @@ public final class Types {
    * target="_parent">The Java Language Specification Section
    * 8.1.2</a>
    */
-  // https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2
-  // "A class is generic if the class declaration declares one or more
-  // type variables (§4.4)."
-  public static final boolean isGeneric(final Class<?> cls) {
+  public static final boolean isGeneric(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2
+    // 8.1.2. Generic Classes and Type Parameters
+    //
+    // A class is generic if it declares one or more type variables (§4.4).
+    return type instanceof Class && isGeneric((Class<?>)type);
+  }
+
+  private static final boolean isGeneric(final Class<?> cls) {
     return cls != null && cls.getTypeParameters().length > 0;
   }
 
@@ -684,9 +725,26 @@ public final class Types {
    *
    * @idempotency This method is idempotent and deterministic.
    */
-  // Trying to implement
-  // https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.6.
   public static final Class<?> erase(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    // 4.6. Type Erasure
+    //
+    // Type erasure is a mapping from types (possibly including
+    // parameterized types and type variables) to types (that are
+    // never parameterized types or type variables). We write |T| for
+    // the erasure of type T. The erasure mapping is defined as
+    // follows:
+    //
+    // The erasure of a parameterized type (§4.5) G<T1,...,Tn> is |G|.
+    //
+    // The erasure of a nested type T.C is |T|.C.
+    //
+    // The erasure of an array type T[] is |T|[].
+    //
+    // The erasure of a type variable (§4.4) is the erasure of its
+    // leftmost bound.
+    //
+    // The erasure of every other type is the type itself.
     final Class<?> returnValue;
     if (type == null) {
       return null;
@@ -706,27 +764,267 @@ public final class Types {
   }
 
   private static final Class<?> erase(final Class<?> type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    // …
+    // The erasure of a nested type T.C is
+    // |T|.C. [Class.getDeclaringClass() returns an already erased
+    // type.]
+    //
+    // The erasure of an array type T[] is |T|[]. [A Class that is an
+    // array has a Class as its component type, and that is already
+    // erased.]
+    // …
+    // The erasure of every other type is the type itself. [So in all
+    // cases we can just return the supplied Class<?>.]
     return type;
   }
 
   private static final Class<?> erase(final ParameterizedType type) {
-    return type == null ? null : erase(type.getRawType());
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    // …
+    // The erasure of a parameterized type (§4.5) G<T1,...,Tn> is |G|
+    // [|G| means the erasure of G, i.e. the erasure of
+    // type.getRawType()].
+    return erase(type.getRawType());
   }
 
   private static final Class<?> erase(final GenericArrayType type) {
-    final Class<?> candidate = type == null ? null : erase(type.getGenericComponentType());
-    return candidate == null ? null : (Class<?>)Array.newInstance(candidate, 0).getClass();
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    //
+    // The erasure of an array type T[] is |T|[]. [|T| means the
+    // erasure of T. We erase the genericComponentType() and use
+    // reflection to find the "normal" array class.]
+    final Class<?> candidate = erase(type.getGenericComponentType());
+    if (candidate == null) {
+      return null;
+    } else {
+      assert !candidate.isArray(); // it's the component type
+      return (Class<?>)Array.newInstance(candidate, 0).getClass();
+    }
   }
 
   private static final Class<?> erase(final TypeVariable<?> type) {
-    final Type[] bounds = type == null ? null : type.getBounds();
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    //
+    // The erasure of a type variable (§4.4) is the erasure of its
+    // leftmost bound. [In the case of a TypeVariable<?> that returns
+    // multiple bounds, we know they will start with a class, not an
+    // interface and not a type variable.]
+    final Type[] bounds = type.getBounds();
     return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
   }
 
   private static final Class<?> erase(final WildcardType type) {
-    final Type[] bounds = type == null ? null : type.getUpperBounds();
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    //
+    // The erasure of a type variable (§4.4) is the erasure of its
+    // leftmost bound.  [WildcardTypes aren't really in the JLS per se
+    // but they behave like type variables. Only upper bounds will
+    // matter here.]
+    final Type[] bounds = type.getUpperBounds();
     return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
   }
+
+  static final Type[] getDirectSupertypes(final Type type) {
+    if (type == null) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent this.]
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else if (type instanceof Class) {
+      return getDirectSupertypes((Class<?>)type);
+    } else if (type instanceof ParameterizedType) {
+      return getDirectSupertypes((ParameterizedType)type);
+    } else if (type instanceof GenericArrayType) {
+      return getDirectSupertypes((GenericArrayType)type);
+    } else if (type instanceof TypeVariable) {
+      return getDirectSupertypes((TypeVariable<?>)type);
+    } else if (type instanceof WildcardType) {
+      return getDirectSupertypes((WildcardType)type);
+    } else {
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    }
+  }
+
+  private static final Type[] getDirectSupertypes(final Class<?> type) {
+    if (type == Object.class || type == boolean.class || type == double.class) {
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else {
+      final Class<?> ct = type.getComponentType();
+      if (ct == null) {
+        assert !type.isArray();
+        if (type.isPrimitive()) {
+          // 4.10.1. Subtyping among Primitive Types
+          //
+          // The following rules define the direct supertype relation
+          // [>₁] among the primitive types:
+          //
+          // double >₁ float
+          //
+          // float >₁ long
+          //
+          // long >₁ int
+          //
+          // int >₁ char
+          //
+          // int >₁ short
+          //
+          // short >₁ byte
+          if (type == float.class) {
+            return new Type[] { double.class };
+          } else if (type == long.class) {
+            return new Type[] { float.class };
+          } else if (type == int.class) {
+            return new Type[] { long.class };
+          } else if (type == char.class) {
+            return new Type[] { int.class };
+          } else if (type == short.class) {
+            return new Type[] { int.class };
+          } else if (type == byte.class) {
+            return new Type[] { short.class };
+          } else {
+            throw new AssertionError("unhandled primitive type: " + type);
+          }
+        } else {
+          // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+          // 4.10.2. Subtyping among [non-array] Class and Interface
+          // Types
+          //
+          // Given a non-generic type declaration C
+          // [e.g. String.class], the direct supertypes of the type C
+          // are all of the following:
+          //
+          // * The direct superclass of C (§8.1.4) [extends clause, so
+          //   Object.class]
+          // * The direct superinterfaces of C (§8.1.5) [implements
+          //   clause, so Serializable.class, CharSequence.class and
+          //   Comparable<String> (parameterized type)]
+          // * The type Object, if C is an interface type with no
+          //   direct superinterfaces (§9.1.3) [String.class is not a
+          //   superinterface]
+          //
+          // Given a generic type declaration C<F₁,…Fₙ> (𝘯 > 0)
+          // [e.g. Comparable<T>; the "F" is for "formal" type
+          // parameters, not actual type arguments], the direct
+          // supertypes of the raw type C (§4.8)
+          // [e.g. Comparable.class] are all of the following:
+          //
+          // * The direct superclass of the raw type C. [see above]
+          // * The direct superinterfaces of the raw type C. [see
+          //   above]
+          // * The type Object, if C<F₁,…Fₙ> is a generic interface
+          //   type with no direct superinterfaces (§9.1.3)
+          //   [e.g. which Comparable<T> is]
+          final Type[] returnValue;
+          final Type genericSuperclass = type.getGenericSuperclass();
+          final Type[] directSuperinterfaces = type.getGenericInterfaces();
+          if (directSuperinterfaces.length <= 0) {
+            returnValue = new Type[] { genericSuperclass == null ? Object.class : genericSuperclass };
+          } else {
+            final int offset = genericSuperclass == null ? 0 : 1;
+            returnValue = new Type[directSuperinterfaces.length + offset];
+            System.arraycopy(directSuperinterfaces, 0, returnValue, offset, directSuperinterfaces.length);
+            if (offset == 1) {
+              returnValue[0] = genericSuperclass;
+            }
+          }
+          return returnValue;
+        }
+      } else if (ct == Object.class || ct.isPrimitive()) {
+        // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.3
+        // 4.10.3. Subtyping among Array Types
+        // …
+        // * Object >₁ Object[] [>₁ is the direct supertype relation]
+        // * Cloneable >₁ Object[]
+        // * java.io.Serializable >₁ Object[]
+        // * If P is a primitive type, then:
+        //   * Object >₁ P[]
+        //   * Cloneable >₁ P[]
+        //   * java.io.Serializable >₁ P[]
+        //
+        // [It is not clear if the order is significant; probably not,
+        // but we follow the order found in the JLS all the same.  It
+        // is worth noting that this order is repeated in the JLS in
+        // at least two places.]
+        return new Type[] { Object.class, Cloneable.class, Serializable.class };
+      } else {
+        // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.3
+        // 4.10.3. Subtyping among Array Types
+        //
+        // The following rules define the direct supertype relation
+        // [>₁] among array types:
+        //
+        // * If S and T are both reference types, then
+        //   S[] >₁ T[] iff S >₁ T.
+        // …
+        //
+        // [We already handled the case where T is Object, i.e. where
+        // T has no direct superclass.]
+        final Type[] componentTypeDirectSupertypes = getDirectSupertypes(ct);
+        assert componentTypeDirectSupertypes != null;
+        assert componentTypeDirectSupertypes.length > 0 : "Unexpected zero length direct supertypes for " + ct;
+        final Type[] returnValue = new Type[componentTypeDirectSupertypes.length];
+        for (int i = 0; i < componentTypeDirectSupertypes.length; i++) {
+          final Type cdst = componentTypeDirectSupertypes[i];
+          assert cdst != null;
+          if (cdst instanceof Class) {
+            // S >₁ T ∴ S[] >₁ T[]
+            returnValue[i] = Array.newInstance((Class<?>)cdst, 0).getClass();
+          } else if (cdst instanceof ParameterizedType) {
+            // S >₁ T ∴ S[] >₁ T[]
+            returnValue[i] = new DefaultGenericArrayType(cdst);
+          } else {
+            throw new IllegalStateException("Unexpected component type direct supertype: " + cdst + " of " + ct);
+          }
+        }
+        return returnValue;
+      }
+    }
+  }
+
+  @Incomplete
+  private static final Type[] getDirectSupertypes(final ParameterizedType type) {
+    final Type rawType = type.getRawType();
+    final Type[] rawTypeDirectSupertypes = getDirectSupertypes(rawType);
+    final Type[] returnValue;
+    if (rawTypeDirectSupertypes.length <= 0) {
+      returnValue = new Type[] { rawType };
+    } else {
+      returnValue = new Type[rawTypeDirectSupertypes.length + 1];
+      System.arraycopy(rawTypeDirectSupertypes, 0, returnValue, 0, rawTypeDirectSupertypes.length);
+      returnValue[returnValue.length] = rawType;
+    }
+    return returnValue;
+  }
+
+  @Incomplete
+  private static final Type[] getDirectSupertypes(final GenericArrayType type) {
+    throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle GenericArrayTypes: " + type);
+  }
+
+  private static final Type[] getDirectSupertypes(final TypeVariable<?> type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+    // 4.10.2. Subtyping among [non-array] Class and Interface Types
+    // …
+    // The direct supertypes of an intersection type T₁ & … & Tₙ are
+    // Tᵢ (1 ≤ 𝑖 ≤ 𝘯).
+    //
+    // The direct supertypes of a type variable are the types listed
+    // in its bound.
+    //
+    // (Intersection types aren't modeled explicitly but are
+    // permissible in TypeVariables.  So these statements appear to
+    // translate "down" to the same thing: the direct supertypes of
+    // a TypeVariable are simply the contents of its bounds.)
+    final Type[] bounds = type.getBounds();
+    return bounds == null || bounds.length <= 0 ? new Type[] { Object.class } : bounds;
+  }
+
+  @Incomplete
+  private static final Type[] getDirectSupertypes(final WildcardType type) {
+    throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle WildcardTypes: " + type);
+  }
+
 
   /**
    * Returns the <em>effective bounds</em> of the supplied {@link

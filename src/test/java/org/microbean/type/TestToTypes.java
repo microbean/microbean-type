@@ -138,7 +138,7 @@ final class TestToTypes {
   }
 
   @Test
-  final void testRawClass() {
+  final void testGenericClass() {
     final Type type = Predicate.class;
     final Set<Type> weldTypes = new HierarchyDiscovery(type).getTypeClosure();
     final TypeSet typeSet = Types.toTypes(type);
