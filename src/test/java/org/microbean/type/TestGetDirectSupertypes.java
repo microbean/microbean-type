@@ -21,7 +21,9 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -36,6 +38,14 @@ final class TestGetDirectSupertypes {
 
   private TestGetDirectSupertypes() {
     super();
+  }
+
+  @Test
+  final void testCompilationThings() {
+    // Does not work, obviously.
+    // final ArrayList<Object> l = new ArrayList<String>();
+
+
   }
 
   @Test
@@ -102,6 +112,14 @@ final class TestGetDirectSupertypes {
     ds = Types.getDirectSupertypes(Comparable[].class);
     assertEquals(1, ds.length);
     assertSame(Object[].class, ds[0]);
+  }
+
+  @Test
+  final void testGenericArrayTypeDirectSupertypes() {
+    // First, compilation:
+    @SuppressWarnings("rawtypes")
+    final List<String>[] listStringArray = new List[] { List.of("hello", "world") };
+    final Object[] o = listStringArray;
   }
   
 }

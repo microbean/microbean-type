@@ -27,14 +27,16 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-final class TestToClass {
+final class TestErase {
 
-  private TestToClass() {
+  private TestErase() {
     super();
   }
 
   @Test
   final <T extends RandomAccess & CharSequence> void testTypeVariable() {
+    // Note the type variable in the method signature.  "The erasure
+    // of a type variable is the erasure of its leftmost bound."
     assertSame(RandomAccess.class,
                Types.erase(((ParameterizedType)new TypeLiteral<List<T>>() {}.getType()).getActualTypeArguments()[0]));
   }

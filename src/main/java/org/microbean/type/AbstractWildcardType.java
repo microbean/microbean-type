@@ -41,13 +41,17 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     super();
     if (upperBounds == null || upperBounds.length <= 0) {
       this.upperBounds = new Type[] { Object.class };
-    } else {
+    } else if (upperBounds.length == 1) {
       this.upperBounds = upperBounds.clone();
+    } else {
+      throw new IllegalArgumentException("upperBounds.length > 1: " + Arrays.asList(upperBounds));
     }
     if (lowerBounds == null || lowerBounds.length <= 0) {
       this.lowerBounds = EMPTY_TYPE_ARRAY;
-    } else {
+    } else if (lowerBounds.length == 1) {
       this.lowerBounds = lowerBounds.clone();
+    } else {
+      throw new IllegalArgumentException("lowerBounds.length > 1: " + Arrays.asList(lowerBounds));
     }
     this.hashCode = this.computeHashCode();
   }

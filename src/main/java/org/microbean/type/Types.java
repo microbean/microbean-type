@@ -155,7 +155,7 @@ public final class Types {
    * a <em>raw type</em> according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8"
    * target="_parent">the rules of the Java Language
-   * Specification</a>.
+   * Specification, section 4.8</a>.
    *
    * <p>This method returns {@code true} if and only if:</p>
    *
@@ -191,7 +191,7 @@ public final class Types {
    *
    * @see <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8"
-   * target="_parent">The Java Language Specification Section 4.8</a>
+   * target="_parent">The Java Language Specification, section 4.8</a>
    */
   public static final boolean isRawType(final Type type) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.8
@@ -229,8 +229,9 @@ public final class Types {
   private static final boolean isRawType(final Class<?> c) {
     // We use getDeclaringClass() here as the third test rather than
     // getEnclosingClass() because getDeclaringClass() skips anonymous
-    // class definitions, which I don't think will satisfy the first
-    // condition.
+    // class definitions, which are not capable of being generic, and
+    // therefore cannot be raw types, and therefore cannot house a
+    // "non-static member type of a raw type R".
     return c != null && (isGeneric(c) || isRawType(c.getComponentType()) || isGeneric(c.getDeclaringClass()));
   }
 
@@ -239,7 +240,7 @@ public final class Types {
    * <em>generic</em> according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2"
    * target="_parent">the rules of the Java Language
-   * Specification</a>.
+   * Specification, section 8.1.2</a>.
    *
    * <p>Only {@link Class}es can be generic. This method will return
    * {@code false} when passed any other kind of {@link Type}.</p>
@@ -256,7 +257,7 @@ public final class Types {
    *
    * @see <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.2"
-   * target="_parent">The Java Language Specification Section
+   * target="_parent">The Java Language Specification section
    * 8.1.2</a>
    */
   public static final boolean isGeneric(final Type type) {
@@ -271,12 +272,21 @@ public final class Types {
     return cls != null && cls.getTypeParameters().length > 0;
   }
 
+  public static final boolean isGenericInterfaceType(final Type type) {
+    if (type instanceof Class) {
+      final Class<?> c = (Class<?>)type;
+      return c.isInterface();
+    } else {
+      return false;
+    }
+  }
+
   /**
    * Returns {@code true} if and only if the supplied {@link Type}
    * represents a <em>reference type</em> according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
    * target="_parent">the rules of the Java Language
-   * Specification</a>.
+   * Specification, section 4.3</a>.
    *
    * @param type the {@link Type} in question; may be {@code null} in which case
    * {@code false} will be returned
@@ -285,19 +295,208 @@ public final class Types {
    * represents a <em>reference type</em> according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
    * target="_parent">the rules of the Java Language
-   * Specification</a>
+   * Specification, section 4.3</a>
    *
    * @see <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
-   * target="_parent">The Java Language Specification Section 4.3</a>
+   * target="_parent">The Java Language Specification section 4.3</a>
    */
   public static final boolean isReferenceType(final Type type) {
+    // Wildcards are ruled out by the BNF in
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
     return
       (type instanceof Class && !((Class<?>)type).isPrimitive()) ||
       type instanceof ParameterizedType ||
       type instanceof GenericArrayType ||
-      type instanceof TypeVariable ||
-      type instanceof WildcardType; // wildcard types in the JLS are unsound type variables
+      type instanceof TypeVariable;
+  }
+
+  private static final boolean provablyDistinct(final Type type0, final Type type1) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
+    // 4.5.1. Type Arguments of Parameterized Types
+    //
+    // Two type arguments are provably distinct if one of the
+    // following is true:
+    //
+    // Neither argument is a type variable or wildcard, and the two
+    // arguments are not the same type.
+    //
+    // One type argument is a type variable or wildcard, with an upper
+    // bound (from capture conversion (§5.1.10), if necessary) of S;
+    // and the other type argument T is not a type variable or
+    // wildcard; and neither |S| <: |T| nor |T| <: |S| (§4.8,
+    // §4.10). [|T| means the erasure of T.]
+    //
+    // Each type argument is a type variable or wildcard, with upper
+    // bounds (from capture conversion, if necessary) of S and T; and
+    // neither |S| <: |T| nor |T| <: |S|.
+
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
+    // 4.10. Subtyping
+    //
+    // The subtype and supertype relations are binary relations on types.
+    //
+    // The supertypes of a type are obtained by reflexive and
+    // transitive closure over the direct supertype relation, written
+    // S >₁ T, which is defined by rules given later in this
+    // section. We write S :> T to indicate that the supertype
+    // relation holds between S and T.
+    //
+    // S is a proper supertype of T, written S > T, if S :> T and S ≠ T.
+    //
+    // The subtypes of a type T are all types U such that T is a
+    // supertype of U, and the null type. We write T <: S to indicate
+    // that that the subtype relation holds between types T and S.
+    //
+    // T is a proper subtype of S, written T < S, if T <: S and S ≠ T.
+    //
+    // T is a direct subtype of S, written T <₁ S, if S >₁ T.
+    //
+    // Subtyping does not extend through parameterized types: T <: S
+    // does not imply that C<T> <: C<S>.
+    if (type0 instanceof TypeVariable ||
+        type0 instanceof WildcardType ||
+        type1 instanceof TypeVariable ||
+        type1 instanceof WildcardType) {
+      final Class<?> c0 = erase(type0);
+      final Class<?> c1 = erase(type1);
+      return !isSubtype(c0, c1) && !isSubtype(c1, c0);
+    } else {
+      // …
+      // Neither argument is a type variable or wildcard, and the two
+      // arguments are not the same type.
+      return !equals(type0, type1);
+    }
+  }
+
+  static final boolean isSupertype(final Type s, final Type t) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
+    // 4.10. Subtyping
+    // …
+    // The supertypes of a type are obtained by reflexive and
+    // transitive closure over the direct supertype relation [see
+    // getDirectSupertypes()], written S >₁ T, which is defined by
+    // rules given later in this section.
+
+    if (s == null) {
+      // The null type is the supertype of no other type.
+      return false;
+    } else if (t == null) {
+      // The null type is a subtype of all other types.
+      return true;
+    } else if (equals(s, t)) {
+      // Reflexive.
+      return true;
+    } else if (s instanceof Class && t instanceof Class) {
+      return isSupertype((Class<?>)s, (Class<?>)t);
+    } else {
+      final Type[] directSupertypes = getDirectSupertypes(t);
+      for (final Type directSupertype : directSupertypes) {
+        if (equals(directSupertype, s) || isSupertype(s, directSupertype)) { // XXX recursive
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  private static final boolean isSupertype(final Class<?> s, final Class<?> t) {
+    // The null type is the supertype of no other type.  So if s is
+    // null we return false.
+    //
+    // The null type is the subtype of all other types.  So if t is
+    // null we return true.
+    //
+    // A class is its own supertype because "the supertypes of a type
+    // are obtained by reflexive and transitive closure over the
+    // direct supertype relation" (note the "reflexive" part).  So if
+    // equals(s, t) we return true.
+    //
+    // The isAssignable() call lets the JDK do the transitive bits for
+    // us in native code in this case.  So if it returns true, so do we.
+    return s != null && (t == null || equals(s, t) || s.isAssignableFrom(t));
+  }
+
+  private static final boolean isProperSupertype(final Type s, final Type t) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
+    // 4.10. Subtyping
+    // …
+    // We write S :> T to indicate that the supertype
+    // relation holds between S and T.
+    //
+    // S is a proper supertype of T, written S > T, if S :> T and S ≠ T.
+    // …
+    return isSupertype(s, t) && !equals(s, t);
+  }
+
+  /**
+   * Returns {@code true} if {@code t} is a <em>direct supertype</em>
+   * of {@code s}, according to <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10"
+   * target="_parent">the rules of the Java Language Specification,
+   * section 4.10</a>.
+   *
+   * @param t the purported direct supertype
+   *
+   * @param s the purported subtype
+   *
+   * @return {@code true} if {@code t} is a <em>direct supertype</em>
+   * of {@code s}, according to <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10"
+   * target="_parent">the rules of the Java Language Specification,
+   * section 4.10</a>; {@code false} otherwise
+   *
+   * @see <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10">The
+   * Java Language Specification, section 4.10</a>
+   *
+   * @see #getDirectSupertypes(Type)
+   */
+  private static final boolean isDirectSupertype(final Type t, final Type s) {
+    final Type[] directSupertypes = getDirectSupertypes(s);
+    for (final Type directSupertype : directSupertypes) {
+      if (equals(directSupertype, t)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static final boolean isSubtype(final Type u, final Type t) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
+    // 4.10. Subtyping
+    // …
+    // The subtypes of a type T are all types U such that T is a
+    // supertype of U, and the null type.
+    return u == null || isSupertype(t, u);
+  }
+
+ private static final boolean isProperSubtype(final Type t, final Type s) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
+    // 4.10. Subtyping
+    // …
+    // The subtypes of a type T are all types U such that T is a
+    // supertype of U, and the null type. We write T <: S to indicate
+    // that that the subtype relation holds between types T and S.
+    //
+    // T is a proper subtype of S, written T < S, if T <: S and S ≠ T.
+    // …
+    // Subtyping does not extend through parameterized types: T <: S
+    // does not imply that C<T> <: C<S>.
+    return isSubtype(t, s) && !equals(t, s);
+  }
+
+  private static final boolean isDirectSubtype(final Type t, final Type s) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
+    // 4.10. Subtyping
+    // …
+    // The supertypes of a type are obtained by reflexive and
+    // transitive closure over the direct supertype relation, written
+    // S >₁ T, which is defined by rules given later in this
+    // section.
+    // …
+    // T is a direct subtype of S, written T <₁ S, if S >₁ T.
+    return isDirectSupertype(s, t);
   }
 
 
@@ -614,7 +813,7 @@ public final class Types {
    *
    * @see <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.7">The
-   * Java Language Specification Section 5.1.7</a>
+   * Java Language Specification section 5.1.7</a>
    */
   @SuppressWarnings("unchecked")
   public static final <T extends Type> T box(final T type) {
@@ -679,7 +878,7 @@ public final class Types {
    * to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6"
    * target="_parent">the rules of the Java Language
-   * Specification</a>.
+   * Specification, section 4.6</a>.
    *
    * <ul>
    *
@@ -825,6 +1024,123 @@ public final class Types {
     return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
   }
 
+  private static final boolean contains(final Type t1, final Type t2) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
+    // 4.5.1. Type Arguments of Parameterized Types
+    // …
+    // A type argument T₁ is said to contain
+    // another type argument T₂, written T₂ <= T₁, if the set of types
+    // denoted by T₂ is provably a subset of the set of types denoted
+    // by T₁ under the reflexive and transitive closure of the
+    // following rules (where <: denotes subtyping (§4.10)):
+    //
+    // ? extends T <= ? extends S if T <: S [if T is a subtype of S, then ? extends S contains ? extends T]
+    // ? extends T <= ? [? contains ? extends T]
+    // ? super T <= ? super S if S <: T [if S is a subtype of T, then ? super S contains ? super T]
+    // ? super T <= ? [? contains ? super T]
+    // ? super T <= ? extends Object [? extends Object contains ? super T]
+    // T <= T [T contains T; a reference type can only contain itself because it is only one type argument]
+    // T <= ? extends T [? extends T contains T]
+    // T <= ? super T) [? super T contains T]
+    if (t1 == null || t2 == null) {
+      return false;
+    } else if (equals(t1, t2)) {
+      // T <= T [T contains T]
+      return true;
+    } else if (t1 instanceof WildcardType) {
+      if (t2 instanceof WildcardType) {
+        return contains((WildcardType)t1, (WildcardType)t2);
+      } else if (isReferenceType(t2)) {
+        return contains((WildcardType)t1, t2);
+      } else {
+        throw new IllegalArgumentException("t2 is neither a WildcardType nor a reference type: " + t2);
+      }
+    } else if (isReferenceType(t1)) {
+      if (t2 instanceof WildcardType || isReferenceType(t2)) {
+        return false; // …because we already tested for equality and a reference type can only contain itself
+      } else {
+        throw new IllegalArgumentException("t2 is neither a WildcardType nor a reference type: " + t2);
+      }
+    } else {
+      throw new IllegalArgumentException("t1 is neither a WildcardType nor a reference type: " + t1);
+    }
+  }
+
+  private static final boolean contains(final WildcardType t1, final Type t2) {
+    assert t1 != null;
+    assert t2 != null;
+    assert isReferenceType(t2);
+    assert !equals(t1, t2);
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
+    // 4.5.1. Type Arguments of Parameterized Types
+    // …
+    // A type argument T₁ is said to contain
+    // another type argument T₂, written T₂ <= T₁, if the set of types
+    // denoted by T₂ is provably a subset of the set of types denoted
+    // by T₁ under the reflexive and transitive closure of the
+    // following rules (where <: denotes subtyping (§4.10)):
+    //
+    // …
+    // T <= ? extends T [? extends T contains T]
+    // T <= ? super T) [? super T contains T]
+    // …
+    final Type[] t1UpperBounds = t1.getUpperBounds();
+    final Type t1UpperBound = t1UpperBounds == null || t1UpperBounds.length <= 0 ? Object.class : t1UpperBounds[0];
+    assert t1UpperBounds.length == 0 || t1UpperBounds.length == 1 : "Unexpected upper bounds: " + Arrays.asList(t1UpperBounds);
+    if (equals(t1UpperBound, t2)) {
+      return true;
+    } else {
+      final Type[] t1LowerBounds = t1.getLowerBounds();
+      assert t1LowerBounds.length == 0 || t1LowerBounds.length == 1 : "Unexpected lower bounds: " + Arrays.asList(t1LowerBounds);
+      final Type t1LowerBound = t1LowerBounds == null || t1LowerBounds.length <= 0 ? null : t1LowerBounds[0];
+      return equals(t1LowerBound, t2);
+    }
+  }
+
+  private static final boolean contains(final WildcardType t1s, final WildcardType t2t) {
+    assert t1s != null;
+    assert t2t != null;
+    assert !equals(t1s, t2t);
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
+    // 4.5.1. Type Arguments of Parameterized Types
+    // …
+    // A type argument T₁ is said to contain
+    // another type argument T₂, written T₂ <= T₁, if the set of types
+    // denoted by T₂ is provably a subset of the set of types denoted
+    // by T₁ under the reflexive and transitive closure of the
+    // following rules (where <: denotes subtyping (§4.10)):
+    // …
+    final Type[] t1sUpperBounds = t1s.getUpperBounds();
+    assert t1sUpperBounds.length == 0 || t1sUpperBounds.length == 1 : "Unexpected upper bounds: " + Arrays.asList(t1sUpperBounds);
+    final Type t1sUpperBound = t1sUpperBounds == null || t1sUpperBounds.length <= 0 ? Object.class : t1sUpperBounds[0];
+    final Type[] t2tUpperBounds = t2t.getUpperBounds();
+    assert t2tUpperBounds.length == 0 || t2tUpperBounds.length == 1 : "Unexpected upper bounds: " + Arrays.asList(t2tUpperBounds);
+    final Type t2tUpperBound = t2tUpperBounds == null || t2tUpperBounds.length <= 0 ? Object.class : t2tUpperBounds[0];
+    if (t1sUpperBound == Object.class ||
+        isSubtype(t2tUpperBound, t1sUpperBound)) {
+      // …
+      // ? extends T <= ? extends S if T <: S [if T is a subtype of S, then ? extends S contains ? extends T]
+      // ? extends T <= ? [? contains ? extends T because Object.class, ?'s default upper bound, contains every reference type]
+      // …
+      // ? super T <= ? [? contains ? super T because Object.class, ?'s default upper bound, contains every reference type]
+      // …
+      // ? super T <= ? extends Object [? extends Object contains ? super T because ? extends Object is the same as ?]
+      // …
+      return true;
+    } else {
+      final Type[] t1sLowerBounds = t1s.getLowerBounds();
+      assert t1sLowerBounds.length == 0 || t1sLowerBounds.length == 1 : "Unexpected lower bounds: " + Arrays.asList(t1sLowerBounds);
+      final Type t1sLowerBound = t1sLowerBounds == null || t1sLowerBounds.length <= 0 ? null : t1sLowerBounds[0];
+      final Type[] t2tLowerBounds = t2t.getLowerBounds();
+      assert t2tLowerBounds.length == 0 || t2tLowerBounds.length == 1 : "Unexpected lower bounds: " + Arrays.asList(t2tLowerBounds);
+      final Type t2tLowerBound = t2tLowerBounds == null || t2tLowerBounds.length <= 0 ? null : t2tLowerBounds[0];
+      // …
+      // ? super T <= ? super S if S <: T [if S is a subtype of T, then ? super S contains ? super T]
+      // …
+      return isSubtype(t1sLowerBound, t2tLowerBound);
+    }
+  }
+
   static final Type[] getDirectSupertypes(final Type type) {
     if (type == null) {
       // The direct supertypes of the null type are all reference
@@ -860,15 +1176,10 @@ public final class Types {
           // [>₁] among the primitive types:
           //
           // double >₁ float
-          //
           // float >₁ long
-          //
           // long >₁ int
-          //
           // int >₁ char
-          //
           // int >₁ short
-          //
           // short >₁ byte
           if (type == float.class) {
             return new Type[] { double.class };
@@ -888,7 +1199,7 @@ public final class Types {
         } else {
           // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
           // 4.10.2. Subtyping among [non-array] Class and Interface
-          // Types
+          // Types [which includes TypeVariables, incidentally]
           //
           // Given a non-generic type declaration C
           // [e.g. String.class], the direct supertypes of the type C
@@ -919,7 +1230,12 @@ public final class Types {
           final Type genericSuperclass = type.getGenericSuperclass();
           final Type[] directSuperinterfaces = type.getGenericInterfaces();
           if (directSuperinterfaces.length <= 0) {
-            returnValue = new Type[] { genericSuperclass == null ? Object.class : genericSuperclass };
+            if (genericSuperclass == null) {
+              assert type.isInterface() : "Unexpected class; should have been an interface: " + type;
+              returnValue = new Type[] { Object.class };
+            } else {
+              returnValue = new Type[] { genericSuperclass };
+            }
           } else {
             final int offset = genericSuperclass == null ? 0 : 1;
             returnValue = new Type[directSuperinterfaces.length + offset];
@@ -982,24 +1298,119 @@ public final class Types {
     }
   }
 
-  @Incomplete
   private static final Type[] getDirectSupertypes(final ParameterizedType type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+    // 4.10. Subtyping
+    // …
+    // Subtyping does not extend through parameterized types: T <: S
+    // [<: means "is a subtype of"] does not imply that C<T> <: C<S>.
+    // …
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+    // 4.10.2. Subtyping among Class and Interface Types
+    // …
+    // Given a generic type declaration C<F₁,…,Fₙ> (𝘯 > 0), the
+    // direct supertypes of the parameterized type C<T₁,…,Tₙ>, where
+    // Tᵢ (1 ≤ 𝑖 ≤ 𝘯) is a type, are all of the following:
+    //
+    // D<U₁ θ,…,Uₖ θ>, where D<U₁,…,Uₖ> is a generic type which is a
+    // direct supertype of the generic type C<F₁,…,Fₙ> and θ is the
+    // substitution [F₁:=T₁,…,Fₙ:=Tₙ].
+    //
+    // (https://docs.oracle.com/javase/specs/jls/se11/html/jls-1.html#jls-1.3
+    // 1.3. Notation
+    // …
+    // The type system of the Java programming language occasionally
+    // relies on the notion of a substitution. The notation
+    // [F₁:=T₁,…,Fₙ:=Tₙ] denotes substitution of Fᵢ by Tᵢ for
+    // 1 ≤ 𝘪 ≤ 𝘯.)
+    //
+    // [i.e. Replace F with T throughout. By the time we get to Java's
+    // reflective objects (ParameterizedType, etc.), Java has mostly
+    // done this for us.  TODO: is this also describing type
+    // resolution?]
+    //
+    // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝑖 ≤ 𝘯)
+    // (§4.5.1). [i.e. this puts synthetic wildcard-containing
+    // ParameterizedTypes into the direct supertypes list]
+    //
+    // (https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
+    // 4.5.1. Type Arguments of Parameterized Types
+    // …
+    // A type argument T₁ is said to contain
+    // another type argument T₂, written T₂ <= T₁, if the set of types
+    // denoted by T₂ is provably a subset of the set of types denoted
+    // by T₁ under the reflexive and transitive closure of the
+    // following rules (where <: denotes subtyping (§4.10)):
+    //
+    // ? extends T <= ? extends S if T <: S [if S contains T, then ? extends S contains ? extends T]
+    // ? extends T <= ? [? contains ? extends T]
+    // ? super T <= ? super S if S <: T [if T contains S, then ? super S contains ? super T]
+    // ? super T <= ? [? contains ? super T]
+    // ? super T <= ? extends Object [? extends Object contains ? super T]
+    // T <= T [T contains T]
+    // T <= ? extends T [? extends T contains T]
+    // T <= ? super T) [? super T contains T])
+    //
+    // The type Object, if C<F₁,…,Fₙ> is a generic interface type
+    // with no direct superinterfaces.
+    //
+    // The raw type C.
+
+    // Example:
+    // Given List<String>,
+
+
     final Type rawType = type.getRawType();
     final Type[] rawTypeDirectSupertypes = getDirectSupertypes(rawType);
     final Type[] returnValue;
     if (rawTypeDirectSupertypes.length <= 0) {
+      // The raw type C.
       returnValue = new Type[] { rawType };
     } else {
       returnValue = new Type[rawTypeDirectSupertypes.length + 1];
       System.arraycopy(rawTypeDirectSupertypes, 0, returnValue, 0, rawTypeDirectSupertypes.length);
-      returnValue[returnValue.length] = rawType;
+      // The raw type C.
+      returnValue[returnValue.length - 1] = rawType;
     }
     return returnValue;
   }
 
   @Incomplete
-  private static final Type[] getDirectSupertypes(final GenericArrayType type) {
-    throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle GenericArrayTypes: " + type);
+  static final Type[] getDirectSupertypes(final GenericArrayType type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.3
+    // 4.10.3. Subtyping among Array Types
+    //
+    // The following rules define the direct supertype relation
+    // [>₁] among array types:
+    //
+    // * If S and T are both reference types, then
+    //   S[] >₁ T[] iff S >₁ T.
+    //
+    // [Recall however that the component of a GenericArrayType is
+    // only? ever? a ParameterizedType or TypeVariable? So if it's a
+    // ParameterizedType, remember that "[s]ubtyping does not extend
+    // through parameterized types: T <: S does not imply that C<T> <:
+    // C<S>."]
+    final Type genericComponentType = type.getGenericComponentType();
+    // assert genericComponentType instanceof ParameterizedType : "Unexpected genericComponentType: " + genericComponentType;
+    final Type[] genericComponentTypeDirectSupertypes = getDirectSupertypes(genericComponentType);
+    final Type[] returnValue = new Type[genericComponentTypeDirectSupertypes.length];
+    for (int i = 0; i < genericComponentTypeDirectSupertypes.length; i++) {
+      final Type genericComponentTypeDirectSupertype = genericComponentTypeDirectSupertypes[i];
+      if (genericComponentTypeDirectSupertype instanceof Class) {
+        if (genericComponentTypeDirectSupertype == Object.class) {
+          // OK; I think? TODO CHECK
+          returnValue[i] = Object.class;
+        } else {
+          // Raw type
+          assert isGeneric(genericComponentTypeDirectSupertype) : "Not generic: " + genericComponentTypeDirectSupertype;
+          returnValue[i] = genericComponentTypeDirectSupertype;
+        }
+      } else {
+        returnValue[i] = new DefaultGenericArrayType(genericComponentTypeDirectSupertypes[i]);
+      }
+    }
+    return returnValue;
   }
 
   private static final Type[] getDirectSupertypes(final TypeVariable<?> type) {
