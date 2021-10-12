@@ -1832,6 +1832,114 @@ public final class Types {
     throw new UnsupportedOperationException("substitute() is currently unimplemented");
   }
 
+  static final Type substitute(final Type in, final Type from, final Type to) {
+    Objects.requireNonNull(in, "in");
+    Objects.requireNonNull(from, "from");
+    Objects.requireNonNull(to, "to");
+    if (equals(in, from)) {
+      if (equals(in, to)) {
+        assert equals(from, to);
+        return in;
+      } else {
+        return to;
+      }
+    } else if (equals(in, to)) {
+      assert !equals(from, to);
+      return in;
+    } else if (equals(from, to)) {
+      return in;
+    } else if (in instanceof Class) {
+      return substitute((Class<?>)in, from, to);
+    } else if (in instanceof ParameterizedType) {
+      return substitute((ParameterizedType)in, from, to);
+    } else if (in instanceof GenericArrayType) {
+      return substitute((GenericArrayType)in, from, to);
+    } else if (in instanceof TypeVariable) {
+      return substitute((TypeVariable)in, from, to);
+    } else if (in instanceof WildcardType) {
+      return substitute((WildcardType)in, from, to);
+    } else {
+      throw new IllegalArgumentException("Unexpected in: " + toString(in));
+    }
+  }
+
+  private static final Type substitute(final Class<?> in, final Type from, final Type to) {
+    // Nothing to substitute.
+    assert !equals(in, from);
+    assert !equals(in, to);
+    assert !equals(from, to);
+    throw new IllegalArgumentException("Unexpected in: " + toString(in));
+  }
+  
+  private static final Type substitute(final ParameterizedType in, final Type from, final Type to) {
+    assert !equals(in, from);
+    assert !equals(in, to);
+    assert !equals(from, to);
+    final Type[] actualTypeArguments = in.getActualTypeArguments();
+    final Type[] newTypeArguments = new Type[actualTypeArguments.length];
+    for (int i = 0; i < actualTypeArguments.length; i++) {
+      newTypeArguments[i] = substitute(actualTypeArguments[i], from, to);
+    }
+    return new DefaultParameterizedType(in.getOwnerType(), in.getRawType(), newTypeArguments);
+  }
+  
+  private static final Type substitute(final GenericArrayType in, final Type from, final Type to) {
+    assert !equals(in, from);
+    assert !equals(in, to);
+    assert !equals(from, to);    
+    final Type genericComponentType = in.getGenericComponentType();
+    if (equals(genericComponentType, from)) {
+      return new DefaultGenericArrayType(substitute(genericComponentType, from, to));
+    } else {
+      return in;
+    }
+  }
+
+  private static final Type substitute(final TypeVariable<?> in, final Type from, final Type to) {
+    assert !equals(in, from);
+    assert !equals(in, to);
+    assert !equals(from, to);
+    final Type[] bounds = in.getBounds();
+    if (bounds.length > 1) {
+      throw new UnsupportedOperationException("bounds.length has to be 1 at the moment because FreshTypeVariable only takes one bound apiece");
+    }
+    final Type[] newBounds = new Type[bounds.length];
+    boolean sub = false;
+    for (int i = 0; i < bounds.length; i++) {
+      newBounds[i] = substitute(bounds[i], from, to);
+      if (!sub) {
+        sub = newBounds[i] != bounds[i];
+      }
+    }
+    if (sub) {
+      return new FreshTypeVariable(newBounds[0]);
+    } else {
+      return in;
+    }
+  }
+
+  private static final Type substitute(final WildcardType in, final Type from, final Type to) {
+    assert !equals(in, from);
+    assert !equals(in, to);
+    assert !equals(from, to);
+    // I'm not sure this is possible or why you'd want to do it if it were, but for completeness….
+    final Type[] lowerBounds = in.getLowerBounds();
+    if (lowerBounds.length <= 0) {
+      final Type[] upperBounds = in.getUpperBounds();
+      final Type upperBound = upperBounds[0];
+      if (equals(upperBound, from)) {
+        return new UpperBoundedWildcardType(to);
+      }
+    } else {
+      final Type lowerBound = lowerBounds[0];
+      assert lowerBound != null;
+      if (equals(lowerBound, from)) {
+        return new LowerBoundedWildcardType(to);
+      }
+    }
+    return in;
+  }
+  
   static final boolean containsWildcard(final Type type) {
     return type instanceof ParameterizedType && containsWildcard((ParameterizedType)type);
   }

@@ -102,7 +102,7 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> extends Abs
    * @exception IllegalArgumentException if the supplied {@code name}
    * identifies no {@link TypeVariable}s
    */
-  public DefaultTypeVariable(final T genericDeclaration, final String name) {
+  public DefaultTypeVariable(final GenericDeclaration genericDeclaration, final String name) {
     this(genericDeclaration, tv -> tv.getName().equals(name));
   }
 
@@ -124,7 +124,7 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> extends Abs
    * Predicate} identifies no {@link TypeVariable}s
    */
   @SuppressWarnings("unchecked")
-  public DefaultTypeVariable(final T genericDeclaration, final Predicate<? super TypeVariable<?>> predicate) {
+  public DefaultTypeVariable(final GenericDeclaration genericDeclaration, final Predicate<? super TypeVariable<?>> predicate) {
     super();
     for (final TypeVariable<?> tv : genericDeclaration.getTypeParameters()) {
       if (predicate.test(tv)) {
