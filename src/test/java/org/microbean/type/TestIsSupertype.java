@@ -44,10 +44,15 @@ final class TestIsSupertype {
 
   @Test
   final void testIsSupertypeRawTypes() {
-    final Type listString = new TypeLiteral<List<String>>() {}.getType();
     assertTrue(Types.isSupertype(List.class, List.class));
+    final Type listString = new TypeLiteral<List<String>>() {}.getType();
     assertTrue(Types.isSupertype(List.class, listString));
     assertTrue(Types.isSupertype(listString, listString));
+  }
+
+  @Test
+  final void testNoParameterizedTypeSubtyping() {
+    final Type listString = new TypeLiteral<List<String>>() {}.getType();
     final Type listObject = new TypeLiteral<List<Object>>() {}.getType();
     assertFalse(Types.isSupertype(listObject, listString));
   }

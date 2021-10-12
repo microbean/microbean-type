@@ -70,20 +70,26 @@ public final class DefaultParameterizedType extends AbstractType implements Para
    * Creates a new {@link DefaultParameterizedType}.
    *
    * @param ownerType the {@link Type} that owns this {@link
-   * DefaultParameterizedType}; may be (and usually is) {@code null};
-   * if non-{@code null} is most commonly a {@link Class} as in all
-   * JDKs through at least 13
+   * DefaultParameterizedType}; may be (and usually is) {@code null}
    *
    * @param rawType the raw type; must not be {@code null}; is most
-   * commonly a {@link Class} as in all JDKs through at least 13
+   * commonly a {@link Class} as in all JDKs through at least 17
    *
    * @param actualTypeArguments the actual {@linkplain
    * #getActualTypeArguments() actual type arguments} of this {@link
-   * DefaultParameterizedType}; may be {@code null}; will be cloned if
-   * non-{@code null}
+   * DefaultParameterizedType}; may be {@code null} in which case a
+   * zero-length array will be used instead; will be cloned if
+   * non-{@code null} and if its length is greater than {@code 0}
    *
    * @exception NullPointerException if {@code rawType} is {@code
    * null}
+   *
+   * @exception IllegalArgumentException if {@code rawType} is an
+   * {@linkplain Class#isInstance(Object) instance of} {@link Class}
+   * and the length of the array returned by its {@link
+   * Class#getTypeParameters()} method is not the same as the length
+   * of the {@link actualTypeArguments} array (or {@code 0} if the
+   * {@code actualTypeArguments} array is {@code null})
    */
   public DefaultParameterizedType(final Type ownerType, final Type rawType, final Type... actualTypeArguments) {
     super();
@@ -93,6 +99,14 @@ public final class DefaultParameterizedType extends AbstractType implements Para
       this.actualTypeArguments = EMPTY_TYPE_ARRAY;
     } else {
       this.actualTypeArguments = actualTypeArguments.clone();
+    }
+    if (rawType instanceof Class) {
+      final Class<?> cls = (Class<?>)rawType;
+      final Type[] typeParameters = cls.getTypeParameters();
+      if (typeParameters.length != this.actualTypeArguments.length) {
+        throw new IllegalArgumentException("rawType: " + Types.toString(rawType) +
+                                           "; actualTypeArguments: " + Arrays.asList(actualTypeArguments));
+      }
     }
     this.hashCode = this.computeHashCode();
   }

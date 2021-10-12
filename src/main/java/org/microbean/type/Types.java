@@ -31,6 +31,7 @@ import java.lang.reflect.WildcardType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -39,10 +40,12 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -129,25 +132,81 @@ public final class Types {
   public static final Type normalize(final Type type) {
     if (type instanceof Class) {
       final Class<?> cls = (Class<?>)type;
-      final Type[] typeParameters = cls.getTypeParameters();
-      if (typeParameters.length <= 0) {
+      if (isGeneric(cls)) {
+        return new DefaultParameterizedType(cls.getDeclaringClass(), cls, cls.getTypeParameters());
+      } else {
         final Type componentType = cls.getComponentType();
         if (componentType == null) {
-          assert !isGeneric(cls);
-          assert !isRawType(cls);
-          return type;
+          return cls;
         } else {
-          final Type normalizedComponentType = normalize(componentType); // XXX recursive
-          return componentType == normalizedComponentType ? type : new DefaultGenericArrayType(normalizedComponentType);
+          final Type normalizedComponentType = normalize(componentType); // NOTE: recursive
+          return componentType == normalizedComponentType ? cls : array(normalizedComponentType);
         }
-      } else {
-        assert !cls.isArray();
-        assert isGeneric(cls);
-        return new DefaultParameterizedType(cls.getDeclaringClass(), cls, typeParameters);
       }
     } else {
       return type;
     }
+  }
+
+  public static final boolean isArrayType(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-10.html#jls-10.1
+    // 10.1 Array Types
+    // …
+    // The element type of an array may be any type, whether primitive
+    // or reference.
+    // …
+    // [That rules out wildcards, but nothing else.]
+    return type instanceof Class ? ((Class<?>)type).isArray() : type instanceof GenericArrayType;
+  }
+
+  public static final Type getComponentType(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-10.html#jls-10
+    // Chapter 10. Arrays
+    // …
+    // An array object contains a number of variables. The number of
+    // variables may be zero, in which case the array is said to be
+    // empty. The variables contained in an array have no names;
+    // instead they are referenced by array access expressions that
+    // use non-negative integer index values. These variables are
+    // called the components of the array. If an array has 𝘯
+    // components, we say 𝘯 is the length of the array; the components
+    // of the array are referenced using integer indices from 0 to 𝘯 -
+    // 1, inclusive.
+    //
+    // All the components of an array have the same type, called the
+    // component type of the array. If the component type of an array
+    // is T, then the type of the array itself is written T[].
+    // …
+    if (type instanceof Class) {
+      return ((Class<?>)type).getComponentType();
+    } else if (type instanceof GenericArrayType) {
+      return ((GenericArrayType)type).getGenericComponentType();
+    } else {
+      return null;
+    }
+  }
+
+  public static final Type getElementType(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-10.html#jls-10
+    // Chapter 10. Arrays
+    // …
+    // The component type of an array may itself be an array type. The
+    // components of such an array may contain references to
+    // subarrays. If, starting from any array type, one considers its
+    // component type, and then (if that is also an array type) the
+    // component type of that type, and so on, eventually one must
+    // reach a component type that is not an array type; this is
+    // called the element type of the original array, and the
+    // components at this level of the data structure are called the
+    // elements of the original array.
+    // …
+    Type elementType = null;
+    Type componentType = getComponentType(type);
+    while (componentType != null) {
+      elementType = componentType;
+      componentType = getComponentType(componentType);
+    }
+    return elementType;
   }
 
   /**
@@ -209,21 +268,31 @@ public final class Types {
     //
     // The reference type that is formed by taking the name of a
     // generic type declaration without an accompanying type argument
-    // list. [More simply: a non-null Class where getTypeParameters()
-    // > 0.  This is exactly the isGeneric(c) test.]
+    // list. [More simply: a non-null Class where
+    // getTypeParameters().length ≤ 0.  This is exactly the
+    // isGeneric(type) test.]
     //
-    // An array type whose element type is a raw type. [So a Class
-    // whose isArray() method returns true, and for which
-    // isRawType(c.getComponentType()) returns true.  You can make
-    // these classes "by hand" or erase() a GenericArrayType to get
-    // one.]
+    // An array type whose element type is a raw
+    // type. [isRawType(getElementType(type))]
     //
     // A non-static member type of a raw type R that is not inherited
-    // from a superclass or superinterface of R. [So still a Class.]
+    // from a superclass or superinterface of R. [A Class whose
+    // getDeclaringClass() returns a "raw type R" or a
+    // ParameterizedType whose getOwnerType() returns a "raw type R".]
     //
     // A non-generic class or interface type is not a raw type.  [We
     // covered this already.]
-    return type instanceof Class && isRawType((Class<?>)type);
+    if (type == null) {
+      return false;
+    } else if (type instanceof Class) {
+      return isRawType((Class<?>)type);
+    } else if (type instanceof ParameterizedType) {
+      return isRawType((ParameterizedType)type);
+    } else if (type instanceof GenericArrayType) {
+      return isRawType((GenericArrayType)type);
+    } else {
+      return false;
+    }
   }
 
   private static final boolean isRawType(final Class<?> c) {
@@ -232,7 +301,31 @@ public final class Types {
     // class definitions, which are not capable of being generic, and
     // therefore cannot be raw types, and therefore cannot house a
     // "non-static member type of a raw type R".
-    return c != null && (isGeneric(c) || isRawType(c.getComponentType()) || isGeneric(c.getDeclaringClass()));
+    return c != null && (isGeneric(c) || isRawType(getElementType(c)) || isGeneric(c.getDeclaringClass()));
+  }
+
+  private static final boolean isRawType(final ParameterizedType type) {
+    if (type == null) {
+      return false;
+    } else {
+      final Type ownerType = type.getOwnerType();
+      if (ownerType == null || ownerType instanceof ParameterizedType) {
+        // ownerType is not a "raw type R" so type is not a "non-static
+        // member type" of it
+        return false;
+      } else if (ownerType instanceof Class) {
+        assert !((Class<?>)ownerType).isArray();
+        // Don't call isRawType(); that would recurse and we only want
+        // to check one level up.
+        return isGeneric(ownerType);
+      } else {
+        throw new AssertionError("Unexpected ownerType: " + ownerType);
+      }
+    }
+  }
+
+  private static final boolean isRawType(final GenericArrayType type) {
+    return isRawType(getElementType(type));
   }
 
   /**
@@ -265,20 +358,40 @@ public final class Types {
     // 8.1.2. Generic Classes and Type Parameters
     //
     // A class is generic if it declares one or more type variables (§4.4).
-    return type instanceof Class && isGeneric((Class<?>)type);
+    return type instanceof Class && ((Class<?>)type).getTypeParameters().length > 0;
   }
 
-  private static final boolean isGeneric(final Class<?> cls) {
+  public static final boolean isGeneric(final Class<?> cls) {
     return cls != null && cls.getTypeParameters().length > 0;
   }
 
-  public static final boolean isGenericInterfaceType(final Type type) {
+  public static final boolean isGenericInterface(final Type type) {
     if (type instanceof Class) {
-      final Class<?> c = (Class<?>)type;
-      return c.isInterface();
+      final Class<?> cls = (Class<?>)type;
+      return cls.isInterface() && cls.getTypeParameters().length > 0;
     } else {
       return false;
     }
+  }
+
+  public static final boolean isGenericInterface(final Class<?> cls) {
+    return cls != null && cls.isInterface() && cls.getTypeParameters().length > 0;
+  }
+
+  public static final boolean isClassOrInterface(final Type type) {
+    return type instanceof Class;
+  }
+
+  public static final boolean isClassOrInterface(final Class<?> cls) {
+    return cls != null;
+  }
+
+  public static final boolean isInterface(final Type type) {
+    return type instanceof Class && ((Class<?>)type).isInterface();
+  }
+
+  public static final boolean isInterface(final Class<?> cls) {
+    return cls != null && cls.isInterface();
   }
 
   /**
@@ -304,6 +417,11 @@ public final class Types {
   public static final boolean isReferenceType(final Type type) {
     // Wildcards are ruled out by the BNF in
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
+    //
+    // I'm omitting the private FreshTypeVariable and IntersectionType
+    // types on purpose as this method should never be called with them.
+    assert !(type instanceof FreshTypeVariable);
+    assert !(type instanceof IntersectionType);
     return
       (type instanceof Class && !((Class<?>)type).isPrimitive()) ||
       type instanceof ParameterizedType ||
@@ -390,9 +508,12 @@ public final class Types {
     } else if (s instanceof Class && t instanceof Class) {
       return isSupertype((Class<?>)s, (Class<?>)t);
     } else {
-      final Type[] directSupertypes = getDirectSupertypes(t);
-      for (final Type directSupertype : directSupertypes) {
-        if (equals(directSupertype, s) || isSupertype(s, directSupertype)) { // XXX recursive
+      final Type[] tDirectSupertypes = getDirectSupertypes(t);
+      for (final Type tDirectSupertype : tDirectSupertypes) {
+        if (!equals(t, tDirectSupertype) && isSupertype(s, tDirectSupertype)) { // NOTE: recursive
+          // A parameterized type, but no other type, can be its own
+          // direct supertype. We already handled this case with the
+          // equals() check a few lines up.
           return true;
         }
       }
@@ -573,7 +694,7 @@ public final class Types {
       boolean createNewType = false;
       for (int i = 0; i < length; i++) {
         final Type actualTypeArgument = actualTypeArguments[i];
-        final Type resolvedActualTypeArgument = resolve(actualTypeArgument, typeResolver); // XXX recursive
+        final Type resolvedActualTypeArgument = resolve(actualTypeArgument, typeResolver); // NOTE: recursive
         resolvedActualTypeArguments[i] = resolvedActualTypeArgument;
         if (!createNewType && actualTypeArgument != resolvedActualTypeArgument) {
           // If they're not the same object reference, then resolution
@@ -595,7 +716,7 @@ public final class Types {
     final Type candidate = typeResolver.apply(type);
     if (candidate == null) {
       final Type genericComponentType = type.getGenericComponentType();
-      final Type resolvedComponentType = resolve(genericComponentType, typeResolver); // XXX recursive
+      final Type resolvedComponentType = resolve(genericComponentType, typeResolver); // NOTE: recursive
       if (resolvedComponentType == null || resolvedComponentType == genericComponentType) {
         // Identity means that basically resolution was a no-op, so the
         // genericComponentType was whatever it was, and so we are going
@@ -609,7 +730,7 @@ public final class Types {
         // just a plain class.  That's actually just an ordinary Java
         // array, so "resolve" this type by returning its array
         // equivalent.
-        return Array.newInstance((Class<?>)resolvedComponentType, 0).getClass();
+        return array(resolvedComponentType);
       } else {
         // If we get here, we know that resolution actually did
         // something, so return a new GenericArrayType implementation
@@ -685,8 +806,8 @@ public final class Types {
    * computed; may be {@code null}
    *
    * @param removalPredicate a {@link Predicate} used to selectively
-   * remove some {@link Type}s from the computed {@link TypeSet}; may
-   * be {@code null}
+   * remove some <strong>resolved</strong> {@link Type}s from the computed
+   *  {@link TypeSet}; may be {@code null}
    *
    * @return a non-{@code null} {@link TypeSet}, filtered by the
    * supplied {@link Predicate}
@@ -698,12 +819,16 @@ public final class Types {
    *
    * @idempotency This method is idempotent.
    */
-  public static final TypeSet toTypes(final Type type, Predicate<? super Type> removalPredicate) {
+  public static final TypeSet toTypes(final Type type, final Predicate<? super Type> removalPredicate) {
+    // Keys will be Class or TypeVariable<?> instances and nothing
+    // else.
     final Map<Type, Type> resolvedTypes = new HashMap<>();
     toTypes(type, isRawType(type), resolvedTypes);
-    resolvedTypes.keySet().removeIf(removalPredicate == null ?
-                                    Predicate.not(Types::isClass) :
-                                    k -> !isClass(k) || removalPredicate.test(resolvedTypes.get(k)));
+    if (removalPredicate == null) {
+      resolvedTypes.keySet().removeIf(Predicate.not(Types::isClass));
+    } else {
+      resolvedTypes.keySet().removeIf(k -> !isClass(k) || removalPredicate.test(resolvedTypes.get(k)));
+    }
     return resolvedTypes.isEmpty() ? TypeSet.EMPTY_TYPESET : new TypeSet(resolvedTypes.values());
   }
 
@@ -744,29 +869,29 @@ public final class Types {
   private static final void toTypes(final ParameterizedType parameterizedType,
                                     final boolean noParameterizedTypes,
                                     final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = erase(parameterizedType);
-    if (rawType != null) {
+    final Class<?> erasure = erase(parameterizedType);
+    if (erasure != null) {
       if (!noParameterizedTypes) {
-        final TypeVariable<?>[] typeVariables = rawType.getTypeParameters();
+        final TypeVariable<?>[] typeVariables = erasure.getTypeParameters();
         final Type[] typeArguments = parameterizedType.getActualTypeArguments();
         assert typeVariables.length == typeArguments.length;
         for (int i = 0; i < typeVariables.length; i++) {
           resolvedTypes.put(typeVariables[i], resolve(typeArguments[i], resolvedTypes::get));
         }
       }
-      resolvedTypes.put(rawType, resolve(parameterizedType, resolvedTypes::get));
-      toTypes(rawType, noParameterizedTypes, resolvedTypes);
+      resolvedTypes.put(erasure, resolve(parameterizedType, resolvedTypes::get));
+      toTypes(erasure, noParameterizedTypes, resolvedTypes);
     }
   }
 
   private static final void toTypes(final GenericArrayType genericArrayType,
                                     final boolean noParameterizedTypes,
                                     final Map<Type, Type> resolvedTypes) {
-    final Class<?> rawType = erase(genericArrayType);
-    if (rawType != null) {
-      assert rawType.isArray() : "Not an array type; check erase(GenericArrayType): " + rawType;
-      resolvedTypes.put(rawType, genericArrayType);
-      toTypes(rawType, noParameterizedTypes, resolvedTypes);
+    final Class<?> erasure = erase(genericArrayType);
+    if (erasure != null) {
+      assert erasure.isArray() : "Not an array type; check erase(GenericArrayType): " + erasure;
+      resolvedTypes.put(erasure, genericArrayType);
+      toTypes(erasure, noParameterizedTypes, resolvedTypes);
     }
   }
 
@@ -871,6 +996,41 @@ public final class Types {
    */
   public static final boolean isClass(final Type type) {
     return type instanceof Class;
+  }
+
+  /**
+   * Returns a new array of {@link Type}s containing the type erasures
+   * for the supplied {@link Type}s according to <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6"
+   * target="_parent">the rules of the Java Language Specification,
+   * section 4.6</a>.
+   *
+   * <p>This method never returns {@code null}.</p>
+   *
+   * @param types the {@link Type}s to erase; may be {@code null}
+   *
+   * @return a new array of the same length as the supplied {@code
+   * types} array that contains type erasures
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #erase(Type)
+   */
+  public static final Type[] erase(final Type[] types) {
+    if (types == null || types.length <= 0) {
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else {
+      final Type[] erasedTypes = new Type[types.length];
+      for (int i = 0; i < types.length; i++) {
+        erasedTypes[i] = erase(types[i]);
+      }
+      return erasedTypes;
+    }
   }
 
   /**
@@ -998,7 +1158,7 @@ public final class Types {
       return null;
     } else {
       assert !candidate.isArray(); // it's the component type
-      return (Class<?>)Array.newInstance(candidate, 0).getClass();
+      return array(candidate);
     }
   }
 
@@ -1022,6 +1182,38 @@ public final class Types {
     // matter here.]
     final Type[] bounds = type.getUpperBounds();
     return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
+  }
+
+  static final boolean isUnboundedWildcard(final Type type) {
+    return
+      type instanceof UnboundedWildcardType ||
+      isUpperBoundedWildcard(type) && ((WildcardType)type).getUpperBounds()[0] == Object.class;
+  }
+
+  static final boolean isUnboundedWildcard(final WildcardType type) {
+    return
+      type instanceof UnboundedWildcardType ||
+      isUpperBoundedWildcard(type) && type.getUpperBounds()[0] == Object.class;
+  }
+
+  static final boolean isUnboundedWildcard(final UnboundedWildcardType type) {
+    return type != null;
+  }
+
+  static final boolean isUpperBoundedWildcard(final Type type) {
+    return
+      type instanceof UpperBoundedWildcardType ||
+      type instanceof WildcardType && ((WildcardType)type).getLowerBounds().length <= 0;
+  }
+
+  static final boolean isUpperBoundedWildcard(final WildcardType type) {
+    return
+      type instanceof UpperBoundedWildcardType ||
+      type instanceof WildcardType && type.getLowerBounds().length <= 0;
+  }
+
+  static final boolean isUpperBoundedWildcard(final UpperBoundedWildcardType type) {
+    return type != null;
   }
 
   private static final boolean contains(final Type t1, final Type t2) {
@@ -1141,34 +1333,143 @@ public final class Types {
     }
   }
 
+  static final Type[] getContainingTypeArguments(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
+    // 4.5.1. Type Arguments of Parameterized Types
+    // …
+    // A type argument T₁ is said to contain
+    // another type argument T₂, written T₂ <= T₁, if the set of types
+    // denoted by T₂ is provably a subset of the set of types denoted
+    // by T₁ under the reflexive and transitive closure of the
+    // following rules (where <: denotes subtyping (§4.10)):
+    //
+    // ? extends T <= ? extends S if T <: S [if T is a subtype of S, then ? extends S contains ? extends T]
+    // ? extends T <= ? [? contains ? extends T]
+    // ? super T <= ? super S if S <: T [if S is a subtype of T, then ? super S contains ? super T]
+    // ? super T <= ? [? contains ? super T]
+    // ? super T <= ? extends Object [? extends Object contains ? super T]
+    // T <= T [T contains T; a reference type can only contain itself because it is only one type argument]
+    // T <= ? extends T [? extends T contains T]
+    // T <= ? super T) [? super T contains T]
+    if (Objects.requireNonNull(type, "type") == Object.class) {
+      return new Type[] { new LowerBoundedWildcardType(Object.class), UnboundedWildcardType.INSTANCE };
+    } else {
+      final Collection<Type> types = new ArrayList<>();
+      getContainingTypeArguments(type, types::add);
+      types.add(UnboundedWildcardType.INSTANCE);
+      return types.isEmpty() ? AbstractType.EMPTY_TYPE_ARRAY : types.toArray(new Type[types.size()]);
+    }
+  }
+
+  private static final void getContainingTypeArguments(final Type type, final Consumer<? super Type> types) {
+    assert type != null;
+    assert type != Object.class;
+    // T <= T
+    types.accept(type);
+    if (type instanceof WildcardType) {
+      final WildcardType wct = (WildcardType)type;
+      final Type[] lowerBounds = wct.getLowerBounds();
+      if (lowerBounds.length <= 0) {
+        final Type[] upperBounds = wct.getUpperBounds();
+        assert upperBounds.length == 1;
+        final Type upperBound = upperBounds[0];
+        if (upperBound != Object.class) {
+          for (final Type s : getDirectSupertypes(upperBound, false)) {
+            assert s != null;
+            assert !Types.equals(upperBound, s);
+            if (s != Object.class) {
+              getContainingTypeArguments(new UpperBoundedWildcardType(s), types); // NOTE: recursive
+            }
+          }
+        }
+      }
+    } else {
+      getContainingTypeArguments(new UpperBoundedWildcardType(type), types); // NOTE: recursive
+      types.accept(new LowerBoundedWildcardType(type));
+    }
+  }
+
+  static final Type getDirectSuperclassType(final Type type) {
+    // JLS 17 nomenclature
+    return getDirectSuperclass(type);
+  }
+
+  static final Type getDirectSuperclass(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-8.html#jls-8.1.4
+    // 8.1.4. Superclasses and Subclasses
+    //
+    // The optional extends clause in a normal class declaration
+    // specifies the direct superclass of the current class.
+    // …
+    // Given a (possibly generic) class declaration C<F₁,…Fₙ> (𝘯 ≥ 0)
+    // [sic; e.g. the parameter list can be empty], C ≠ Object), the
+    // direct superclass of the class type C<F₁,…Fₙ> is the type given
+    // in the extends clause of the declaration of C if an extends
+    // clause is present, or Object otherwise.
+    if (type == null) {
+      return null;
+    } else if (type instanceof Class) {
+      return getDirectSuperclass((Class<?>)type);
+    } else {
+      return null;
+    }
+  }
+
+  static final Type getDirectSuperclassType(final Class<?> cls) {
+    // JLS 17 nomenclature
+    return getDirectSuperclass(cls);
+  }
+
+  static final Type getDirectSuperclass(final Class<?> cls) {
+    return cls == null ? null : cls.getGenericSuperclass();
+  }
+
   static final Type[] getDirectSupertypes(final Type type) {
+    return getDirectSupertypes(type, true);
+  }
+
+  private static final Type[] getDirectSupertypes(final Type type, final boolean includeContainingTypeArguments) {
     if (type == null) {
       // The direct supertypes of the null type are all reference
       // types other than the null type itself. [There's no way to
-      // represent this.]
+      // represent an array of infinite size so we use an empty one
+      // instead.]
       return AbstractType.EMPTY_TYPE_ARRAY;
     } else if (type instanceof Class) {
-      return getDirectSupertypes((Class<?>)type);
+      return getDirectSupertypes((Class<?>)type, includeContainingTypeArguments);
     } else if (type instanceof ParameterizedType) {
-      return getDirectSupertypes((ParameterizedType)type);
+      return getDirectSupertypes((ParameterizedType)type, includeContainingTypeArguments);
     } else if (type instanceof GenericArrayType) {
-      return getDirectSupertypes((GenericArrayType)type);
+      return getDirectSupertypes((GenericArrayType)type, includeContainingTypeArguments);
     } else if (type instanceof TypeVariable) {
-      return getDirectSupertypes((TypeVariable<?>)type);
+      return getDirectSupertypes((TypeVariable<?>)type, includeContainingTypeArguments);
+    } else if (type instanceof FreshTypeVariable) {
+      // Private type
+      return getDirectSupertypes((FreshTypeVariable)type, includeContainingTypeArguments);
+    } else if (type instanceof IntersectionType) {
+      // Private type
+      return getDirectSupertypes((IntersectionType)type, includeContainingTypeArguments);
     } else if (type instanceof WildcardType) {
-      return getDirectSupertypes((WildcardType)type);
+      return getDirectSupertypes((WildcardType)type, includeContainingTypeArguments);
     } else {
       return AbstractType.EMPTY_TYPE_ARRAY;
     }
   }
 
   private static final Type[] getDirectSupertypes(final Class<?> type) {
-    if (type == Object.class || type == boolean.class || type == double.class) {
+    return getDirectSupertypes(type, true);
+  }
+
+  private static final Type[] getDirectSupertypes(final Class<?> type, final boolean includeContainingTypeArguments) {
+    if (type == null || type == Object.class || type == boolean.class || type == double.class) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent an array of infinite size so we use an empty one
+      // instead.]
       return AbstractType.EMPTY_TYPE_ARRAY;
     } else {
       final Class<?> ct = type.getComponentType();
       if (ct == null) {
-        assert !type.isArray();
         if (type.isPrimitive()) {
           // 4.10.1. Subtyping among Primitive Types
           //
@@ -1201,47 +1502,48 @@ public final class Types {
           // 4.10.2. Subtyping among [non-array] Class and Interface
           // Types [which includes TypeVariables, incidentally]
           //
-          // Given a non-generic type declaration C
-          // [e.g. String.class], the direct supertypes of the type C
-          // are all of the following:
+          // Given a non-generic type declaration C the direct
+          // supertypes of the type C are all of the following:
           //
-          // * The direct superclass of C (§8.1.4) [extends clause, so
-          //   Object.class]
+          // * The direct superclass of C (§8.1.4) [extends clause]
           // * The direct superinterfaces of C (§8.1.5) [implements
-          //   clause, so Serializable.class, CharSequence.class and
-          //   Comparable<String> (parameterized type)]
+          //   clause]
           // * The type Object, if C is an interface type with no
-          //   direct superinterfaces (§9.1.3) [String.class is not a
-          //   superinterface]
+          //   direct superinterfaces (§9.1.3)
           //
-          // Given a generic type declaration C<F₁,…Fₙ> (𝘯 > 0)
-          // [e.g. Comparable<T>; the "F" is for "formal" type
-          // parameters, not actual type arguments], the direct
-          // supertypes of the raw type C (§4.8)
-          // [e.g. Comparable.class] are all of the following:
+          // Given a generic type declaration C<F₁,…Fₙ> (𝘯 > 0) the
+          // direct supertypes of the raw type C (§4.8) are all of the
+          // following:
           //
-          // * The direct superclass of the raw type C. [see above]
-          // * The direct superinterfaces of the raw type C. [see
-          //   above]
+          // * The direct superclass of the raw type C. [JLS 17
+          //   changes this to: "The erasure (§4.6) of the direct
+          //   superclass type of C, if C is a class [i.e., not an
+          //   interface].]
+          //
+          // * The direct superinterfaces of the raw type C. [JLS 17
+          //   changes this to: "The erasure (§4.6) of the direct
+          //   superinterface types of C.]
+          //
           // * The type Object, if C<F₁,…Fₙ> is a generic interface
           //   type with no direct superinterfaces (§9.1.3)
-          //   [e.g. which Comparable<T> is]
+          // […]
           final Type[] returnValue;
-          final Type genericSuperclass = type.getGenericSuperclass();
-          final Type[] directSuperinterfaces = type.getGenericInterfaces();
+          final Type directSuperclass = erase(getDirectSuperclass(type));
+          assert (directSuperclass == null ? type.isInterface() : directSuperclass instanceof Class) : directSuperclass == null ? "Unexpected class; should have been an interface: " + toString(type) : "Unexpected type erasure of direct superclass: " + toString(directSuperclass);
+          final Type[] directSuperinterfaces = erase(type.getGenericInterfaces());
           if (directSuperinterfaces.length <= 0) {
-            if (genericSuperclass == null) {
-              assert type.isInterface() : "Unexpected class; should have been an interface: " + type;
+            if (directSuperclass == null) {
+              assert type.isInterface() : "Unexpected class; should have been an interface: " + toString(type);
               returnValue = new Type[] { Object.class };
             } else {
-              returnValue = new Type[] { genericSuperclass };
+              returnValue = new Type[] { directSuperclass };
             }
           } else {
-            final int offset = genericSuperclass == null ? 0 : 1;
+            final int offset = directSuperclass == null ? 0 : 1;
             returnValue = new Type[directSuperinterfaces.length + offset];
             System.arraycopy(directSuperinterfaces, 0, returnValue, offset, directSuperinterfaces.length);
             if (offset == 1) {
-              returnValue[0] = genericSuperclass;
+              returnValue[0] = directSuperclass;
             }
           }
           return returnValue;
@@ -1249,7 +1551,7 @@ public final class Types {
       } else if (ct == Object.class || ct.isPrimitive()) {
         // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.3
         // 4.10.3. Subtyping among Array Types
-        // …
+        // […]
         // * Object >₁ Object[] [>₁ is the direct supertype relation]
         // * Cloneable >₁ Object[]
         // * java.io.Serializable >₁ Object[]
@@ -1257,7 +1559,7 @@ public final class Types {
         //   * Object >₁ P[]
         //   * Cloneable >₁ P[]
         //   * java.io.Serializable >₁ P[]
-        //
+        // […]
         // [It is not clear if the order is significant; probably not,
         // but we follow the order found in the JLS all the same.  It
         // is worth noting that this order is repeated in the JLS in
@@ -1272,64 +1574,51 @@ public final class Types {
         //
         // * If S and T are both reference types, then
         //   S[] >₁ T[] iff S >₁ T.
-        // …
-        //
+        // […]
         // [We already handled the case where T is Object, i.e. where
         // T has no direct superclass.]
-        final Type[] componentTypeDirectSupertypes = getDirectSupertypes(ct);
+        final Type[] componentTypeDirectSupertypes = getDirectSupertypes(ct, includeContainingTypeArguments);
         assert componentTypeDirectSupertypes != null;
         assert componentTypeDirectSupertypes.length > 0 : "Unexpected zero length direct supertypes for " + ct;
         final Type[] returnValue = new Type[componentTypeDirectSupertypes.length];
         for (int i = 0; i < componentTypeDirectSupertypes.length; i++) {
           final Type cdst = componentTypeDirectSupertypes[i];
-          assert cdst != null;
-          if (cdst instanceof Class) {
-            // S >₁ T ∴ S[] >₁ T[]
-            returnValue[i] = Array.newInstance((Class<?>)cdst, 0).getClass();
-          } else if (cdst instanceof ParameterizedType) {
-            // S >₁ T ∴ S[] >₁ T[]
-            returnValue[i] = new DefaultGenericArrayType(cdst);
-          } else {
-            throw new IllegalStateException("Unexpected component type direct supertype: " + cdst + " of " + ct);
-          }
+          assert (cdst instanceof Class || cdst instanceof ParameterizedType) : "Unexpected direct supertype: " + cdst;
+          returnValue[i] = array(cdst);
         }
         return returnValue;
       }
     }
   }
 
-  private static final Type[] getDirectSupertypes(final ParameterizedType type) {
+  private static final Type[] getDirectSupertypes(final ParameterizedType type, final boolean includeContainingTypeArguments) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
     // 4.10. Subtyping
-    // …
+    // […]
     // Subtyping does not extend through parameterized types: T <: S
     // [<: means "is a subtype of"] does not imply that C<T> <: C<S>.
-    // …
+    // […]
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
     // 4.10.2. Subtyping among Class and Interface Types
-    // …
+    // […]
     // Given a generic type declaration C<F₁,…,Fₙ> (𝘯 > 0), the
     // direct supertypes of the parameterized type C<T₁,…,Tₙ>, where
-    // Tᵢ (1 ≤ 𝑖 ≤ 𝘯) is a type, are all of the following:
+    // Tᵢ (1 ≤ 𝘪 ≤ 𝘯) is a type, are all of the following:
     //
     // D<U₁ θ,…,Uₖ θ>, where D<U₁,…,Uₖ> is a generic type which is a
-    // direct supertype of the generic type C<F₁,…,Fₙ> and θ is the
-    // substitution [F₁:=T₁,…,Fₙ:=Tₙ].
+    // direct supertype of the generic type C<F₁,…,Fₙ> and θ [theta]
+    // is the substitution [F₁:=T₁,…,Fₙ:=Tₙ]. [See also
+    // https://stackoverflow.com/questions/69502823/in-the-java-language-specification-version-11-section-4-10-2-how-do-i-read-u%e2%82%96.]
     //
     // (https://docs.oracle.com/javase/specs/jls/se11/html/jls-1.html#jls-1.3
     // 1.3. Notation
-    // …
+    // […]
     // The type system of the Java programming language occasionally
     // relies on the notion of a substitution. The notation
     // [F₁:=T₁,…,Fₙ:=Tₙ] denotes substitution of Fᵢ by Tᵢ for
     // 1 ≤ 𝘪 ≤ 𝘯.)
     //
-    // [i.e. Replace F with T throughout. By the time we get to Java's
-    // reflective objects (ParameterizedType, etc.), Java has mostly
-    // done this for us.  TODO: is this also describing type
-    // resolution?]
-    //
-    // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝑖 ≤ 𝘯)
+    // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝘪 ≤ 𝘯)
     // (§4.5.1). [i.e. this puts synthetic wildcard-containing
     // ParameterizedTypes into the direct supertypes list]
     //
@@ -1355,28 +1644,351 @@ public final class Types {
     // with no direct superinterfaces.
     //
     // The raw type C.
-
-    // Example:
-    // Given List<String>,
-
-
-    final Type rawType = type.getRawType();
-    final Type[] rawTypeDirectSupertypes = getDirectSupertypes(rawType);
-    final Type[] returnValue;
-    if (rawTypeDirectSupertypes.length <= 0) {
-      // The raw type C.
-      returnValue = new Type[] { rawType };
+    // […]
+    if (type == null) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent an array of infinite size so we use an empty one instead.]
+      return AbstractType.EMPTY_TYPE_ARRAY;
     } else {
-      returnValue = new Type[rawTypeDirectSupertypes.length + 1];
-      System.arraycopy(rawTypeDirectSupertypes, 0, returnValue, 0, rawTypeDirectSupertypes.length);
+      final Type C = type.getRawType();
+      assert C instanceof Class : "Unexpected raw type C: " + toString(C);
+      assert isGeneric((Class<?>)C) : "Unexpected non-generic rawType: " + toString(C);
+
+      final Type[] formalTypeParameters = getTypeParameters(C);
+      assert formalTypeParametersAreTypeVariableInstances(formalTypeParameters);
+
+      Type[] actualTypeArguments = type.getActualTypeArguments();
+      // (It is assumed that cloning of actualTypeArguments takes
+      // place as all viable implementations of ParameterizedType
+      // should do.)
+      assert actualTypeArguments != type.getActualTypeArguments();
+      assert actualTypeArguments.length == formalTypeParameters.length;
+
+      // Nuke wildcards by applying capture conversion
+      actualTypeArguments = applyCaptureConversion(formalTypeParameters, actualTypeArguments);
+      assert actualTypeArguments.length == formalTypeParameters.length;
+      
+      // See
+      // https://stackoverflow.com/questions/69502823/in-the-java-language-specification-version-11-section-4-10-2-how-do-i-read-u%e2%82%96
+      
+      final List<Type> directSupertypes = new ArrayList<>();      
+      
+      final Type[] directSupertypesOfC = getDirectSupertypes(C);
+      final boolean addObject = isInterface(C) && directSupertypesOfC.length <= 0;
+      for (final Type directSupertypeOfC : directSupertypesOfC) {
+        assert directSupertypeOfC instanceof Class : "Unexpected erasure of direct supertype of " + toString(C) + ": " + toString(directSupertypeOfC);
+        directSupertypes.add(theta(getOwnerType(directSupertypeOfC), directSupertypeOfC, actualTypeArguments));
+      }
+      
+      if (addObject) {
+        // The type Object, if C<F₁,…,Fₙ> is a generic interface type
+        // with no direct superinterfaces.
+        directSupertypes.add(Object.class);
+      }
+      
       // The raw type C.
-      returnValue[returnValue.length - 1] = rawType;
+      directSupertypes.add(C);
+      
+      if (includeContainingTypeArguments) {
+        // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝘪 ≤ 𝘯)
+        for (int i = 0; i < actualTypeArguments.length; i++) {
+          final Type Ti = actualTypeArguments[i];
+          for (final Type Si : getContainingTypeArguments(Ti)) {
+            if (!equals(Ti, Si)) { // types contain themselves; avoid infinite loops and needless assignments
+              actualTypeArguments[i] = Si;
+            }
+          }
+        }
+        final ParameterizedType newType = new DefaultParameterizedType(type.getOwnerType(), C, actualTypeArguments);
+        directSupertypes.add(newType);
+        assert actualTypeArguments != newType.getActualTypeArguments();
+      }
+      return directSupertypes.toArray(new Type[directSupertypes.size()]);
     }
-    return returnValue;
   }
 
-  @Incomplete
-  static final Type[] getDirectSupertypes(final GenericArrayType type) {
+  static final Type[] applyCaptureConversion(final Type[] A, final Type[] T) {
+    return A instanceof TypeVariable[] ? applyCaptureConversion((TypeVariable<?>[])A, T) : T;
+  }
+  
+  static final Type[] applyCaptureConversion(final TypeVariable<?>[] A, final Type[] T) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.10
+    // 5.1.10 Capture Conversion
+    //
+    // Let G name a generic type declaration (§8.1.2, §9.1.2) with 𝘯
+    // type parameters A₁…Aₙ with corresponding bounds U₁…Uₙ.
+    // 
+    // There exists a capture conversion from a parameterized type
+    // G<T₁…Tₙ>(§4.5) toa parameterized type G<S₁…Sₙ>, where, for
+    // 1 ≤ 𝘪 ≤ 𝘯:
+    //
+    // * If Tᵢ is a wildcard type argument (§4.5.1) of the form ?,
+    //   then Sᵢ is a fresh type variable whose upper bound is
+    //   Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ] and whose lower bound is the null type
+    //   (§4.1).
+    //
+    // * If Tᵢ is a wildcard type argument of the form ? extends Bᵢ,
+    //   then Sᵢ is a fresh type variable whose upper bound is
+    //   glb(Bᵢ, Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ]) and whose lower bound is the
+    //   null type.
+    //
+    //   glb(V₁,…,Vₘ) is defined as V₁ & … & Vₘ.
+    //
+    //   It is a compile-time error if, for any two classes (not
+    //   interfaces) Vᵢ and Vⱼ, Vᵢ is not a subclass of Vⱼ or vice
+    //   versa.
+    //
+    // * If Tᵢ is a wildcard type argument of the form ? super Bᵢ,
+    //   then Sᵢ is a fresh type variable whose upper bound is
+    //   Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ] and whose lower bound is Bᵢ.
+    //
+    // * Otherwise, Sᵢ = Tᵢ.
+    //
+    // Capture conversion on any type other than a parameterized type
+    // (§4.5) acts as an identity conversion (§5.1.1).
+    //
+    // Capture conversion is not applied recursively.
+    //
+    // [Also see https://stackoverflow.com/a/31209735/208288 and
+    // https://stackoverflow.com/a/46061947/208288 for great
+    // walkthroughs.]
+    //
+    // [See
+    // https://github.com/openjdk/jdk/blob/b870468bdc99938fbb19a41b0ede0a3e3769ace2/src/jdk.compiler/share/classes/com/sun/tools/javac/code/Types.java#L4388-L4456
+    // for algorithmic inspiration.]
+
+    // TODO: As written this is still broken slightly.
+    
+    if (A.length != T.length) {
+      throw new IllegalArgumentException("A.length: " + A.length + "; T.length: " + T.length);
+    }
+    final Type[] S = new Type[T.length];
+    for (int i = 0; i < T.length; i++) {
+      final Type Ti = T[i];
+      if (Ti instanceof WildcardType) {
+        final WildcardType wTi = (WildcardType)Ti;
+        final Type[] lowerBounds = wTi.getLowerBounds();
+        if (lowerBounds.length <= 0) {
+          final Type upperBound = wTi.getUpperBounds()[0];
+          if (upperBound == Object.class) {
+            // Unbounded wildcard.
+            // * If Tᵢ is a wildcard type argument (§4.5.1) of the
+            //   form ?, then Sᵢ is a fresh type variable whose upper
+            //   bound is Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ] and whose lower bound is
+            //   the null type (§4.1).
+            //
+            // Replace Ti-which-is-"?" with a new type variable whose upper bound is that of 
+            assert A[i].getBounds().length == 1 : "Unexpected bounds: " + Arrays.asList(A[i].getBounds());
+            S[i] = new FreshTypeVariable(A[i]);
+          } else {
+            // Upper-bounded wildcard
+            S[i] = new FreshTypeVariable(glb(upperBound, A[i]));
+          }
+        } else {
+          // Lower-bounded wildcard
+          S[i] = new FreshTypeVariable(A[i], lowerBounds[0]);
+        }
+      } else {
+        S[i] = Ti;
+      }
+    }
+    return S;
+  }
+
+  // Implement the substitution in section 5.1.10
+  private static final Type substitute(final Type upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
+    Objects.requireNonNull(upperBound, "upperBound");
+    if (typeParameters.length != freshTypeVariables.length) {
+      throw new IllegalArgumentException("typeParameters.length != freshTypeVariables.length: typeParameters: " + Arrays.asList(typeParameters) + "; freshTypeVariables: " + Arrays.asList(freshTypeVariables));
+    }
+    // upper bound is going to be Gorp or X in the <X extends Gorp, Y extends X> portion of public class Foo<X>
+    // So it will be either a:
+    // Class<?>
+    // ParameterizedType
+    // TypeVariable
+    assert !(upperBound instanceof GenericArrayType) : "Unexpected GenericArrayType: " + toString(upperBound);
+    assert !(upperBound instanceof WildcardType) : "Unexpected WildcardType: " + toString(upperBound);
+    if (upperBound instanceof Class) {
+      return substitute((Class<?>)upperBound, typeParameters, freshTypeVariables);
+    } else if (upperBound instanceof ParameterizedType) {
+      return substitute((ParameterizedType)upperBound, typeParameters, freshTypeVariables);
+    } else if (upperBound instanceof TypeVariable) {
+      return substitute((TypeVariable<?>)upperBound, typeParameters, freshTypeVariables);
+    } else {
+      throw new IllegalArgumentException("Unexpected upperBound: " + toString(upperBound));
+    }
+  }
+
+  private static final Type substitute(final Class<?> upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
+    throw new UnsupportedOperationException("substitute() is currently unimplemented");
+  }
+
+  private static final Type substitute(final ParameterizedType upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
+    throw new UnsupportedOperationException("substitute() is currently unimplemented");
+  }
+
+  private static final Type substitute(final TypeVariable<?> upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
+    throw new UnsupportedOperationException("substitute() is currently unimplemented");
+  }
+
+  static final boolean containsWildcard(final Type type) {
+    return type instanceof ParameterizedType && containsWildcard((ParameterizedType)type);
+  }
+
+  static final boolean containsWildcard(final ParameterizedType parameterizedType) {
+    return parameterizedType != null && containsWildcard(parameterizedType.getActualTypeArguments());
+  }
+
+  static final boolean containsWildcard(final Type[] types) {
+    // Useful; see
+    // https://stackoverflow.com/questions/69530080/in-the-java-language-specification-version-11-section-4-10-2-is-it-true-that-a
+    if (types == null || types.length <= 0) {
+      return false;
+    } else {
+      for (final Type type : types) {
+        if (type instanceof WildcardType) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  static final Type[] getTypeParameters(final Type type) {
+    if (type == null) {
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else if (type instanceof Class) {
+      return ((Class<?>)type).getTypeParameters();
+    } else if (type instanceof ParameterizedType) {
+      return getTypeParameters(((ParameterizedType)type).getRawType()); // NOTE: recursive
+    } else {
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    }
+  }
+
+  static final Type[] getTypeParameters(final Class<?> type) {
+    return type == null ? AbstractType.EMPTY_TYPE_ARRAY : type.getTypeParameters();
+  }
+
+  static final Type[] getTypeParameters(final ParameterizedType type) {
+    return type == null ? AbstractType.EMPTY_TYPE_ARRAY : getTypeParameters(type.getRawType()); // NOTE: recursive
+  }
+
+  static final Type getOwnerType(final Type type) {
+    if (type instanceof Class) {
+      return ((Class<?>)type).getDeclaringClass(); // TODO: or getEnclosingClass()? which also handles anonymous classes?
+    } else if (type instanceof ParameterizedType) {
+      return ((ParameterizedType)type).getOwnerType();
+    } else {
+      return null;
+    }
+  }
+
+  static final Type getOwnerType(final Class<?> cls) {
+    return cls == null ? null : cls.getDeclaringClass(); // TODO: or getEnclosingClass()? which also handles anonymous classes?
+  }
+
+  static final Type getOwnerType(final ParameterizedType ptype) {
+    return ptype == null ? null : ptype.getOwnerType();
+  }
+
+  static final Type theta(final Type ownerType, final Type rawType, final Type[] actualTypeArguments) {
+    if (rawType instanceof Class) {
+      return theta(ownerType, (Class<?>)rawType, actualTypeArguments);
+    } else if (rawType instanceof ParameterizedType) {
+      return theta(ownerType, ((ParameterizedType)rawType).getRawType(), actualTypeArguments);
+    } else {
+      throw new IllegalArgumentException("Unexpected rawType: " + rawType);
+    }
+  }
+
+  static final Type theta(final Type ownerType, final Class<?> cls, final Type[] actualTypeArguments) {
+    Objects.requireNonNull(cls, "cls");
+    // Not sure we need to accept ownerType.
+    assert ownerType == null ? cls.getDeclaringClass() == null : ownerType.equals(cls.getDeclaringClass()) : "Unexpected ownerType: " + toString(ownerType) + "; cls.getDeclaringClass(): " + toString(cls.getDeclaringClass());
+    return
+      isGeneric(cls) ? new DefaultParameterizedType(ownerType, cls, theta(cls.getTypeParameters(), actualTypeArguments)) : cls;
+  }
+
+  static final Type[] theta(final Type[] formalTypeParameters, final Type[] actualTypeArguments) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+    // 4.10.2. Subtyping among Class and Interface Types
+    // …
+    // θ [theta] is the substitution [F₁:=T₁,…,Fₙ:=Tₙ].
+    // …
+    // [That is: given a formal type parameter Fₙ, replace it with a
+    // corresponding actual type argument Tₙ.]
+    if (formalTypeParameters == null || actualTypeArguments == null || formalTypeParameters.length <= 0) {
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else if (formalTypeParameters.length > actualTypeArguments.length) {
+      throw new IllegalArgumentException();
+    } else {
+      final Type[] returnValue = new Type[formalTypeParameters.length];
+      for (int i = 0; i < formalTypeParameters.length; i++) {
+        returnValue[i] = theta(formalTypeParameters[i], actualTypeArguments[i]);
+      }
+      return returnValue;
+    }
+  }
+
+  /**
+   * In the context of computing direct supertypes for a {@link
+   * ParameterizedType}, ensures {@code formalTypeParameter} is a
+   * valid {@link Type} for a {@linkplain Class#getTypeParameters()
+   * formal type parameter} (a {@link TypeVariable}), and ensures
+   * {@code actualTypeArgument} is a valid {@link Type} for an
+   * {@linkplain ParameterizedType#getActualTypeArguments() actual
+   * type argument} (anything other than a {@link WildcardType}, and
+   * returns {@code actualTypeArgument}, thus implementing the θ
+   * substitution defined by <a
+   * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2"
+   * target="_parent">Section 4.10.2 of The Java Language
+   * Specification</a>.
+   *
+   * @param formalTypeParameter a formal {@linkplain
+   * Class#getTypeParameters() type parameter}; must be a {@link TypeVariable}
+   *
+   * @param actualTypeParameter an {@linkplain
+   * ParameterizedType#getActualTypeArguments() actual type argument};
+   * must not be {@link null} and must not be a {@link WildcardType}
+   *
+   * @return actualTypeParameter if both arguments pass validation
+   *
+   * @exception NullPointerException if either argument is {@code
+   * null}
+   *
+   * @exception IllegalArgumentException if {@code
+   * formalTypeParameter} is not a {@link TypeVariable} or if {@code
+   * actualTypeParameter} is a {@link WildcardType}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   */
+  static final Type theta(final Type formalTypeParameter, final Type actualTypeArgument) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+    // 4.10.2. Subtyping among Class and Interface Types
+    // …
+    // θ [theta] is the substitution [F₁:=T₁,…,Fₙ:=Tₙ].
+    // …
+    // [That is: given a formal type parameter Fₙ, replace it with a
+    // corresponding actual type argument Tₙ.]
+    Objects.requireNonNull(formalTypeParameter);
+    Objects.requireNonNull(actualTypeArgument);
+    if (!(formalTypeParameter instanceof TypeVariable)) {
+      throw new IllegalArgumentException("Unexpected type parameter: " + toString(formalTypeParameter));
+    } else if (actualTypeArgument instanceof WildcardType) {
+      throw new IllegalArgumentException("Unexpected WildcardType type argument: " + toString(actualTypeArgument));
+    } else {
+      return actualTypeArgument;
+    }
+  }
+
+  private static final Type[] getDirectSupertypes(final GenericArrayType type, final boolean includeContainingTypeArguments) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.3
     // 4.10.3. Subtyping among Array Types
     //
@@ -1385,38 +1997,57 @@ public final class Types {
     //
     // * If S and T are both reference types, then
     //   S[] >₁ T[] iff S >₁ T.
-    //
-    // [Recall however that the component of a GenericArrayType is
-    // only? ever? a ParameterizedType or TypeVariable? So if it's a
-    // ParameterizedType, remember that "[s]ubtyping does not extend
-    // through parameterized types: T <: S does not imply that C<T> <:
-    // C<S>."]
-    final Type genericComponentType = type.getGenericComponentType();
-    // assert genericComponentType instanceof ParameterizedType : "Unexpected genericComponentType: " + genericComponentType;
-    final Type[] genericComponentTypeDirectSupertypes = getDirectSupertypes(genericComponentType);
-    final Type[] returnValue = new Type[genericComponentTypeDirectSupertypes.length];
-    for (int i = 0; i < genericComponentTypeDirectSupertypes.length; i++) {
-      final Type genericComponentTypeDirectSupertype = genericComponentTypeDirectSupertypes[i];
-      if (genericComponentTypeDirectSupertype instanceof Class) {
-        if (genericComponentTypeDirectSupertype == Object.class) {
-          // OK; I think? TODO CHECK
-          returnValue[i] = Object.class;
-        } else {
-          // Raw type
-          assert isGeneric(genericComponentTypeDirectSupertype) : "Not generic: " + genericComponentTypeDirectSupertype;
-          returnValue[i] = genericComponentTypeDirectSupertype;
-        }
-      } else {
-        returnValue[i] = new DefaultGenericArrayType(genericComponentTypeDirectSupertypes[i]);
+    // …
+    if (type == null) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent an array of infinite size so we use an empty one
+      // instead.]
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else {
+      final Type[] genericComponentTypeDirectSupertypes = getDirectSupertypes(type.getGenericComponentType(), includeContainingTypeArguments);
+      final Type[] returnValue = new Type[genericComponentTypeDirectSupertypes.length];
+      for (int i = 0; i < genericComponentTypeDirectSupertypes.length; i++) {
+        final Type ds = genericComponentTypeDirectSupertypes[i];
+        assert (ds instanceof Class ? ds == Object.class || isGeneric(ds) : true) : "Unexpected direct supertype: " + toString(ds);
+        returnValue[i] = array(ds);
       }
+      return returnValue;
     }
-    return returnValue;
   }
 
-  private static final Type[] getDirectSupertypes(final TypeVariable<?> type) {
+  private static final Type[] getDirectSupertypes(final FreshTypeVariable type, final boolean includeContainingTypeArguments) {
+    if (type == null) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent an array of infinite size so we use an empty one instead.]
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else {
+      return new Type[] { type.getUpperBound() };
+    }
+  }
+
+  private static final Type[] getDirectSupertypes(final IntersectionType type, final boolean includeContainingTypeArguments) {
+    if (type == null) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent an array of infinite size so we use an empty one instead.]
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else {
+      // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+      // 4.10.2. Subtyping among [non-array] Class and Interface Types
+      // […]
+      // The direct supertypes of an intersection type T₁ & … & Tₙ are
+      // Tᵢ (1 ≤ 𝑖 ≤ 𝘯).
+      // […]
+      return type.getBounds();
+    }
+  }
+
+  private static final Type[] getDirectSupertypes(final TypeVariable<?> type, final boolean includeContainingTypeArguments) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
     // 4.10.2. Subtyping among [non-array] Class and Interface Types
-    // …
+    // […]
     // The direct supertypes of an intersection type T₁ & … & Tₙ are
     // Tᵢ (1 ≤ 𝑖 ≤ 𝘯).
     //
@@ -1427,14 +2058,30 @@ public final class Types {
     // permissible in TypeVariables.  So these statements appear to
     // translate "down" to the same thing: the direct supertypes of
     // a TypeVariable are simply the contents of its bounds.)
-    final Type[] bounds = type.getBounds();
-    return bounds == null || bounds.length <= 0 ? new Type[] { Object.class } : bounds;
+    // […]
+    if (type == null) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent an array of infinite size so we use an empty one instead.]
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else {
+      final Type[] bounds = type.getBounds();
+      return bounds == null || bounds.length <= 0 ? new Type[] { Object.class } : bounds;
+    }
   }
 
   @Incomplete
-  private static final Type[] getDirectSupertypes(final WildcardType type) {
-    throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle WildcardTypes: " + type);
+  private static final Type[] getDirectSupertypes(final WildcardType type, final boolean includeContainingTypeArguments) {
+    if (type == null) {
+      // The direct supertypes of the null type are all reference
+      // types other than the null type itself. [There's no way to
+      // represent an array of infinite size so we use an empty one instead.]
+      return AbstractType.EMPTY_TYPE_ARRAY;
+    } else {
+      throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle WildcardTypes: " + type);
+    }
   }
+
 
 
   /**
@@ -1855,7 +2502,55 @@ public final class Types {
     }
   }
 
+  private static final Type array(final Type type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-10.html#jls-10.1
+    // 10.1 Array Types
+    // …
+    // The element type of an array may be any type, whether
+    // primitive or reference.
+    // …
+    // [That rules out wildcards, but nothing else.]
+    if (Objects.requireNonNull(type, "type") instanceof Class) {
+      return array((Class<?>)type);
+    } else if (type instanceof GenericArrayType) {
+      return type;
+    } else if (!(type instanceof WildcardType)) {
+      return new DefaultGenericArrayType(type);
+    } else {
+      throw new IllegalArgumentException("!isReferenceType(type): " + type);
+    }
+  }
 
+  private static final Class<?> array(final Class<?> type) {
+    return type.isArray() ? type : Array.newInstance(type, 0).getClass();
+  }
+
+  private static final GenericArrayType array(final GenericArrayType type) {
+    return Objects.requireNonNull(type, "type");
+  }
+
+  private static final Type glb(final Type... types) {
+    // https://docs.oracle.com/javase/specs/jls/se17/html/jls-5.html#jls-5.1.10
+    // 5.1.10 Capture Conversion
+    // […]
+    // glb(V₁,…,Vₘ) is defined as V₁ & … & Vₘ.
+    return new IntersectionType(types);
+  }
+
+  private static final Type lub(final Type[] types) {
+    Objects.requireNonNull(types, "types");
+    // see
+    // https://github.com/openjdk/jdk/blob/b870468bdc99938fbb19a41b0ede0a3e3769ace2/src/jdk.compiler/share/classes/com/sun/tools/javac/code/Types.java#L3959
+    // for inspiration
+    throw new UnsupportedOperationException("lub()");
+  }
+
+
+  private static final boolean formalTypeParametersAreTypeVariableInstances(final Type[] formalTypeParameters) {
+    return formalTypeParameters instanceof TypeVariable<?>[];
+  }
+
+  
   /*
    * Inner and nested classes.
    */
@@ -1878,5 +2573,63 @@ public final class Types {
 
   }
 
+  private static final class IntersectionType implements Type {
+
+    private final Type[] bounds;
+
+    private IntersectionType(final Type[] bounds) {
+      super();
+      if (bounds.length <= 0) {
+        throw new IllegalArgumentException("empty bounds");
+      }
+      this.bounds = bounds.clone();
+    }
+
+    private final Type[] getBounds() {
+      return this.bounds.clone();
+    }
+
+    @Override
+    public final String toString() {
+      final StringJoiner sj = new StringJoiner(" & ");
+      for (final Type t : this.bounds) {
+        sj.add(Types.toString(t));
+      }
+      return sj.toString();
+    }
+
+  }
+
+  private static final class FreshTypeVariable implements Type {
+
+    private final Type upperBound;
+
+    private final Type lowerBound;
+
+    private FreshTypeVariable(final Type upperBound) {
+      this(upperBound, null);
+    }
+
+    private FreshTypeVariable(final Type upperBound,
+                              final Type lowerBound) {
+      super();
+      this.upperBound = upperBound;
+      this.lowerBound = lowerBound;
+    }
+
+    private final Type getUpperBound() {
+      return this.upperBound;
+    }
+
+    private final Type getLowerBound() {
+      return this.lowerBound;
+    }
+
+    @Override
+    public String toString() {
+      return "capture; upper bound: " + Types.toString(upperBound) + "; lower bound: " + Types.toString(lowerBound);
+    }
+
+  }
 
 }

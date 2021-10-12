@@ -18,12 +18,15 @@ package org.microbean.type;
 
 import java.io.Serializable;
 
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -45,9 +48,72 @@ final class TestGetDirectSupertypes {
     // Does not work, obviously.
     // final ArrayList<Object> l = new ArrayList<String>();
 
+    // Obvious.
+    final ArrayList<String> l0 = new ArrayList<String>();
+
+    final ArrayList<?> l1 = l0;
+    final ArrayList<? extends String> l2 = l0;
+    final ArrayList<? super String> l3 = l0;
+    // final ArrayList<CharSequence> l4 = l0; // nope
+    // final ArrayList<? extends Integer> = l0; // nope
+    final ArrayList<? extends CharSequence> l4 = l0;
+    // final ArrayList<? super CharSequence> l5 = l0; // nope
+    
 
   }
 
+  private static abstract class Goober implements Collection<List<String>[]> {
+
+  }
+
+  private static final Type[] generateContainingTypes(final Type type) {
+    Objects.requireNonNull(type);
+    if (type == Object.class) {
+      return new Type[] { UnboundedWildcardType.INSTANCE, new LowerBoundedWildcardType(Object.class) };
+    } else {
+      final Collection<Type> types = new ArrayList<>();
+      generateContainingTypes(type, types);
+      types.add(UnboundedWildcardType.INSTANCE);
+      return types.toArray(new Type[types.size()]);
+    }
+  }
+
+  private static final void generateContainingTypes(final Type type, final Collection<Type> types) {
+    Objects.requireNonNull(type);
+    // T <= T
+    types.add(type);
+    if (type instanceof WildcardType) {
+      final WildcardType wct = (WildcardType)type;
+      final Type[] lowerBounds = wct.getLowerBounds();
+      if (lowerBounds.length <= 0) {
+        final Type[] upperBounds = wct.getUpperBounds();
+        assert upperBounds.length == 1;
+        final Type upperBound = upperBounds[0];
+        if (upperBound != Object.class) {
+          for (final Type s : Types.getDirectSupertypes(upperBound)) {
+            assert s != null;
+            assert !Types.equals(upperBound, s);
+            if (s != Object.class) {
+              generateContainingTypes(new UpperBoundedWildcardType(s), types);
+            }
+          }
+        }
+      }
+    } else {
+      generateContainingTypes(new UpperBoundedWildcardType(type), types);
+      types.add(new LowerBoundedWildcardType(type));
+    }
+  }
+
+  @Test
+  final void testGetContainingTypeArguments() {
+    final Type[] containingTypes = Types.getContainingTypeArguments(String.class);
+    System.out.println("Containing types:");
+    for (final Type t : containingTypes) {
+      System.out.println("  " + Types.toString(t));
+    }
+  }
+  
   @Test
   final void testClassDirectSupertypes() {
     // Object (limiting case)
@@ -84,10 +150,12 @@ final class TestGetDirectSupertypes {
     // First is the direct superclass…
     assertSame(Object[].class, ds[0]);
 
-    // …then the direct interfaces in no partiuclar order.
+    // …then the direct superinterfaces in no partiuclar order.
     assertTrue(dsc.contains(CharSequence[].class));
     assertTrue(dsc.contains(Serializable[].class));
-    assertTrue(dsc.contains(new TypeLiteral<Comparable<String>[]>() {}.getType()));
+    // assertTrue(dsc.contains(new TypeLiteral<Comparable<String>[]>() {}.getType()), "" + dsc);
+    // Hmm; maybe this instead?
+    assertTrue(dsc.contains(Comparable[].class));
 
     // See the interesting footnote to
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-10.html#jls-10.1
@@ -98,15 +166,16 @@ final class TestGetDirectSupertypes {
     // Number[] according to §4.10.3, but the direct superclass of
     // Integer[] is Object according to the Class object for Integer[]
     // (§10.8). This does not matter in practice, because Object is
-    // also a supertype of all array types."
+    // also a [non-direct] supertype of all array types."
     //
     // (As it happens, the direct supertypes of Integer[] include
     // Number[] and Comparable<Integer>[].)
     ds = Types.getDirectSupertypes(Integer[].class);
-    dsc = Arrays.asList(ds);
-    assertEquals(2, ds.length, "" + dsc);
-    assertSame(Number[].class, ds[0]);
-    assertEquals(new TypeLiteral<Comparable<Integer>[]>() {}.getType(), ds[1]);
+    assertEquals(2, ds.length);
+    assertSame(Number[].class, ds[0]); // we always add the direct supertype first
+    // assertEquals(new TypeLiteral<Comparable<Integer>[]>() {}.getType(), ds[1]); // then the direct superinterfaces
+    // Hmm; maybe this instead?
+    assertSame(Comparable[].class, ds[1]);
     
     // Comparable[] (Comparable is a raw type)
     ds = Types.getDirectSupertypes(Comparable[].class);
@@ -114,12 +183,24 @@ final class TestGetDirectSupertypes {
     assertSame(Object[].class, ds[0]);
   }
 
+  @SuppressWarnings("rawtypes")
   @Test
   final void testGenericArrayTypeDirectSupertypes() {
-    // First, compilation:
-    @SuppressWarnings("rawtypes")
-    final List<String>[] listStringArray = new List[] { List.of("hello", "world") };
-    final Object[] o = listStringArray;
+    final GenericArrayType type = (GenericArrayType)new TypeLiteral<List<String>[]>() {}.getType();
+    assertEquals(new TypeLiteral<List<String>>() {}.getType(), type.getGenericComponentType());
+    final Type[] dss = Types.getDirectSupertypes(type);
+    Collection<Type> dsc = Arrays.asList(dss);
+    assertTrue(dss.length > 2, "" + dsc); // TODO: this will change when we add wildcard handling
+    assertTrue(dsc.contains(List[].class), "" + dsc);
+    assertTrue(dsc.contains(new TypeLiteral<Collection<String>[]>() {}.getType()), "" + dsc);
   }
-  
+
+  @Test
+  final void testParameterizedTypeDirectSupertypes() {
+    final Type[] dss = Types.getDirectSupertypes(new TypeLiteral<List<String>>() {}.getType());
+    Collection<Type> dsc = Arrays.asList(dss);
+    assertTrue(dss.length > 2, "" + dsc); // TODO: this will change when we add wildcard handling
+    assertTrue(dsc.contains(List.class), "" + dsc);
+    assertTrue(dsc.contains(new TypeLiteral<Collection<String>>() {}.getType()), "" + dsc);
+  }
 }

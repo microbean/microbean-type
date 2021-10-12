@@ -1,12 +1,21 @@
 # microBean™ Type
 
-[![Build Status](https://travis-ci.com/microbean/microbean-type.svg?branch=master)](https://travis-ci.com/microbean/microbean-type)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.microbean/microbean-type/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.microbean/microbean-type)
 
 The microBean™ Type project provides classes and interfaces assisting
 with Java <a
 href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/reflect/Type.html"><code>Type</code></a>
 instances.
+
+# Status
+
+This project is currently experimental, in a pre-alpha state, and
+unsuitable for production use.
+
+# Compatibility
+
+Until further notice, this project's APIs are subject to frequent
+backwards-incompatible signature and behavior changes without notice.
 
 # Requirements
 
