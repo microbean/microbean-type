@@ -45,39 +45,21 @@ public abstract class AbstractType implements Serializable, Type {
    */
 
 
-  /**
+  /*
    * The version of this class for {@linkplain Serializable
    * serialization purposes}.
    */
-  private static final long serialVersionUID = 2L;
+  private static final long serialVersionUID = 3L;
 
-  /**
-   * A zero-length array of {@link AnnotatedType} instances.
-   *
-   * @nullability This field is never {@code null}.
-   */
-  protected static final AnnotatedType[] EMPTY_ANNOTATED_TYPE_ARRAY = new AnnotatedType[0];
-
-  /**
-   * A zero-length array of {@link Annotation} instances.
-   *
-   * @nullability This field is never {@code null}.
-   */
-  protected static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[0];
-
-  /**
-   * A zero-length array of {@link TypeVariable} instances.
-   *
-   * @nullability This field is never {@code null}.
-   */
-  protected static final TypeVariable<?>[] EMPTY_TYPE_VARIABLE_ARRAY = new TypeVariable<?>[0];
-
-  /**
+  /*
    * A zero-length array of {@link Type} instances.
    *
    * @nullability This field is never {@code null}.
+   *
+   * @deprecated Please use {@link Types#emptyTypeArray()} instead.
    */
-  public static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
+  @Deprecated(forRemoval = true)
+  public static final Type[] EMPTY_TYPE_ARRAY = Types.emptyTypeArray();
 
 
   /*

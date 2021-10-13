@@ -47,11 +47,21 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
       throw new IllegalArgumentException("upperBounds.length > 1: " + Arrays.asList(upperBounds));
     }
     if (lowerBounds == null || lowerBounds.length <= 0) {
-      this.lowerBounds = EMPTY_TYPE_ARRAY;
+      this.lowerBounds = Types.emptyTypeArray();
     } else if (lowerBounds.length == 1) {
       this.lowerBounds = lowerBounds.clone();
     } else {
       throw new IllegalArgumentException("lowerBounds.length > 1: " + Arrays.asList(lowerBounds));
+    }
+    for (final Type upperBound : this.upperBounds) {
+      if (!Types.isReferenceType(upperBound)) {
+        throw new IllegalArgumentException("upperBounds contains non-reference type: " + Arrays.asList(this.upperBounds));
+      }
+    }
+    for (final Type lowerBound : this.lowerBounds) {
+      if (!Types.isReferenceType(lowerBound)) {
+        throw new IllegalArgumentException("lowerBounds contains non-reference type: " + Arrays.asList(this.lowerBounds));
+      }
     }
     this.hashCode = this.computeHashCode();
   }
@@ -121,7 +131,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     stream.defaultReadObject();
     Serializable[] serializableBounds = (Serializable[])stream.readObject();
     if (serializableBounds == null || serializableBounds.length <= 0) {
-      this.lowerBounds = EMPTY_TYPE_ARRAY;
+      this.lowerBounds = Types.emptyTypeArray();
     } else {
       this.lowerBounds = new Type[serializableBounds.length];
       System.arraycopy(serializableBounds, 0, this.lowerBounds, 0, serializableBounds.length);

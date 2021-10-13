@@ -14,8 +14,9 @@ unsuitable for production use.
 
 # Compatibility
 
-Until further notice, this project's APIs are subject to frequent
-backwards-incompatible signature and behavior changes without notice.
+**Until further notice, this project's APIs are subject to frequent
+backwards-incompatible signature and behavior changes, regardless of
+project version and without notice.**
 
 # Requirements
 

@@ -45,9 +45,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.microbean.development.annotation.Experimental;
 import org.microbean.development.annotation.Incomplete;
@@ -70,6 +72,8 @@ public final class Types {
    * Static fields.
    */
 
+
+  private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
 
   static final Comparator<Type> typeComparator = new TypeComparator();
 
@@ -361,7 +365,7 @@ public final class Types {
     return type instanceof Class && ((Class<?>)type).getTypeParameters().length > 0;
   }
 
-  public static final boolean isGeneric(final Class<?> cls) {
+  private static final boolean isGeneric(final Class<?> cls) {
     return cls != null && cls.getTypeParameters().length > 0;
   }
 
@@ -374,23 +378,31 @@ public final class Types {
     }
   }
 
-  public static final boolean isGenericInterface(final Class<?> cls) {
+  private static final boolean isGenericInterface(final Class<?> cls) {
     return cls != null && cls.isInterface() && cls.getTypeParameters().length > 0;
   }
 
-  public static final boolean isClassOrInterface(final Type type) {
+  public static final boolean isInstanceOfClass(final Type type) {
     return type instanceof Class;
   }
 
-  public static final boolean isClassOrInterface(final Class<?> cls) {
+  private static final boolean isInstanceOfClass(final Class<?> cls) {
     return cls != null;
+  }
+
+  public static final boolean isNonInterfaceClassType(final Type type) {
+    return type instanceof Class && !((Class<?>)type).isInterface();
+  }
+
+  private static final boolean isNonInterfaceClassType(final Class<?> cls) {
+    return cls != null && !cls.isInterface();
   }
 
   public static final boolean isInterface(final Type type) {
     return type instanceof Class && ((Class<?>)type).isInterface();
   }
 
-  public static final boolean isInterface(final Class<?> cls) {
+  private static final boolean isInterface(final Class<?> cls) {
     return cls != null && cls.isInterface();
   }
 
@@ -400,6 +412,9 @@ public final class Types {
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
    * target="_parent">the rules of the Java Language
    * Specification, section 4.3</a>.
+   *
+   * <p>This method is implemented as if by {@code !isPrimitive(type)
+   * && !isWildcard(type)}.</p>
    *
    * @param type the {@link Type} in question; may be {@code null} in which case
    * {@code false} will be returned
@@ -413,20 +428,19 @@ public final class Types {
    * @see <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.3"
    * target="_parent">The Java Language Specification section 4.3</a>
+   *
+   * @see #isPrimitive(Type)
+   *
+   * @see #isWildcard(Type)
    */
   public static final boolean isReferenceType(final Type type) {
     // Wildcards are ruled out by the BNF in
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
-    //
-    // I'm omitting the private FreshTypeVariable and IntersectionType
-    // types on purpose as this method should never be called with them.
-    assert !(type instanceof FreshTypeVariable);
-    assert !(type instanceof IntersectionType);
-    return
-      (type instanceof Class && !((Class<?>)type).isPrimitive()) ||
-      type instanceof ParameterizedType ||
-      type instanceof GenericArrayType ||
-      type instanceof TypeVariable;
+    return !isPrimitive(type) && !isWildcard(type);
+  }
+
+  public static final boolean isWildcard(final Type type) {
+    return type instanceof WildcardType;
   }
 
   private static final boolean provablyDistinct(final Type type0, final Type type1) {
@@ -472,8 +486,12 @@ public final class Types {
     //
     // Subtyping does not extend through parameterized types: T <: S
     // does not imply that C<T> <: C<S>.
-    if (type0 instanceof TypeVariable ||
+    if (type0 instanceof FreshTypeVariable ||
+        type0 instanceof IntersectionType ||
+        type0 instanceof TypeVariable ||
         type0 instanceof WildcardType ||
+        type1 instanceof FreshTypeVariable ||
+        type1 instanceof IntersectionType ||
         type1 instanceof TypeVariable ||
         type1 instanceof WildcardType) {
       final Class<?> c0 = erase(type0);
@@ -668,6 +686,10 @@ public final class Types {
       return resolve((ParameterizedType)type, typeResolver);
     } else if (type instanceof GenericArrayType) {
       return resolve((GenericArrayType)type, typeResolver);
+    } else if (type instanceof FreshTypeVariable) {
+      return resolve((FreshTypeVariable)type, typeResolver);
+    } else if (type instanceof IntersectionType) {
+      return resolve((IntersectionType)type, typeResolver);
     } else if (type instanceof TypeVariable) {
       return resolve((TypeVariable<?>)type, typeResolver);
     } else if (type instanceof WildcardType) {
@@ -742,6 +764,19 @@ public final class Types {
       return candidate;
     }
   }
+
+  private static final Type resolve(final FreshTypeVariable type,
+                                    final Function<? super Type, ? extends Type> typeResolver) {
+    final Type candidate = typeResolver.apply(type);
+    return candidate == null ? type : candidate;
+  }
+
+  private static final Type resolve(final IntersectionType type,
+                                    final Function<? super Type, ? extends Type> typeResolver) {
+    final Type candidate = typeResolver.apply(type);
+    return candidate == null ? type : candidate;
+  }
+
 
   private static final Type resolve(final TypeVariable<?> type,
                                     final Function<? super Type, ? extends Type> typeResolver) {
@@ -825,9 +860,9 @@ public final class Types {
     final Map<Type, Type> resolvedTypes = new HashMap<>();
     toTypes(type, isRawType(type), resolvedTypes);
     if (removalPredicate == null) {
-      resolvedTypes.keySet().removeIf(Predicate.not(Types::isClass));
+      resolvedTypes.keySet().removeIf(Predicate.not(Types::isInstanceOfClass));
     } else {
-      resolvedTypes.keySet().removeIf(k -> !isClass(k) || removalPredicate.test(resolvedTypes.get(k)));
+      resolvedTypes.keySet().removeIf(k -> !isInstanceOfClass(k) || removalPredicate.test(resolvedTypes.get(k)));
     }
     return resolvedTypes.isEmpty() ? TypeSet.EMPTY_TYPESET : new TypeSet(resolvedTypes.values());
   }
@@ -843,6 +878,10 @@ public final class Types {
       toTypes((ParameterizedType)type, noParameterizedTypes, resolvedTypes);
     } else if (type instanceof GenericArrayType) {
       toTypes((GenericArrayType)type, noParameterizedTypes, resolvedTypes);
+    } else if (type instanceof FreshTypeVariable) {
+      toTypes((FreshTypeVariable)type, noParameterizedTypes, resolvedTypes);
+    } else if (type instanceof IntersectionType) {
+      toTypes((IntersectionType)type, noParameterizedTypes, resolvedTypes);
     } else if (type instanceof TypeVariable) {
       toTypes((TypeVariable<?>)type, noParameterizedTypes, resolvedTypes);
     } else if (type instanceof WildcardType) {
@@ -894,6 +933,20 @@ public final class Types {
       toTypes(erasure, noParameterizedTypes, resolvedTypes);
     }
   }
+
+  private static final void toTypes(final FreshTypeVariable freshTypeVariable,
+                                    final boolean noParameterizedTypes,
+                                    final Map<Type, Type> resolvedTypes) {
+    // Do nothing on purpose.
+  }
+
+
+  private static final void toTypes(final IntersectionType intersectionType,
+                                    final boolean noParameterizedTypes,
+                                    final Map<Type, Type> resolvedTypes) {
+    // Do nothing on purpose.
+  }
+
 
   private static final void toTypes(final TypeVariable<?> typeVariable,
                                     final boolean noParameterizedTypes,
@@ -974,31 +1027,6 @@ public final class Types {
   }
 
   /**
-   * Returns {@code true} if the supplied {@link Type} is an instance
-   * of {@link Class}.
-   *
-   * <h2>Design Notes</h2>
-   *
-   * <p>This prosaic method exists because various {@link Predicate}s
-   * need to exist that test this very thing, and making it {@code
-   * public} does no harm.</p>
-   *
-   * @param type the {@link Type} in question; may be {@code null} in
-   * which case {@code false} will be returned
-   *
-   * @return {@code true} if and only if {@code type} is an instance
-   * of {@link Class}
-   *
-   * @idempotency This method is idempotent and deterministic.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  public static final boolean isClass(final Type type) {
-    return type instanceof Class;
-  }
-
-  /**
    * Returns a new array of {@link Type}s containing the type erasures
    * for the supplied {@link Type}s according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6"
@@ -1023,7 +1051,7 @@ public final class Types {
    */
   public static final Type[] erase(final Type[] types) {
     if (types == null || types.length <= 0) {
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       final Type[] erasedTypes = new Type[types.length];
       for (int i = 0; i < types.length; i++) {
@@ -1113,6 +1141,10 @@ public final class Types {
       return erase((ParameterizedType)type);
     } else if (type instanceof GenericArrayType) {
       return erase((GenericArrayType)type);
+    } else if (type instanceof FreshTypeVariable) {
+      return erase((FreshTypeVariable)type);
+    } else if (type instanceof IntersectionType) {
+      return erase((IntersectionType)type);
     } else if (type instanceof TypeVariable) {
       return erase((TypeVariable<?>)type);
     } else if (type instanceof WildcardType) {
@@ -1162,6 +1194,27 @@ public final class Types {
     }
   }
 
+  private static final Class<?> erase(final FreshTypeVariable type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    //
+    // The erasure of a type variable (§4.4) is the erasure of its
+    // leftmost bound. [In the case of a FreshTypeVariable that
+    // returns multiple bounds, we know they will start with a class,
+    // not an interface and not a type variable.]
+    return erase(type.getUpperBound());
+  }
+
+  private static final Class<?> erase(final IntersectionType type) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
+    //
+    // The erasure of a type variable (§4.4) is the erasure of its
+    // leftmost bound. [In the case of a FreshTypeVariable that
+    // returns multiple bounds, we know they will start with a class,
+    // not an interface and not a type variable.]
+    final Type[] bounds = type.getBounds();
+    return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
+  }
+
   private static final Class<?> erase(final TypeVariable<?> type) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
     //
@@ -1184,35 +1237,39 @@ public final class Types {
     return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
   }
 
-  static final boolean isUnboundedWildcard(final Type type) {
-    return
-      type instanceof UnboundedWildcardType ||
-      isUpperBoundedWildcard(type) && ((WildcardType)type).getUpperBounds()[0] == Object.class;
+  public static final boolean isUnboundedWildcard(final Type type) {
+    return isUpperBoundedWildcard(type) && ((WildcardType)type).getUpperBounds()[0] == Object.class;
   }
 
-  static final boolean isUnboundedWildcard(final WildcardType type) {
-    return
-      type instanceof UnboundedWildcardType ||
-      isUpperBoundedWildcard(type) && type.getUpperBounds()[0] == Object.class;
+  private static final boolean isUnboundedWildcard(final WildcardType type) {
+    return isUpperBoundedWildcard(type) && type.getUpperBounds()[0] == Object.class;
   }
 
-  static final boolean isUnboundedWildcard(final UnboundedWildcardType type) {
+  private static final boolean isUnboundedWildcard(final UnboundedWildcardType type) {
     return type != null;
   }
 
-  static final boolean isUpperBoundedWildcard(final Type type) {
-    return
-      type instanceof UpperBoundedWildcardType ||
-      type instanceof WildcardType && ((WildcardType)type).getLowerBounds().length <= 0;
+  public static final boolean isUpperBoundedWildcard(final Type type) {
+    return type instanceof WildcardType && ((WildcardType)type).getLowerBounds().length <= 0;
   }
 
-  static final boolean isUpperBoundedWildcard(final WildcardType type) {
-    return
-      type instanceof UpperBoundedWildcardType ||
-      type instanceof WildcardType && type.getLowerBounds().length <= 0;
+  private static final boolean isUpperBoundedWildcard(final WildcardType type) {
+    return type != null && type.getLowerBounds().length <= 0;
   }
 
-  static final boolean isUpperBoundedWildcard(final UpperBoundedWildcardType type) {
+  private static final boolean isUpperBoundedWildcard(final UpperBoundedWildcardType type) {
+    return type != null;
+  }
+
+  public static final boolean isLowerBoundedWildcard(final Type type) {
+    return type instanceof WildcardType && ((WildcardType)type).getLowerBounds().length > 0;
+  }
+
+  private static final boolean isLowerBoundedWildcard(final WildcardType type) {
+    return type != null && type.getLowerBounds().length > 0;
+  }
+
+  private static final boolean isLowerBoundedWildcard(final LowerBoundedWildcardType type) {
     return type != null;
   }
 
@@ -1278,12 +1335,12 @@ public final class Types {
     // …
     final Type[] t1UpperBounds = t1.getUpperBounds();
     final Type t1UpperBound = t1UpperBounds == null || t1UpperBounds.length <= 0 ? Object.class : t1UpperBounds[0];
-    assert t1UpperBounds.length == 0 || t1UpperBounds.length == 1 : "Unexpected upper bounds: " + Arrays.asList(t1UpperBounds);
+    assert t1UpperBounds.length == 0 || t1UpperBounds.length == 1 : "Unexpected upper bounds: " + toString(t1UpperBounds);
     if (equals(t1UpperBound, t2)) {
       return true;
     } else {
       final Type[] t1LowerBounds = t1.getLowerBounds();
-      assert t1LowerBounds.length == 0 || t1LowerBounds.length == 1 : "Unexpected lower bounds: " + Arrays.asList(t1LowerBounds);
+      assert t1LowerBounds.length == 0 || t1LowerBounds.length == 1 : "Unexpected lower bounds: " + toString(t1LowerBounds);
       final Type t1LowerBound = t1LowerBounds == null || t1LowerBounds.length <= 0 ? null : t1LowerBounds[0];
       return equals(t1LowerBound, t2);
     }
@@ -1303,10 +1360,10 @@ public final class Types {
     // following rules (where <: denotes subtyping (§4.10)):
     // …
     final Type[] t1sUpperBounds = t1s.getUpperBounds();
-    assert t1sUpperBounds.length == 0 || t1sUpperBounds.length == 1 : "Unexpected upper bounds: " + Arrays.asList(t1sUpperBounds);
+    assert t1sUpperBounds.length == 0 || t1sUpperBounds.length == 1 : "Unexpected upper bounds: " + toString(t1sUpperBounds);
     final Type t1sUpperBound = t1sUpperBounds == null || t1sUpperBounds.length <= 0 ? Object.class : t1sUpperBounds[0];
     final Type[] t2tUpperBounds = t2t.getUpperBounds();
-    assert t2tUpperBounds.length == 0 || t2tUpperBounds.length == 1 : "Unexpected upper bounds: " + Arrays.asList(t2tUpperBounds);
+    assert t2tUpperBounds.length == 0 || t2tUpperBounds.length == 1 : "Unexpected upper bounds: " + toString(t2tUpperBounds);
     final Type t2tUpperBound = t2tUpperBounds == null || t2tUpperBounds.length <= 0 ? Object.class : t2tUpperBounds[0];
     if (t1sUpperBound == Object.class ||
         isSubtype(t2tUpperBound, t1sUpperBound)) {
@@ -1321,10 +1378,10 @@ public final class Types {
       return true;
     } else {
       final Type[] t1sLowerBounds = t1s.getLowerBounds();
-      assert t1sLowerBounds.length == 0 || t1sLowerBounds.length == 1 : "Unexpected lower bounds: " + Arrays.asList(t1sLowerBounds);
+      assert t1sLowerBounds.length == 0 || t1sLowerBounds.length == 1 : "Unexpected lower bounds: " + toString(t1sLowerBounds);
       final Type t1sLowerBound = t1sLowerBounds == null || t1sLowerBounds.length <= 0 ? null : t1sLowerBounds[0];
       final Type[] t2tLowerBounds = t2t.getLowerBounds();
-      assert t2tLowerBounds.length == 0 || t2tLowerBounds.length == 1 : "Unexpected lower bounds: " + Arrays.asList(t2tLowerBounds);
+      assert t2tLowerBounds.length == 0 || t2tLowerBounds.length == 1 : "Unexpected lower bounds: " + toString(t2tLowerBounds);
       final Type t2tLowerBound = t2tLowerBounds == null || t2tLowerBounds.length <= 0 ? null : t2tLowerBounds[0];
       // …
       // ? super T <= ? super S if S <: T [if S is a subtype of T, then ? super S contains ? super T]
@@ -1357,7 +1414,7 @@ public final class Types {
       final Collection<Type> types = new ArrayList<>();
       getContainingTypeArguments(type, types::add);
       types.add(UnboundedWildcardType.INSTANCE);
-      return types.isEmpty() ? AbstractType.EMPTY_TYPE_ARRAY : types.toArray(new Type[types.size()]);
+      return types.isEmpty() ? emptyTypeArray() : types.toArray(new Type[types.size()]);
     }
   }
 
@@ -1434,25 +1491,25 @@ public final class Types {
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one
       // instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else if (type instanceof Class) {
       return getDirectSupertypes((Class<?>)type, includeContainingTypeArguments);
     } else if (type instanceof ParameterizedType) {
       return getDirectSupertypes((ParameterizedType)type, includeContainingTypeArguments);
     } else if (type instanceof GenericArrayType) {
       return getDirectSupertypes((GenericArrayType)type, includeContainingTypeArguments);
-    } else if (type instanceof TypeVariable) {
-      return getDirectSupertypes((TypeVariable<?>)type, includeContainingTypeArguments);
     } else if (type instanceof FreshTypeVariable) {
       // Private type
       return getDirectSupertypes((FreshTypeVariable)type, includeContainingTypeArguments);
     } else if (type instanceof IntersectionType) {
       // Private type
       return getDirectSupertypes((IntersectionType)type, includeContainingTypeArguments);
+    } else if (type instanceof TypeVariable) {
+      return getDirectSupertypes((TypeVariable<?>)type, includeContainingTypeArguments);
     } else if (type instanceof WildcardType) {
       return getDirectSupertypes((WildcardType)type, includeContainingTypeArguments);
     } else {
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     }
   }
 
@@ -1466,7 +1523,7 @@ public final class Types {
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one
       // instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       final Class<?> ct = type.getComponentType();
       if (ct == null) {
@@ -1649,7 +1706,7 @@ public final class Types {
       // The direct supertypes of the null type are all reference
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       final Type C = type.getRawType();
       assert C instanceof Class : "Unexpected raw type C: " + toString(C);
@@ -1668,28 +1725,28 @@ public final class Types {
       // Nuke wildcards by applying capture conversion
       actualTypeArguments = applyCaptureConversion(formalTypeParameters, actualTypeArguments);
       assert actualTypeArguments.length == formalTypeParameters.length;
-      
+
       // See
       // https://stackoverflow.com/questions/69502823/in-the-java-language-specification-version-11-section-4-10-2-how-do-i-read-u%e2%82%96
-      
-      final List<Type> directSupertypes = new ArrayList<>();      
-      
+
+      final List<Type> directSupertypes = new ArrayList<>();
+
       final Type[] directSupertypesOfC = getDirectSupertypes(C);
       final boolean addObject = isInterface(C) && directSupertypesOfC.length <= 0;
       for (final Type directSupertypeOfC : directSupertypesOfC) {
         assert directSupertypeOfC instanceof Class : "Unexpected erasure of direct supertype of " + toString(C) + ": " + toString(directSupertypeOfC);
         directSupertypes.add(theta(getOwnerType(directSupertypeOfC), directSupertypeOfC, actualTypeArguments));
       }
-      
+
       if (addObject) {
         // The type Object, if C<F₁,…,Fₙ> is a generic interface type
         // with no direct superinterfaces.
         directSupertypes.add(Object.class);
       }
-      
+
       // The raw type C.
       directSupertypes.add(C);
-      
+
       if (includeContainingTypeArguments) {
         // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝘪 ≤ 𝘯)
         for (int i = 0; i < actualTypeArguments.length; i++) {
@@ -1711,17 +1768,17 @@ public final class Types {
   static final Type[] applyCaptureConversion(final Type[] A, final Type[] T) {
     return A instanceof TypeVariable[] ? applyCaptureConversion((TypeVariable<?>[])A, T) : T;
   }
-  
+
   static final Type[] applyCaptureConversion(final TypeVariable<?>[] A, final Type[] T) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.10
     // 5.1.10 Capture Conversion
     //
     // Let G name a generic type declaration (§8.1.2, §9.1.2) with 𝘯
     // type parameters A₁…Aₙ with corresponding bounds U₁…Uₙ.
-    // 
+    //
     // There exists a capture conversion from a parameterized type
-    // G<T₁…Tₙ>(§4.5) toa parameterized type G<S₁…Sₙ>, where, for
-    // 1 ≤ 𝘪 ≤ 𝘯:
+    // G<T₁…Tₙ>(§4.5) to a [new] parameterized type G<S₁…Sₙ>, where,
+    // for 1 ≤ 𝘪 ≤ 𝘯:
     //
     // * If Tᵢ is a wildcard type argument (§4.5.1) of the form ?,
     //   then Sᵢ is a fresh type variable whose upper bound is
@@ -1759,18 +1816,26 @@ public final class Types {
     // for algorithmic inspiration.]
 
     // TODO: As written this is still broken slightly.
-    
+
+    // A's contents are type parameters; T's contents are type
+    // arguments for them, so A and T have to have the same length.
     if (A.length != T.length) {
       throw new IllegalArgumentException("A.length: " + A.length + "; T.length: " + T.length);
     }
+
+    // S is the array holding the new fresh type variables.
     final Type[] S = new Type[T.length];
+    
     for (int i = 0; i < T.length; i++) {
       final Type Ti = T[i];
       if (Ti instanceof WildcardType) {
         final WildcardType wTi = (WildcardType)Ti;
         final Type[] lowerBounds = wTi.getLowerBounds();
         if (lowerBounds.length <= 0) {
-          final Type upperBound = wTi.getUpperBounds()[0];
+          final Type[] upperBounds = wTi.getUpperBounds();
+          assert upperBounds.length == 1 : "Unexpected upper bounds: " + toString(upperBounds);
+          final Type upperBound = upperBounds[0];
+          assert upperBound != null : "Unexpected null upper bound";
           if (upperBound == Object.class) {
             // Unbounded wildcard.
             // * If Tᵢ is a wildcard type argument (§4.5.1) of the
@@ -1778,8 +1843,15 @@ public final class Types {
             //   bound is Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ] and whose lower bound is
             //   the null type (§4.1).
             //
-            // Replace Ti-which-is-"?" with a new type variable whose upper bound is that of 
-            assert A[i].getBounds().length == 1 : "Unexpected bounds: " + Arrays.asList(A[i].getBounds());
+            // U3, for example, is the upper bound of A3, whatever
+            // that is.  Let's say A3 is "X extends Object"; U3 is
+            // "Object".  With T3 by definition being "?" here, S3
+            // will be a new fresh type variable.  S3's upper bound is
+            // U3-(Object)-with-the-results-of-replacing-occurrences-anywhere-"in"-it-of-any-A-with-that-A's-corresponding-S. Is
+            // there any occurrence of, say, A3 ("X extends Object")
+            // "in" U3 ("Object")?  No there is not.  So T3, "?", is
+            // replaced with S3 ("CAP extends Object [U3]").
+            assert A[i].getBounds().length == 1 : "Unexpected bounds: " + toString(A[i].getBounds());
             S[i] = new FreshTypeVariable(A[i]);
           } else {
             // Upper-bounded wildcard
@@ -1800,7 +1872,7 @@ public final class Types {
   private static final Type substitute(final Type upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
     Objects.requireNonNull(upperBound, "upperBound");
     if (typeParameters.length != freshTypeVariables.length) {
-      throw new IllegalArgumentException("typeParameters.length != freshTypeVariables.length: typeParameters: " + Arrays.asList(typeParameters) + "; freshTypeVariables: " + Arrays.asList(freshTypeVariables));
+      throw new IllegalArgumentException("typeParameters.length != freshTypeVariables.length: typeParameters: " + toString(typeParameters) + "; freshTypeVariables: " + toString(freshTypeVariables));
     }
     // upper bound is going to be Gorp or X in the <X extends Gorp, Y extends X> portion of public class Foo<X>
     // So it will be either a:
@@ -1854,8 +1926,12 @@ public final class Types {
       return substitute((ParameterizedType)in, from, to);
     } else if (in instanceof GenericArrayType) {
       return substitute((GenericArrayType)in, from, to);
+    } else if (in instanceof FreshTypeVariable) {
+      return substitute((FreshTypeVariable)in, from, to);
+    } else if (in instanceof IntersectionType) {
+      return substitute((IntersectionType)in, from, to);
     } else if (in instanceof TypeVariable) {
-      return substitute((TypeVariable)in, from, to);
+      return substitute((TypeVariable<?>)in, from, to);
     } else if (in instanceof WildcardType) {
       return substitute((WildcardType)in, from, to);
     } else {
@@ -1863,83 +1939,122 @@ public final class Types {
     }
   }
 
-  private static final Type substitute(final Class<?> in, final Type from, final Type to) {
-    // Nothing to substitute.
+  private static final <T> Class<T> substitute(final Class<T> in, final Type from, final Type to) {
     assert !equals(in, from);
     assert !equals(in, to);
     assert !equals(from, to);
-    throw new IllegalArgumentException("Unexpected in: " + toString(in));
+    return in;
   }
-  
-  private static final Type substitute(final ParameterizedType in, final Type from, final Type to) {
-    assert !equals(in, from);
-    assert !equals(in, to);
-    assert !equals(from, to);
-    final Type[] actualTypeArguments = in.getActualTypeArguments();
-    final Type[] newTypeArguments = new Type[actualTypeArguments.length];
-    for (int i = 0; i < actualTypeArguments.length; i++) {
-      newTypeArguments[i] = substitute(actualTypeArguments[i], from, to);
-    }
-    return new DefaultParameterizedType(in.getOwnerType(), in.getRawType(), newTypeArguments);
+
+  private static final ParameterizedType substitute(final ParameterizedType in, final Type from, final Type to) {
+    return
+      substitute(in,
+                 in::getActualTypeArguments,
+                 Types::emptyTypeArray,
+                 (up, low) -> new DefaultParameterizedType(in.getOwnerType(), in.getRawType(), up),
+                 from,
+                 to);
   }
-  
-  private static final Type substitute(final GenericArrayType in, final Type from, final Type to) {
-    assert !equals(in, from);
-    assert !equals(in, to);
-    assert !equals(from, to);    
-    final Type genericComponentType = in.getGenericComponentType();
-    if (equals(genericComponentType, from)) {
-      return new DefaultGenericArrayType(substitute(genericComponentType, from, to));
-    } else {
-      return in;
-    }
+
+  private static final GenericArrayType substitute(final GenericArrayType in, final Type from, final Type to) {
+    return
+      substitute(in,
+                 () -> new Type[] { in.getGenericComponentType() },
+                 Types::emptyTypeArray,
+                 (up, low) -> new DefaultGenericArrayType(up[0]),
+                 from,
+                 to);
+  }
+
+  private static final FreshTypeVariable substitute(final FreshTypeVariable in, final Type from, final Type to) {
+    return
+      substitute(in,
+                 () -> new Type[] { in.getUpperBound() },
+                 () -> in.getLowerBound() == null ? emptyTypeArray() : new Type[] { in.getLowerBound() },
+                 FreshTypeVariable::new,
+                 from,
+                 to);
+  }
+
+  private static final IntersectionType substitute(final IntersectionType in, final Type from, final Type to) {
+    return
+      substitute(in,
+                 in::getBounds,
+                 Types::emptyTypeArray,
+                 (up, low) -> new IntersectionType(up),
+                 from,
+                 to);
   }
 
   private static final Type substitute(final TypeVariable<?> in, final Type from, final Type to) {
-    assert !equals(in, from);
-    assert !equals(in, to);
-    assert !equals(from, to);
-    final Type[] bounds = in.getBounds();
-    if (bounds.length > 1) {
-      throw new UnsupportedOperationException("bounds.length has to be 1 at the moment because FreshTypeVariable only takes one bound apiece");
-    }
-    final Type[] newBounds = new Type[bounds.length];
-    boolean sub = false;
-    for (int i = 0; i < bounds.length; i++) {
-      newBounds[i] = substitute(bounds[i], from, to);
-      if (!sub) {
-        sub = newBounds[i] != bounds[i];
-      }
-    }
-    if (sub) {
-      return new FreshTypeVariable(newBounds[0]);
-    } else {
-      return in;
-    }
+    return
+      substitute(in,
+                 in::getBounds,
+                 Types::emptyTypeArray,
+                 FreshTypeVariable::new,
+                 from,
+                 to);
   }
 
   private static final Type substitute(final WildcardType in, final Type from, final Type to) {
     assert !equals(in, from);
     assert !equals(in, to);
     assert !equals(from, to);
-    // I'm not sure this is possible or why you'd want to do it if it were, but for completeness….
-    final Type[] lowerBounds = in.getLowerBounds();
-    if (lowerBounds.length <= 0) {
-      final Type[] upperBounds = in.getUpperBounds();
-      final Type upperBound = upperBounds[0];
-      if (equals(upperBound, from)) {
-        return new UpperBoundedWildcardType(to);
+    return
+      substitute(in,
+                 in::getUpperBounds,
+                 in::getLowerBounds,
+                 (up, low) -> {
+                   if (low.length <= 0) {
+                     assert up.length == 1;
+                     return up[0] == Object.class ? UnboundedWildcardType.INSTANCE : new UpperBoundedWildcardType(up);
+                   } else {
+                     return new LowerBoundedWildcardType(low);
+                   }
+                 },
+                 from,
+                 to);
+  }
+
+  private static final <T extends Type> T substitute(final T in,
+                                                     final Supplier<? extends Type[]> upper,
+                                                     final Supplier<? extends Type[]> lower,
+                                                     final BiFunction<? super Type[], ? super Type[], ? extends T> out,
+                                                     final Type from,
+                                                     final Type to) {
+    assert !equals(in, from);
+    assert !equals(in, to);
+    assert !equals(from, to);
+    boolean sub = false;
+    Type[] old = upper == null ? emptyTypeArray() : upper.get(); // e.g. upper bounds, type arguments, etc.
+    final Type[] newUppers;
+    if (old != null && old.length > 0) {
+      newUppers = new Type[old.length];
+      for (int i = 0; i < old.length; i++) {
+        newUppers[i] = substitute(old[i], from, to);
+        if (!sub) {
+          sub = newUppers[i] != old[i];
+        }
       }
     } else {
-      final Type lowerBound = lowerBounds[0];
-      assert lowerBound != null;
-      if (equals(lowerBound, from)) {
-        return new LowerBoundedWildcardType(to);
-      }
+      newUppers = emptyTypeArray();
     }
-    return in;
+    old = lower == null ? emptyTypeArray() : lower.get();
+    final Type[] newLowers;
+    if (old != null && old.length > 0) {
+      newLowers = new Type[old.length];
+      for (int i = 0; i < old.length; i++) {
+        newLowers[i] = substitute(old[i], from, to);
+        if (!sub) {
+          sub = newLowers[i] != old[i];
+        }
+      }
+    } else {
+      newLowers = emptyTypeArray();
+    }
+    return sub ? out.apply(newUppers, newLowers) : in;
   }
-  
+
   static final boolean containsWildcard(final Type type) {
     return type instanceof ParameterizedType && containsWildcard((ParameterizedType)type);
   }
@@ -1965,22 +2080,22 @@ public final class Types {
 
   static final Type[] getTypeParameters(final Type type) {
     if (type == null) {
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else if (type instanceof Class) {
       return ((Class<?>)type).getTypeParameters();
     } else if (type instanceof ParameterizedType) {
       return getTypeParameters(((ParameterizedType)type).getRawType()); // NOTE: recursive
     } else {
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     }
   }
 
   static final Type[] getTypeParameters(final Class<?> type) {
-    return type == null ? AbstractType.EMPTY_TYPE_ARRAY : type.getTypeParameters();
+    return type == null ? emptyTypeArray() : type.getTypeParameters();
   }
 
   static final Type[] getTypeParameters(final ParameterizedType type) {
-    return type == null ? AbstractType.EMPTY_TYPE_ARRAY : getTypeParameters(type.getRawType()); // NOTE: recursive
+    return type == null ? emptyTypeArray() : getTypeParameters(type.getRawType()); // NOTE: recursive
   }
 
   static final Type getOwnerType(final Type type) {
@@ -2028,7 +2143,7 @@ public final class Types {
     // [That is: given a formal type parameter Fₙ, replace it with a
     // corresponding actual type argument Tₙ.]
     if (formalTypeParameters == null || actualTypeArguments == null || formalTypeParameters.length <= 0) {
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else if (formalTypeParameters.length > actualTypeArguments.length) {
       throw new IllegalArgumentException();
     } else {
@@ -2111,7 +2226,7 @@ public final class Types {
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one
       // instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       final Type[] genericComponentTypeDirectSupertypes = getDirectSupertypes(type.getGenericComponentType(), includeContainingTypeArguments);
       final Type[] returnValue = new Type[genericComponentTypeDirectSupertypes.length];
@@ -2129,7 +2244,7 @@ public final class Types {
       // The direct supertypes of the null type are all reference
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       return new Type[] { type.getUpperBound() };
     }
@@ -2140,7 +2255,7 @@ public final class Types {
       // The direct supertypes of the null type are all reference
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
       // 4.10.2. Subtyping among [non-array] Class and Interface Types
@@ -2171,7 +2286,7 @@ public final class Types {
       // The direct supertypes of the null type are all reference
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       final Type[] bounds = type.getBounds();
       return bounds == null || bounds.length <= 0 ? new Type[] { Object.class } : bounds;
@@ -2184,13 +2299,11 @@ public final class Types {
       // The direct supertypes of the null type are all reference
       // types other than the null type itself. [There's no way to
       // represent an array of infinite size so we use an empty one instead.]
-      return AbstractType.EMPTY_TYPE_ARRAY;
+      return emptyTypeArray();
     } else {
       throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle WildcardTypes: " + type);
     }
   }
-
-
 
   /**
    * Returns the <em>effective bounds</em> of the supplied {@link
@@ -2272,6 +2385,10 @@ public final class Types {
       return (T)DefaultParameterizedType.valueOf((ParameterizedType)type);
     } else if (type instanceof GenericArrayType) {
       return (T)DefaultGenericArrayType.valueOf((GenericArrayType)type);
+    } else if (type instanceof FreshTypeVariable) {
+      throw new IllegalArgumentException("Unexpected type: " + type);
+    } else if (type instanceof IntersectionType) {
+      throw new IllegalArgumentException("Unexpected type: " + type);
     } else if (type instanceof TypeVariable) {
       return (T)DefaultTypeVariable.valueOf((TypeVariable<? extends GenericDeclaration>)type);
     } else if (type instanceof WildcardType) {
@@ -2304,6 +2421,10 @@ public final class Types {
       return hashCode((ParameterizedType)type);
     } else if (type instanceof GenericArrayType) {
       return hashCode((GenericArrayType)type);
+    } else if (type instanceof FreshTypeVariable) {
+      return hashCode((FreshTypeVariable)type);
+    } else if (type instanceof IntersectionType) {
+      return hashCode((IntersectionType)type);
     } else if (type instanceof TypeVariable) {
       return hashCode((TypeVariable<?>)type);
     } else if (type instanceof WildcardType) {
@@ -2327,6 +2448,14 @@ public final class Types {
 
   private static final int hashCode(final GenericArrayType type) {
     return type == null ? 0 : Objects.hashCode(type.getGenericComponentType());
+  }
+
+  private static final int hashCode(final FreshTypeVariable type) {
+    return type == null ? 0 : hashCode(type.getUpperBound()) ^ hashCode(type.getLowerBound());
+  }
+
+  private static final int hashCode(final IntersectionType type) {
+    return type == null ? 0 : Arrays.hashCode(type.getBounds());
   }
 
   private static final int hashCode(final TypeVariable<?> type) {
@@ -2366,6 +2495,10 @@ public final class Types {
       return type1 instanceof ParameterizedType && equals((ParameterizedType)type0, (ParameterizedType)type1);
     } else if (type0 instanceof GenericArrayType) {
       return type1 instanceof GenericArrayType && equals((GenericArrayType)type0, (GenericArrayType)type1);
+    } else if (type0 instanceof FreshTypeVariable) {
+      return type1 instanceof FreshTypeVariable && equals((FreshTypeVariable)type0, (FreshTypeVariable)type1);
+    } else if (type0 instanceof IntersectionType) {
+      return type1 instanceof IntersectionType && equals((IntersectionType)type0, (IntersectionType)type1);
     } else if (type0 instanceof TypeVariable) {
       return type1 instanceof TypeVariable && equals((TypeVariable<?>)type0, (TypeVariable<?>)type1);
     } else if (type0 instanceof WildcardType) {
@@ -2424,6 +2557,22 @@ public final class Types {
       return true;
     } else {
       return equals(ga0.getGenericComponentType(), ga1.getGenericComponentType());
+    }
+  }
+
+  private static final boolean equals(final FreshTypeVariable tv0, final FreshTypeVariable tv1) {
+    return tv0 == tv1;
+  }
+
+  private static final boolean equals(final IntersectionType tv0, final IntersectionType tv1) {
+    if (tv0 == null) {
+      return tv1 == null;
+    } else if (tv1 == null) {
+      return false;
+    } else if (tv0 == tv1) {
+      return true;
+    } else {
+      return equals(tv0.getBounds(), tv1.getBounds());
     }
   }
 
@@ -2495,6 +2644,30 @@ public final class Types {
     }
   }
 
+  public static final String toString(final Type[] types) {
+    if (types == null) {
+      return "null";
+    } else if (types.length <= 0) {
+      return "[]";
+    } else {
+      final StringJoiner sj = new StringJoiner("[", ", ", "]");
+      for (final Type type : types) {
+        sj.add(toString(type));
+      }
+      return sj.toString();
+    }
+  }
+
+  public static final String toString(final Collection<? extends Type> types) {
+    if (types == null) {
+      return "null";
+    } else if (types.isEmpty()) {
+      return "[]";
+    } else {
+      return toString(types.toArray(new Type[types.size()]));
+    }
+  }
+  
   /**
    * Returns a {@link String} representation of the supplied {@link
    * Type} that is independent of its implementation.
@@ -2523,6 +2696,10 @@ public final class Types {
       return toString((ParameterizedType)type);
     } else if (type instanceof GenericArrayType) {
       return toString((GenericArrayType)type);
+    } else if (type instanceof FreshTypeVariable) {
+      return toString((FreshTypeVariable)type);
+    } else if (type instanceof IntersectionType) {
+      return toString((IntersectionType)type);
     } else if (type instanceof TypeVariable) {
       return toString((TypeVariable<?>)type);
     } else if (type instanceof WildcardType) {
@@ -2574,6 +2751,14 @@ public final class Types {
     } else {
       return toString(gatype.getGenericComponentType()) + "[]";
     }
+  }
+
+  private static final String toString(final FreshTypeVariable ftv) {
+    return ftv == null ? "null" : ftv.getTypeName();
+  }
+
+  private static final String toString(final IntersectionType type) {
+    return type == null ? "null" : type.getTypeName();
   }
 
   private static final String toString(final TypeVariable<?> tv) {
@@ -2658,7 +2843,11 @@ public final class Types {
     return formalTypeParameters instanceof TypeVariable<?>[];
   }
 
-  
+  public static final Type[] emptyTypeArray() {
+    return EMPTY_TYPE_ARRAY;
+  }
+
+
   /*
    * Inner and nested classes.
    */
@@ -2685,16 +2874,45 @@ public final class Types {
 
     private final Type[] bounds;
 
+    private IntersectionType() {
+      super();
+      this.bounds = new Type[] { Object.class };
+    }
+    
+    private IntersectionType(final Type bound) {
+      super();
+      this.bounds = new Type[] { bound == null ? Object.class : bound };
+    }
+    
     private IntersectionType(final Type[] bounds) {
       super();
-      if (bounds.length <= 0) {
-        throw new IllegalArgumentException("empty bounds");
+      if (bounds == null || bounds.length <= 0) {
+        this.bounds = new Type[] { Object.class };
+      } else {
+        this.bounds = bounds.clone();
       }
-      this.bounds = bounds.clone();
     }
 
     private final Type[] getBounds() {
       return this.bounds.clone();
+    }
+
+    @Override
+    public final int hashCode() {
+      return Types.hashCode(this);
+    }
+
+    @Override
+    public final boolean equals(final Object other) {
+      if (other == this) {
+        return true;
+      } else if (other == null) {
+        return false;
+      } else if (this.getClass() == other.getClass()) {
+        return Types.equals(this, (IntersectionType)other);
+      } else {
+        return false;
+      }
     }
 
     @Override
@@ -2714,14 +2932,48 @@ public final class Types {
 
     private final Type lowerBound;
 
+    private FreshTypeVariable(final Type[] upperBounds) {
+      this(upperBounds, emptyTypeArray());
+    }
+
+    private FreshTypeVariable(final Type[] upperBounds,
+                              final Type[] lowerBounds) {
+      super();
+      if (upperBounds == null || upperBounds.length <= 0) {
+        this.upperBound = Object.class;
+      } else if (upperBounds.length == 1) {
+        this.upperBound = upperBounds[0];
+      } else {
+        this.upperBound = new IntersectionType(upperBounds);
+      }
+      if (lowerBounds == null || lowerBounds.length <= 0) {
+        this.lowerBound = null;
+      } else {
+        this.lowerBound = lowerBounds.length == 1 ? lowerBounds[0] : new IntersectionType(lowerBounds);
+      }
+      if (isPrimitive(this.upperBound) || isWildcard(this.upperBound)) {
+        throw new IllegalArgumentException("upperBound: " + this.upperBound);
+      } else if (isPrimitive(this.lowerBound) || isPrimitive(this.lowerBound)) {
+        throw new IllegalArgumentException("lowerBound: " + this.lowerBound);
+      }
+    }
+
+    private FreshTypeVariable() {
+      super();
+      this.upperBound = Object.class;
+      this.lowerBound = null;
+    }
+    
     private FreshTypeVariable(final Type upperBound) {
-      this(upperBound, null);
+      super();
+      this.upperBound = upperBound == null ? Object.class : upperBound;
+      this.lowerBound = null;
     }
 
     private FreshTypeVariable(final Type upperBound,
                               final Type lowerBound) {
       super();
-      this.upperBound = upperBound;
+      this.upperBound = upperBound == null ? Object.class : upperBound;
       this.lowerBound = lowerBound;
     }
 
@@ -2734,8 +2986,30 @@ public final class Types {
     }
 
     @Override
+    public final int hashCode() {
+      return Types.hashCode(this);
+    }
+
+    @Override
+    public final boolean equals(final Object other) {
+      if (other == this) {
+        return true;
+      } else if (other == null) {
+        return false;
+      } else if (this.getClass() == other.getClass()) {
+        return Types.equals(this, (FreshTypeVariable)other);
+      } else {
+        return false;
+      }
+    }
+
+    @Override
     public String toString() {
-      return "capture; upper bound: " + Types.toString(upperBound) + "; lower bound: " + Types.toString(lowerBound);
+      if (this.lowerBound == null) {
+        return "CAP extends " + Types.toString(upperBound);
+      } else {
+        return "CAP extends " + Types.toString(upperBound) + " super " + Types.toString(lowerBound);
+      }
     }
 
   }

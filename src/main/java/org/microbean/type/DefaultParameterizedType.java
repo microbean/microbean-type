@@ -96,7 +96,7 @@ public final class DefaultParameterizedType extends AbstractType implements Para
     this.ownerType = ownerType;
     this.rawType = Objects.requireNonNull(rawType, "rawType");
     if (actualTypeArguments == null || actualTypeArguments.length <= 0) {
-      this.actualTypeArguments = EMPTY_TYPE_ARRAY;
+      this.actualTypeArguments = Types.emptyTypeArray();
     } else {
       this.actualTypeArguments = actualTypeArguments.clone();
     }
@@ -215,7 +215,7 @@ public final class DefaultParameterizedType extends AbstractType implements Para
     }
     final Serializable[] serializableActualTypeArguments = (Serializable[])stream.readObject();
     if (serializableActualTypeArguments == null || serializableActualTypeArguments.length <= 0) {
-      this.actualTypeArguments = EMPTY_TYPE_ARRAY;
+      this.actualTypeArguments = Types.emptyTypeArray();
     } else {
       this.actualTypeArguments = new Type[serializableActualTypeArguments.length];
       System.arraycopy(serializableActualTypeArguments, 0, this.actualTypeArguments, 0, serializableActualTypeArguments.length);
