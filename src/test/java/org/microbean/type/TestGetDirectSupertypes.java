@@ -107,11 +107,17 @@ final class TestGetDirectSupertypes {
 
   @Test
   final void testGetContainingTypeArguments() {
-    final Type[] containingTypes = Types.getContainingTypeArguments(String.class);
-    System.out.println("Containing types:");
-    for (final Type t : containingTypes) {
-      System.out.println("  " + Types.toString(t));
-    }
+    // These are values for type arguments that can "contain" String.class.
+    final Type[] containingTypeArguments = Types.getContainingTypeArguments(String.class);
+    final Collection<Type> c = Arrays.asList(containingTypeArguments);
+    assertEquals(7, containingTypeArguments.length, "" + c); // TODO: this will fail and need to change when we go to JDK 12+ thanks to Constable, ConstantDesc, etc.
+    assertTrue(c.contains(String.class));
+    assertTrue(c.contains(new UpperBoundedWildcardType(String.class)));
+    assertTrue(c.contains(new UpperBoundedWildcardType(Serializable.class)));
+    assertTrue(c.contains(new UpperBoundedWildcardType(Comparable.class)));
+    assertTrue(c.contains(new UpperBoundedWildcardType(CharSequence.class)));
+    assertTrue(c.contains(new LowerBoundedWildcardType(String.class)));
+    assertTrue(c.contains(UnboundedWildcardType.INSTANCE));
   }
   
   @Test

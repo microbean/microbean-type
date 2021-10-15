@@ -29,13 +29,31 @@ import java.util.StringJoiner;
 
 class AbstractWildcardType extends AbstractType implements WildcardType {
 
+
+  /*
+   * Static fields.
+   */
+
+
   private static final long serialVersionUID = 2L;
+
+
+  /*
+   * Instance fields.
+   */
+
 
   private transient Type[] upperBounds;
 
   private transient Type[] lowerBounds;
 
   private transient int hashCode;
+
+
+  /*
+   * Constructors.
+   */
+
 
   AbstractWildcardType(final Type[] upperBounds, final Type[] lowerBounds) {
     super();
@@ -53,6 +71,8 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     } else {
       throw new IllegalArgumentException("lowerBounds.length > 1: " + Arrays.asList(lowerBounds));
     }
+    // Wildcards can't have primitives or other wildcards
+    // (non-reference types) anywhere in their bounds.
     for (final Type upperBound : this.upperBounds) {
       if (!Types.isReferenceType(upperBound)) {
         throw new IllegalArgumentException("upperBounds contains non-reference type: " + Arrays.asList(this.upperBounds));
@@ -70,17 +90,31 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     this(other.getUpperBounds(), other.getLowerBounds());
   }
 
-  @Override
+
+  /*
+   * Instance methods.
+   */
+
+
+  public final Type getUpperBound() {
+    return this.upperBounds[0];
+  }
+
+  public final Type getLowerBound() {
+    return this.lowerBounds.length <=0 ? null : this.lowerBounds[0];
+  }
+
+  @Override // WildcardType
   public final Type[] getUpperBounds() {
     return this.upperBounds.clone();
   }
 
-  @Override
+  @Override // WildcardType
   public final Type[] getLowerBounds() {
     return this.lowerBounds.clone();
   }
 
-  @Override
+  @Override // Object
   public final int hashCode() {
     return this.hashCode;
   }
@@ -89,7 +123,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     return Types.hashCode(this);
   }
 
-  @Override
+  @Override // Object
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
@@ -177,6 +211,12 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     }
   }
 
+
+  /*
+   * Static methods.
+   */
+
+  
   public static final AbstractWildcardType valueOf(final WildcardType type) {
     if (type == null) {
       return null;
