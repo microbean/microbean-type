@@ -19,6 +19,7 @@ package org.microbean.type;
 import java.io.Serializable;
 
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 
@@ -66,59 +67,6 @@ final class TestGetDirectSupertypes {
 
   }
 
-  private static final Type[] generateContainingTypes(final Type type) {
-    Objects.requireNonNull(type);
-    if (type == Object.class) {
-      return new Type[] { UnboundedWildcardType.INSTANCE, new LowerBoundedWildcardType(Object.class) };
-    } else {
-      final Collection<Type> types = new ArrayList<>();
-      generateContainingTypes(type, types);
-      types.add(UnboundedWildcardType.INSTANCE);
-      return types.toArray(new Type[types.size()]);
-    }
-  }
-
-  private static final void generateContainingTypes(final Type type, final Collection<Type> types) {
-    Objects.requireNonNull(type);
-    // T <= T
-    types.add(type);
-    if (type instanceof WildcardType) {
-      final WildcardType wct = (WildcardType)type;
-      final Type[] lowerBounds = wct.getLowerBounds();
-      if (lowerBounds.length <= 0) {
-        final Type[] upperBounds = wct.getUpperBounds();
-        assert upperBounds.length == 1;
-        final Type upperBound = upperBounds[0];
-        if (upperBound != Object.class) {
-          for (final Type s : Types.getDirectSupertypes(upperBound)) {
-            assert s != null;
-            assert !Types.equals(upperBound, s);
-            if (s != Object.class) {
-              generateContainingTypes(new UpperBoundedWildcardType(s), types);
-            }
-          }
-        }
-      }
-    } else {
-      generateContainingTypes(new UpperBoundedWildcardType(type), types);
-      types.add(new LowerBoundedWildcardType(type));
-    }
-  }
-
-  @Test
-  final void testGetContainingTypeArguments() {
-    // These are values for type arguments that can "contain" String.class.
-    final Type[] containingTypeArguments = Types.getContainingTypeArguments(String.class);
-    final Collection<Type> c = Arrays.asList(containingTypeArguments);
-    assertEquals(7, containingTypeArguments.length, "" + c); // TODO: this will fail and need to change when we go to JDK 12+ thanks to Constable, ConstantDesc, etc.
-    assertTrue(c.contains(String.class));
-    assertTrue(c.contains(new UpperBoundedWildcardType(String.class)));
-    assertTrue(c.contains(new UpperBoundedWildcardType(Serializable.class)));
-    assertTrue(c.contains(new UpperBoundedWildcardType(Comparable.class)));
-    assertTrue(c.contains(new UpperBoundedWildcardType(CharSequence.class)));
-    assertTrue(c.contains(new LowerBoundedWildcardType(String.class)));
-    assertTrue(c.contains(UnboundedWildcardType.INSTANCE));
-  }
   
   @Test
   final void testClassDirectSupertypes() {
@@ -205,6 +153,11 @@ final class TestGetDirectSupertypes {
   final void testParameterizedTypeDirectSupertypes() {
     final Type[] dss = Types.getDirectSupertypes(new TypeLiteral<List<String>>() {}.getType());
     Collection<Type> dsc = Arrays.asList(dss);
+    /*
+    for (final Type ds : dsc) {
+      System.out.println("  " + Types.toString(ds));
+    }
+    */
     assertTrue(dss.length > 2, "" + dsc); // TODO: this will change when we add wildcard handling
     assertTrue(dsc.contains(List.class), "" + dsc);
     assertTrue(dsc.contains(new TypeLiteral<Collection<String>>() {}.getType()), "" + dsc);

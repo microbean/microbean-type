@@ -43,7 +43,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -1418,40 +1420,84 @@ public final class Types {
     // T <= ? extends T [? extends T contains T]
     // T <= ? super T) [? super T contains T]
     if (Objects.requireNonNull(type, "type") == Object.class) {
-      return new Type[] { new LowerBoundedWildcardType(Object.class), UnboundedWildcardType.INSTANCE };
+      return new Type[] { Object.class, new LowerBoundedWildcardType(Object.class), UnboundedWildcardType.INSTANCE };
     } else {
-      final Collection<Type> types = new ArrayList<>();
-      getContainingTypeArguments(type, types::add);
-      types.add(UnboundedWildcardType.INSTANCE);
-      return types.isEmpty() ? emptyTypeArray() : types.toArray(new Type[types.size()]);
+      final Collection<TypeWrapper> typeWrappers = new ArrayList<>();
+      getContainingTypeArguments(type, t -> {
+          final TypeWrapper wrapper = new TypeWrapper(t);
+          if (typeWrappers.contains(wrapper)) {
+            return false;
+          } else {
+            return typeWrappers.add(wrapper);
+          }
+        });
+      /*
+      final SortedSet<TypeWrapper> typeWrappers = new TreeSet<>();
+      getContainingTypeArguments(type, t -> typeWrappers.add(new TypeWrapper(t)));
+      */
+      typeWrappers.add(new TypeWrapper(UnboundedWildcardType.INSTANCE));
+      return typeWrappers.isEmpty() ? emptyTypeArray() : typeWrappers.stream().map(tw -> tw.t).toArray(Type[]::new);
+      // return types.isEmpty() ? emptyTypeArray() : types.toArray(new Type[types.size()]);
     }
   }
 
-  private static final void getContainingTypeArguments(final Type type, final Consumer<? super Type> types) {
+  private static final void getContainingTypeArguments(final Type type,
+                                                       final Predicate<? super Type> adder) {
     assert type != null;
     assert type != Object.class;
-    // T <= T
-    types.accept(type);
     if (type instanceof WildcardType) {
-      final WildcardType wct = (WildcardType)type;
-      final Type[] lowerBounds = wct.getLowerBounds();
-      if (lowerBounds.length <= 0) {
-        final Type[] upperBounds = wct.getUpperBounds();
-        assert upperBounds.length == 1;
-        final Type upperBound = upperBounds[0];
-        if (upperBound != Object.class) {
-          for (final Type s : getDirectSupertypes(upperBound, false)) {
-            assert s != null;
-            assert !Types.equals(upperBound, s);
-            if (s != Object.class) {
-              getContainingTypeArguments(new UpperBoundedWildcardType(s), types); // NOTE: recursive
-            }
+      getContainingTypeArguments((WildcardType)type, adder);
+    } else if (adder.test(type)) { // T <= T
+      getContainingTypeArguments(new UpperBoundedWildcardType(type), adder); // NOTE: recursive
+      final boolean added = adder.test(new LowerBoundedWildcardType(type));
+      assert added;
+    }
+  }
+
+  private static final void getContainingTypeArguments(final WildcardType type,
+                                                       final Predicate<? super Type> adder) {
+    final Object[] lowerBounds = type.getLowerBounds();
+    if (lowerBounds.length <= 0) {
+      final Type[] upperBounds = type.getUpperBounds();
+      assert upperBounds.length == 1;
+      final Type upperBound = upperBounds[0];
+      assert upperBound != null;
+      assert !(upperBound instanceof WildcardType) : "Upper bound was somehow a WildcardType: " + toString(upperBound);
+      if (upperBound != Object.class &&
+          adder.test(type)) { // T <= T
+        for (final Type upperBoundSupertype : getSupertypes(upperBound)) {
+          assert upperBoundSupertype != null;
+          if (upperBoundSupertype != Object.class && !equals(upperBound, upperBoundSupertype)) {
+            adder.test(new UpperBoundedWildcardType(upperBoundSupertype));
           }
         }
+        /*
+        for (final Type upperBoundDirectSupertype : getDirectSupertypes(upperBound, true)) {
+          assert upperBoundDirectSupertype != null;
+          if (upperBoundDirectSupertype != Object.class && !Types.equals(upperBound, upperBoundDirectSupertype)) {
+            getContainingTypeArguments(new UpperBoundedWildcardType(upperBoundDirectSupertype), adder); // NOTE: recursive
+          }
+        }
+        */
       }
+    }
+  }
+
+  static final Type[] getSupertypes(final Type type) {
+    if (type == null) {
+      return emptyTypeArray();
     } else {
-      getContainingTypeArguments(new UpperBoundedWildcardType(type), types); // NOTE: recursive
-      types.accept(new LowerBoundedWildcardType(type));
+      final Set<TypeWrapper> supertypes = new HashSet<>();
+      for (final Type directSupertype : getDirectSupertypes(type)) {
+        assert !equals(type, directSupertype);
+        supertypes.add(new TypeWrapper(directSupertype));
+        for (final Type transitiveDirectSupertype : getDirectSupertypes(directSupertype)) {
+          supertypes.add(new TypeWrapper(transitiveDirectSupertype));
+        }
+      }
+      assert !supertypes.contains(new TypeWrapper(type)) : "supertypes.contains(type): supertypes: " + toString(supertypes) + "; type: " + toString(type);
+      supertypes.add(new TypeWrapper(type));
+      return supertypes.stream().map(tw -> tw.t).toArray(Type[]::new);
     }
   }
 
@@ -1657,7 +1703,7 @@ public final class Types {
     }
   }
 
-  private static final Type[] getDirectSupertypes(final ParameterizedType type, final boolean includeContainingTypeArguments) {
+  private static final Type[] getDirectSupertypes(ParameterizedType type, final boolean includeContainingTypeArguments) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
     // 4.10. Subtyping
     // […]
@@ -1717,31 +1763,36 @@ public final class Types {
       // represent an array of infinite size so we use an empty one instead.]
       return emptyTypeArray();
     } else {
-      final Type C = type.getRawType();
-      assert C instanceof Class : "Unexpected raw type C: " + toString(C);
-      assert isGeneric((Class<?>)C) : "Unexpected non-generic rawType: " + toString(C);
 
-      final Type[] formalTypeParameters = getTypeParameters(C);
-      assert formalTypeParametersAreTypeVariableInstances(formalTypeParameters);
-
-      Type[] actualTypeArguments = type.getActualTypeArguments();
-      // (It is assumed that cloning of actualTypeArguments takes
-      // place as all viable implementations of ParameterizedType
-      // should do.)
-      assert actualTypeArguments != type.getActualTypeArguments();
-      assert actualTypeArguments.length == formalTypeParameters.length;
-
-      // Nuke wildcards by applying capture conversion
-      actualTypeArguments = applyCaptureConversion(formalTypeParameters, actualTypeArguments);
-      assert actualTypeArguments.length == formalTypeParameters.length;
+      // If the type has no wildcards, capture conversion will do
+      // nothing (at the expense of a couple of array creations and a
+      // few assignments into those arrays; these arrays will get
+      // thrown away in this case) and will return the type as-is.  If
+      // the type has wildcards, capture conversion will be applied
+      // and a new type will be returned.
+      final ParameterizedType oldType = type;
+      type = applyCaptureConversion(oldType);
+      assert (containsWildcard(oldType, false) ? type != oldType : type == oldType) : "oldType: " + toString(oldType) + "; type: " + toString(type);
 
       // See
       // https://stackoverflow.com/questions/69502823/in-the-java-language-specification-version-11-section-4-10-2-how-do-i-read-u%e2%82%96
 
       final List<Type> directSupertypes = new ArrayList<>();
 
+      final Type C = type.getRawType();
+      assert C instanceof Class : "Unexpected raw type C: " + toString(C);
+      assert isGeneric((Class<?>)C) : "Unexpected non-generic rawType: " + toString(C);
+
       final Type[] directSupertypesOfC = getDirectSupertypes(C);
+
       final boolean addObject = isInterface(C) && directSupertypesOfC.length <= 0;
+
+      Type[] actualTypeArguments = type.getActualTypeArguments();
+      // (It is assumed that cloning of actualTypeArguments takes
+      // place as all viable implementations of ParameterizedType
+      // should do.)
+      assert actualTypeArguments != type.getActualTypeArguments();
+
       for (final Type directSupertypeOfC : directSupertypesOfC) {
         assert directSupertypeOfC instanceof Class : "Unexpected erasure of direct supertype of " + toString(C) + ": " + toString(directSupertypeOfC);
         directSupertypes.add(theta(getOwnerType(directSupertypeOfC), directSupertypeOfC, actualTypeArguments));
@@ -1760,9 +1811,32 @@ public final class Types {
         // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝘪 ≤ 𝘯)
         for (int i = 0; i < actualTypeArguments.length; i++) {
           final Type Ti = actualTypeArguments[i];
+          assert !(Ti instanceof WildcardType) : "Ti was a WildcardType (didn't we do capture conversion already?): " + toString(Ti);
+          // TODO: Tentative assertion.
+          // assert !(Ti instanceof FreshTypeVariable) : "Ti was a FreshTypeVariable: " + Ti;
           for (final Type Si : getContainingTypeArguments(Ti)) {
-            if (!equals(Ti, Si)) { // types contain themselves; avoid infinite loops and needless assignments
-              actualTypeArguments[i] = Si;
+            assert (equals(Ti, Si) ? true : Si instanceof WildcardType) : "Si was not a WildcardType: " + toString(Si);
+            // System.out.println("Ti <= Si: " + toString(Ti) + " <= " + toString(Si));
+            if (!equals(Ti, Si)) {
+              // In the JLS, parameterized types are unique among all
+              // other types in that they are their own direct
+              // supertype.  This is because, given List<String>, some
+              // of its supertypes are List<T that contains String>.
+              // One example of a T that contains String is T itself
+              // (all types contain themselves).  So it follows that
+              // List<String> is its own direct supertype.
+              //
+              // This complicates matters because every other relation
+              // having to do with subtyping "goes through"
+              // getDirectSupertype() as the spec requires, applying
+              // it reflexively as well as transitively.
+              //
+              // If we allow this one case where List<String> is its
+              // own direct supertype, then in getSupertypes() and
+              // elsewhere we have to special-case ParameterizedType
+              // situations.  That is undesirable.  So we eliminate
+              // the reflexivity here.
+              actualTypeArguments[i] = Si; // XXX TODO FIXME NO NO NO NO this needs to be combinatorial
             }
           }
         }
@@ -1774,16 +1848,12 @@ public final class Types {
     }
   }
 
-  static final Type[] applyCaptureConversion(final Type[] A, final Type[] T) {
-    return A instanceof TypeVariable[] ? applyCaptureConversion((TypeVariable<?>[])A, T) : T;
-  }
-
-  static final Type[] applyCaptureConversion(final TypeVariable<?>[] A, final Type[] T) {
+  static final ParameterizedType applyCaptureConversion(final ParameterizedType GT) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-5.html#jls-5.1.10
     // 5.1.10 Capture Conversion
     //
     // Let G name a generic type declaration (§8.1.2, §9.1.2) with 𝘯
-    // type parameters A₁…Aₙ with corresponding bounds U₁…Uₙ.
+    // type parameters A₁…Aₙ with corresponding bounds U₁…Uₙ [𝘯 > 0].
     //
     // There exists a capture conversion from a parameterized type
     // G<T₁…Tₙ>(§4.5) to a [new] parameterized type G<S₁…Sₙ>, where,
@@ -1823,97 +1893,98 @@ public final class Types {
     // [See
     // https://github.com/openjdk/jdk/blob/b870468bdc99938fbb19a41b0ede0a3e3769ace2/src/jdk.compiler/share/classes/com/sun/tools/javac/code/Types.java#L4388-L4456
     // for algorithmic inspiration.]
-
-    // TODO: As written this is still broken slightly.
-
-    // A's contents are type parameters; T's contents are type
-    // arguments for them, so A and T have to have the same length.
-    if (A.length != T.length) {
-      throw new IllegalArgumentException("A.length: " + A.length + "; T.length: " + T.length);
+    final TypeVariable<?>[] A = (TypeVariable<?>[])Types.getTypeParameters(GT);
+    if (A.length <= 0) {
+      throw new IllegalArgumentException("Not a generic type declaration: " + Types.toString(GT));
     }
-
-    // S is the array holding the new fresh type variables.
-    final Type[] S = new Type[T.length];
-    
+    final Type[] T = GT.getActualTypeArguments();
+    if (A.length != T.length) {
+      throw new IllegalArgumentException("Mismatched lengths; A: " + Types.toString(A) + "; T: " + Types.toString(T));
+    }
+    final Type[] S = new Type[A.length];
+    // Pass 1.  Fill S to start.  Null slots are where capture
+    // conversion will happen.  Keep track of them for easy recall
+    // later.  If that list is empty, there is no capture conversion
+    // to be done.
+    final List<Integer> wildcardSlotIndices = new ArrayList<>(T.length);
     for (int i = 0; i < T.length; i++) {
       final Type Ti = T[i];
       if (Ti instanceof WildcardType) {
-        final WildcardType wTi = (WildcardType)Ti;
-        final Type[] lowerBounds = wTi.getLowerBounds();
-        if (lowerBounds.length <= 0) {
-          final Type[] upperBounds = wTi.getUpperBounds();
-          assert upperBounds.length == 1 : "Unexpected upper bounds: " + toString(upperBounds);
-          final Type upperBound = upperBounds[0];
-          assert upperBound != null : "Unexpected null upper bound";
-          if (upperBound == Object.class) {
-            // Unbounded wildcard.
+        // (Leave S[i] null to denote a substitution to be performed
+        // in another pass.)
+        wildcardSlotIndices.add(Integer.valueOf(i));
+      } else {
+        // * Otherwise [if Tᵢ is not a wildcard], Sᵢ = Tᵢ.
+        S[i] = Ti;
+      }
+    }
+    final ParameterizedType GS;
+    if (wildcardSlotIndices.isEmpty()) {
+      GS = GT;
+    } else {
+      // Pass 2; perform capture conversion on the wildcards we found
+      // in pass 1.
+      for (final Integer wildcardSlotIndex : wildcardSlotIndices) {
+        final int i = wildcardSlotIndex.intValue();
+        assert S[i] == null;
+        final WildcardType Ti = (WildcardType)T[i];
+        final Type Bi;
+        final Type[] lowerBounds = Ti.getLowerBounds();
+        if (lowerBounds.length == 0) {
+          Bi = Ti.getUpperBounds()[0];
+          if (Bi == Object.class) {
             // * If Tᵢ is a wildcard type argument (§4.5.1) of the
             //   form ?, then Sᵢ is a fresh type variable whose upper
             //   bound is Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ] and whose lower bound is
             //   the null type (§4.1).
-            //
-            // U3, for example, is the upper bound of A3, whatever
-            // that is.  Let's say A3 is "X extends Object"; U3 is
-            // "Object".  With T3 by definition being "?" here, S3
-            // will be a new fresh type variable.  S3's upper bound is
-            // U3-(Object)-with-the-results-of-replacing-occurrences-anywhere-"in"-it-of-any-A-with-that-A's-corresponding-S. Is
-            // there any occurrence of, say, A3 ("X extends Object")
-            // "in" U3 ("Object")?  No there is not.  So T3, "?", is
-            // replaced with S3 ("CAP extends Object [U3]").
-            assert A[i].getBounds().length == 1 : "Unexpected bounds: " + toString(A[i].getBounds());
-            S[i] = new FreshTypeVariable(A[i]);
+            S[i] = new FreshTypeVariable(substitute(i, A, S));
           } else {
-            // Upper-bounded wildcard
-            S[i] = new FreshTypeVariable(glb(upperBound, A[i]));
+            // * If Tᵢ is a wildcard type argument of the form ?
+            //   extends Bᵢ, then Sᵢ is a fresh type variable whose
+            //   upper bound is glb(Bᵢ, Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ]) and whose
+            //   lower bound is the null type.
+            //
+            //   glb(V₁,…,Vₘ) is defined as V₁ & … & Vₘ.
+            S[i] = new FreshTypeVariable(Types.glb(Bi, substitute(i, A, S)));
           }
         } else {
-          // Lower-bounded wildcard
-          S[i] = new FreshTypeVariable(A[i], lowerBounds[0]);
+          // * If Tᵢ is a wildcard type argument of the form ? super
+          //   Bᵢ, then Sᵢ is a fresh type variable whose upper bound
+          //   is Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ] and whose lower bound is Bᵢ.
+          Bi = lowerBounds[0];
+          S[i] = new FreshTypeVariable(substitute(i, A, S), Bi);
         }
-      } else {
-        S[i] = Ti;
+      }
+      GS = new DefaultParameterizedType(GT.getOwnerType(), GT.getRawType(), S);
+    }
+    return GS;
+  }
+
+  // Designed to be used solely from the applyCaptureConversion()
+  // method immediately above.  Any other usage may result in
+  // undefined behavior.
+  private static final Type substitute(final int i,
+                                       final TypeVariable<?>[] A,
+                                       final Type[] S) {
+    assert i >= 0 && i < A.length : "i: " + i;
+    assert A.length == S.length;
+    assert S[i] == null;
+    Type Ui = A[i].getBounds()[0];
+    for (int n = 0; n < A.length; n++) {
+      final Type Sn = S[n];
+      if (Sn != null) {
+        // Uᵢ[A₁:=S₁,…,Aₙ:=Sₙ] [Uᵢ with the substitution in brackets applied to it]
+        Ui = Types.substitute(Ui, A[n], Sn);
+        assert Ui != null;
       }
     }
-    return S;
+    return Ui;
   }
 
-  // Implement the substitution in section 5.1.10
-  private static final Type substitute(final Type upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
-    Objects.requireNonNull(upperBound, "upperBound");
-    if (typeParameters.length != freshTypeVariables.length) {
-      throw new IllegalArgumentException("typeParameters.length != freshTypeVariables.length: typeParameters: " + toString(typeParameters) + "; freshTypeVariables: " + toString(freshTypeVariables));
-    }
-    // upper bound is going to be Gorp or X or Frob<Blatz>[] in the <X extends Gorp, Y extends X, Z extends Frob<Blatz>[]> portion of public class Foo<X>
-    // So it will be either a:
-    // Class<?>
-    // ParameterizedType
-    // TypeVariable
-    assert !(upperBound instanceof GenericArrayType) : "Unexpected GenericArrayType: " + toString(upperBound);
-    assert !(upperBound instanceof WildcardType) : "Unexpected WildcardType: " + toString(upperBound);
-    if (upperBound instanceof Class) {
-      return substitute((Class<?>)upperBound, typeParameters, freshTypeVariables);
-    } else if (upperBound instanceof ParameterizedType) {
-      return substitute((ParameterizedType)upperBound, typeParameters, freshTypeVariables);
-    } else if (upperBound instanceof TypeVariable) {
-      return substitute((TypeVariable<?>)upperBound, typeParameters, freshTypeVariables);
-    } else {
-      throw new IllegalArgumentException("Unexpected upperBound: " + toString(upperBound));
-    }
-  }
-
-  private static final Type substitute(final Class<?> upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
-    throw new UnsupportedOperationException("substitute() is currently unimplemented");
-  }
-
-  private static final Type substitute(final ParameterizedType upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
-    throw new UnsupportedOperationException("substitute() is currently unimplemented");
-  }
-
-  private static final Type substitute(final TypeVariable<?> upperBound, final TypeVariable<?>[] typeParameters, final FreshTypeVariable[] freshTypeVariables) {
-    throw new UnsupportedOperationException("substitute() is currently unimplemented");
-  }
-
-  // This is a blunt hammer.
+  // This is a deliberately blunt hammer designed to be used solely
+  // from the substitute(int, TypeVariable<?>[], Type[]) method
+  // immediately above.  Any other usage may result in undefined
+  // behavior.
   static final Type substitute(final Type in, final Type from, final Type to) {
     if (to == null) {
       throw new NullPointerException("to");
@@ -1944,12 +2015,11 @@ public final class Types {
 
   private static final <T> Class<T> substitute(final Class<T> in, final Type from, final Type to) {
     assert !equals(in, from);
-    // assert !equals(in, to);
     assert !equals(from, to);
     return in;
   }
 
-  private static final ParameterizedType substitute(final ParameterizedType in, final Type from, final Type to) {    
+  private static final ParameterizedType substitute(final ParameterizedType in, final Type from, final Type to) {
     return
       substitute(in,
                  Types::emptyTypeArray,
@@ -2000,9 +2070,6 @@ public final class Types {
   }
 
   private static final WildcardType substitute(final WildcardType in, final Type from, final Type to) {
-    assert !equals(in, from);
-    assert !equals(in, to);
-    assert !equals(from, to);
     return
       substitute(in,
                  in::getUpperBounds,
@@ -2028,7 +2095,6 @@ public final class Types {
                                                      final Type from,
                                                      final Type to) {
     assert !equals(in, from);
-    assert !equals(in, to);
     assert !equals(from, to);
     boolean sub = false;
     Type[] old = set0 == null ? emptyTypeArray() : set0.get(); // e.g. (upper) bounds, owner-and-raw-type
@@ -2061,26 +2127,56 @@ public final class Types {
   }
 
   static final boolean containsWildcard(final Type type) {
-    return type instanceof ParameterizedType && containsWildcard((ParameterizedType)type);
+    return containsWildcard(type, true);
   }
 
-  static final boolean containsWildcard(final ParameterizedType parameterizedType) {
-    return parameterizedType != null && containsWildcard(parameterizedType.getActualTypeArguments());
+  static final boolean containsWildcard(final Type type, final boolean recurse) {
+    return
+      type instanceof WildcardType ||
+      type instanceof ParameterizedType && containsWildcard(((ParameterizedType)type).getActualTypeArguments(), recurse);
+  }
+
+  static final boolean containsWildcard(final ParameterizedType type) {
+    return containsWildcard(type, true);
+  }
+
+  static final boolean containsWildcard(final ParameterizedType type, final boolean recurse) {
+    return type != null && containsWildcard(type.getActualTypeArguments(), recurse);
+  }
+
+  static final boolean containsWildcard(final WildcardType type) {
+    return type != null;
   }
 
   static final boolean containsWildcard(final Type[] types) {
+    return containsWildcard(types, true);
+  }
+
+  static final boolean containsWildcard(final Type[] types, final boolean recurse) {
     // Useful; see
     // https://stackoverflow.com/questions/69530080/in-the-java-language-specification-version-11-section-4-10-2-is-it-true-that-a
-    if (types == null || types.length <= 0) {
-      return false;
-    } else {
-      for (final Type type : types) {
-        if (type instanceof WildcardType) {
-          return true;
+    if (types != null && types.length > 0) {
+      if (types instanceof WildcardType[]) {
+        for (final Object type : types) {
+          if (type != null) {
+            return true;
+          }
+        }
+      } else if (recurse) {
+        for (final Type type : types) {
+          if (type instanceof WildcardType || containsWildcard(type, true)) {
+            return true;
+          }
+        }
+      } else {
+        for (final Type type : types) {
+          if (type instanceof WildcardType) {
+            return true;
+          }
         }
       }
-      return false;
     }
+    return false;
   }
 
   static final Type[] getTypeParameters(final Type type) {
@@ -2119,6 +2215,14 @@ public final class Types {
 
   static final Type getOwnerType(final ParameterizedType ptype) {
     return ptype == null ? null : ptype.getOwnerType();
+  }
+
+  static final Type getRawType(final Type type) {
+    return type instanceof ParameterizedType ? ((ParameterizedType)type).getRawType(): null;
+  }
+
+  static final Type getRawType(final ParameterizedType type) {
+    return type == null ? null : type.getRawType();
   }
 
   static final Type theta(final Type ownerType, final Type rawType, final Type[] actualTypeArguments) {
@@ -2306,7 +2410,7 @@ public final class Types {
       // represent an array of infinite size so we use an empty one instead.]
       return emptyTypeArray();
     } else {
-      throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle WildcardTypes: " + type);
+      throw new UnsupportedOperationException("getDirectSupertypes() does not yet handle WildcardTypes (and may never do so): " + type);
     }
   }
 
@@ -2566,7 +2670,25 @@ public final class Types {
   }
 
   private static final boolean equals(final FreshTypeVariable tv0, final FreshTypeVariable tv1) {
-    return tv0 == tv1;
+    if (tv0 == null) {
+      return tv1 == null;
+    } else if (tv1 == null) {
+      return false;
+    } else if (tv0 == tv1) {
+      return true;
+    } else {
+      System.out.println("*** equals called with two non-identical FreshTypeVariable arguments: " + toString(tv0) + ", " + toString(tv1));
+      // TODO: REALLY not sure about this.
+      // My rationale is as follows:
+      // Two TypeVariables are equal to one another if their
+      // GenericDeclarations and names are equal.
+      // A FreshTypeVariable has no GenericDeclaration.
+      // A FreshTypeVariable has no name.
+      // So the only thing left to look at is the bounds.
+      return
+        equals(tv0.getUpperBound(), tv1.getUpperBound()) &&
+        equals(tv0.getLowerBound(), tv1.getLowerBound());
+    }
   }
 
   private static final boolean equals(final IntersectionType tv0, final IntersectionType tv1) {
@@ -2645,7 +2767,19 @@ public final class Types {
     } else {
       return
         equals(w0.getLowerBounds(), w1.getLowerBounds()) &&
-        equals(w1.getUpperBounds(), w1.getUpperBounds());
+        equals(w0.getUpperBounds(), w1.getUpperBounds());
+    }
+  }
+
+  private static final String toString(final Object[] a) {
+    if (a == null) {
+      return "null";
+    } else if (a instanceof Type[]) {
+      return toString((Type[])a);
+    } else if (a instanceof TypeWrapper[]) {
+      return toString((TypeWrapper[])a);
+    } else {
+      return Arrays.toString(a);
     }
   }
 
@@ -2663,16 +2797,48 @@ public final class Types {
     }
   }
 
-  public static final String toString(final Collection<? extends Type> types) {
+  private static final String toString(final TypeWrapper typeWrapper) {
+    return String.valueOf(typeWrapper);
+  }
+
+  private static final String toString(final TypeWrapper[] typeWrappers) {
+    if (typeWrappers == null) {
+      return "null";
+    } else if (typeWrappers.length <= 0) {
+      return "[]";
+    } else {
+      return toString(Arrays.stream(typeWrappers).map(tw -> tw.t).toArray(Type[]::new));
+    }
+  }
+
+  public static final String toString(final Collection<?> types) {
     if (types == null) {
       return "null";
     } else if (types.isEmpty()) {
       return "[]";
     } else {
-      return toString(types.toArray(new Type[types.size()]));
+      final StringJoiner sj = new StringJoiner(", ", "[", "]");
+      for (final Object type : types) {
+        sj.add(toString(type));
+      }
+      return sj.toString();
     }
   }
-  
+
+  private static final String toString(final Object o) {
+    if (o == null) {
+      return "null";
+    } if (o instanceof Collection) {
+      return toString((Collection<?>)o);
+    } else if (o instanceof Type) {
+      return toString((Type)o);
+    } else if (o instanceof TypeWrapper) {
+      return toString((TypeWrapper)o);
+    } else {
+      return o.toString();
+    }
+  }
+
   /**
    * Returns a {@link String} representation of the supplied {@link
    * Type} that is independent of its implementation.
@@ -2881,7 +3047,7 @@ public final class Types {
 
   }
 
-  private static final class IntersectionType implements Type {
+  static final class IntersectionType implements Type {
 
     private final Type[] bounds;
 
@@ -2889,12 +3055,12 @@ public final class Types {
       super();
       this.bounds = new Type[] { Object.class };
     }
-    
+
     private IntersectionType(final Type bound) {
       super();
       this.bounds = new Type[] { bound == null ? Object.class : bound };
     }
-    
+
     private IntersectionType(final Type[] bounds) {
       super();
       if (bounds == null || bounds.length <= 0) {
@@ -2904,7 +3070,7 @@ public final class Types {
       }
     }
 
-    private final Type[] getBounds() {
+    final Type[] getBounds() {
       return this.bounds.clone();
     }
 
@@ -2943,11 +3109,11 @@ public final class Types {
 
     private final Type lowerBound;
 
-    FreshTypeVariable(final Type[] upperBounds) {
+    private FreshTypeVariable(final Type[] upperBounds) {
       this(upperBounds, emptyTypeArray());
     }
 
-    FreshTypeVariable(final Type[] upperBounds, final Type[] lowerBounds) {
+    private FreshTypeVariable(final Type[] upperBounds, final Type[] lowerBounds) {
       super();
       if (upperBounds == null || upperBounds.length <= 0) {
         this.upperBound = Object.class;
@@ -2961,29 +3127,38 @@ public final class Types {
       } else {
         this.lowerBound = lowerBounds.length == 1 ? lowerBounds[0] : new IntersectionType(lowerBounds);
       }
-      if (isPrimitive(this.upperBound) || isWildcard(this.upperBound)) {
+      this.validate();
+    }
+
+    private final void validate() {
+      if (isPrimitive(this.upperBound) ||
+          isWildcard(this.upperBound)) {
         throw new IllegalArgumentException("upperBound: " + this.upperBound);
-      } else if (isPrimitive(this.lowerBound) || isPrimitive(this.lowerBound)) {
+      } else if (isPrimitive(this.lowerBound) ||
+                 isWildcard(this.lowerBound) ||
+                 this.lowerBound instanceof FreshTypeVariable) {
         throw new IllegalArgumentException("lowerBound: " + this.lowerBound);
       }
     }
 
-    FreshTypeVariable() {
+    private FreshTypeVariable() {
       super();
       this.upperBound = Object.class;
       this.lowerBound = null;
     }
-    
+
     FreshTypeVariable(final Type upperBound) {
       super();
       this.upperBound = upperBound == null ? Object.class : upperBound;
       this.lowerBound = null;
+      this.validate();
     }
 
-    FreshTypeVariable(final Type upperBound, final Type lowerBound) {
+    private FreshTypeVariable(final Type upperBound, final Type lowerBound) {
       super();
       this.upperBound = upperBound == null ? Object.class : upperBound;
       this.lowerBound = lowerBound;
+      this.validate();
     }
 
     final Type getUpperBound() {
@@ -3014,11 +3189,60 @@ public final class Types {
 
     @Override
     public String toString() {
-      if (this.lowerBound == null) {
-        return "CAP extends " + Types.toString(upperBound);
-      } else {
-        return "CAP extends " + Types.toString(upperBound) + " super " + Types.toString(lowerBound);
+      final StringBuilder sb = new StringBuilder("CAP extends ").append(Types.toString(upperBound));
+      if (this.lowerBound != null) {
+        sb.append(" super ").append(Types.toString(lowerBound));
       }
+      return sb.toString();
+    }
+
+  }
+
+  private static final class TypeWrapper implements Comparable<TypeWrapper> { // NOTE: does NOT implement Type
+
+    private final Type t;
+
+    private TypeWrapper(final Type t) {
+      super();
+      this.t = Objects.requireNonNull(t, "t");
+    }
+
+    @Override
+    public final int hashCode() {
+      return Types.hashCode(this.t);
+    }
+
+    @Override
+    public final int compareTo(final TypeWrapper tw) {
+      if (tw == this) {
+        return 0;
+      } else if (tw == null) {
+        return -1; // nulls go to the right
+      } else if (this.equals(tw)) {
+        return 0;
+      } else {
+        return typeComparator.compare(this.t, tw.t);
+      }
+    }
+
+    @Override
+    public final boolean equals(final Object other) {
+      if (other == this) {
+        return true;
+      } else if (other == null) {
+        return false;
+      } else if (this.getClass() == other.getClass()) {
+        return Types.equals(this.t, ((TypeWrapper)other).t);
+      } else if (other instanceof Type) {
+        return Types.equals(this.t, (Type)other);
+      } else {
+        return false;
+      }
+    }
+
+    @Override
+    public final String toString() {
+      return Types.toString(this.t);
     }
 
   }
