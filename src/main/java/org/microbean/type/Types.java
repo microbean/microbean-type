@@ -1808,6 +1808,7 @@ public final class Types {
       directSupertypes.add(C);
 
       if (includeContainingTypeArguments) {
+
         // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝘪 ≤ 𝘯)
         for (int i = 0; i < actualTypeArguments.length; i++) {
           final Type Ti = actualTypeArguments[i];
