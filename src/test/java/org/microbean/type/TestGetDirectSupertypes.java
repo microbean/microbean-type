@@ -210,39 +210,18 @@ final class TestGetDirectSupertypes {
     return Collections.unmodifiableList(result);
   }
 
-  private static final <T> void permutations(final Collection<? super T[]> result,
-                                             final List<? extends T[]> columnValues, // the length of this is the number of columns in a row
-                                             final T[] row,
-                                             final int columnIndex) { // index into columnValues; the column we're working on
-    permutations(result::add, columnValues::get, columnValues.size(), row, r -> r.clone(), columnIndex);
-  }
-
   private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
                                              final IntFunction<? extends T[]> columnValuesGetter,
-                                             final int columnValuesDomainSize, // the length of this is the number of columns in a row
-                                             final T[] row,
-                                             final int columnIndex) { // index into columnValues; the column we're working on
-    permutations(resultAdder, columnValuesGetter, columnValuesDomainSize, row, r -> r.clone(), columnIndex);
-  }
-
-  private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
-                                             final IntFunction<? extends T[]> columnValuesGetter,
-                                             final int columnValuesDomainSize, // the length of this is the number of columns in a row
-                                             final T[] row,
+                                             final int columnCount,
+                                             final T[] row, // mutated and reused
                                              final UnaryOperator<T[]> rowCloner,
-                                             final int columnIndex) { // index into columnValues; the column we're working on
-    // See https://stackoverflow.com/a/10262388/208288
-    if (columnIndex < columnValuesDomainSize) {
-      // Reach into the collection of arrays of column values and grab
-      // the relevant one.  (The total number of arrays will be equal
-      // to columnValuesDomainSize.)
-      final T[] columnValues = columnValuesGetter.apply(columnIndex);
-
-      for (int i = 0; i < columnValues.length; i++) {
-        // Set the column we're working on.
-        row[columnIndex] = columnValues[i];
-        // Set the next column in the same row.
-        permutations(resultAdder, columnValuesGetter, columnValuesDomainSize, row, rowCloner, columnIndex + 1); // NOTE: recursive
+                                             final int columnIndex) {
+    // See https://stackoverflow.com/a/10262388/208288 for inspiration
+    assert row.length == columnCount;
+    if (columnIndex < columnCount) {
+      for (final T columnValue : columnValuesGetter.apply(columnIndex)) {
+        row[columnIndex] = columnValue;
+        permutations(resultAdder, columnValuesGetter, columnCount, row, rowCloner, columnIndex + 1); // NOTE: recursive
       }
     } else {
       resultAdder.accept(rowCloner.apply(row));
