@@ -33,6 +33,7 @@ import java.util.Objects;
 
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.UnaryOperator;
 
 import java.util.stream.Stream;
 
@@ -69,7 +70,7 @@ final class TestGetDirectSupertypes {
     // final ArrayList<? extends Integer> = l0; // nope
     final ArrayList<? extends CharSequence> l4 = l0;
     // final ArrayList<? super CharSequence> l5 = l0; // nope
-    
+
 
   }
 
@@ -77,7 +78,7 @@ final class TestGetDirectSupertypes {
 
   }
 
-  
+
   @Test
   final void testClassDirectSupertypes() {
     // Object (limiting case)
@@ -89,7 +90,7 @@ final class TestGetDirectSupertypes {
     assertEquals(1, ds.length);
     assertSame(long.class, ds[0]);
     // TODO: all the others
-    
+
     // Primitive array
     ds = Types.getDirectSupertypes(int[].class);
     assertEquals(3, ds.length);
@@ -140,7 +141,7 @@ final class TestGetDirectSupertypes {
     // assertEquals(new TypeLiteral<Comparable<Integer>[]>() {}.getType(), ds[1]); // then the direct superinterfaces
     // Hmm; maybe this instead?
     assertSame(Comparable[].class, ds[1]);
-    
+
     // Comparable[] (Comparable is a raw type)
     ds = Types.getDirectSupertypes(Comparable[].class);
     assertEquals(1, ds.length);
@@ -184,18 +185,14 @@ final class TestGetDirectSupertypes {
   // ...and so on
 
   @Test
-  final void testGlop() {
+  final void testPermutations() {
     final Type[] sub1 = { String.class, Object.class };
     final Type[] sub2 = { Number.class };
     final List<Type[]> list = List.of(sub1, sub2);
     final List<Type[]> result = permutations(list, Type[]::new);
-    /*
-    final List<Type[]> result = new ArrayList<>();
-    permutations(result, list, new Type[list.size()], 0);
-    for (final Type[] row : result) {
-      System.out.println("r2: " + Types.toString(row));
-    }
-    */
+    assertEquals(2, result.size());
+    assertTrue(Arrays.equals(new Type[] { String.class, Number.class }, result.get(0)));
+    assertTrue(Arrays.equals(new Type[] { Object.class, Number.class }, result.get(1)));
   }
 
   private static final <T> List<T[]> permutations(List<T[]> columnValues, final IntFunction<? extends T[]> constructor) {
@@ -209,127 +206,47 @@ final class TestGetDirectSupertypes {
     if (row.length != columnValues.size()) {
       throw new IllegalArgumentException("constructor: " + constructor);
     }
-    // permutations(result, columnValues, row, 0);
-    permutations(result::add, columnValues::get, columnValues.size(), row, 0);
+    permutations(result::add, columnValues::get, columnValues.size(), row, r -> r.clone(), 0);
     return Collections.unmodifiableList(result);
   }
-  
+
   private static final <T> void permutations(final Collection<? super T[]> result,
                                              final List<? extends T[]> columnValues, // the length of this is the number of columns in a row
                                              final T[] row,
                                              final int columnIndex) { // index into columnValues; the column we're working on
-    permutations(result::add, columnValues::get, columnValues.size(), row, columnIndex);
+    permutations(result::add, columnValues::get, columnValues.size(), row, r -> r.clone(), columnIndex);
   }
 
   private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
-                                             final IntFunction<? extends T[]> columnValueGetter, // the length of this is the number of columns in a row
-                                             final int columnValuesSize,
+                                             final IntFunction<? extends T[]> columnValuesGetter,
+                                             final int columnValuesDomainSize, // the length of this is the number of columns in a row
                                              final T[] row,
                                              final int columnIndex) { // index into columnValues; the column we're working on
+    permutations(resultAdder, columnValuesGetter, columnValuesDomainSize, row, r -> r.clone(), columnIndex);
+  }
+
+  private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
+                                             final IntFunction<? extends T[]> columnValuesGetter,
+                                             final int columnValuesDomainSize, // the length of this is the number of columns in a row
+                                             final T[] row,
+                                             final UnaryOperator<T[]> rowCloner,
+                                             final int columnIndex) { // index into columnValues; the column we're working on
     // See https://stackoverflow.com/a/10262388/208288
-    if (columnIndex < columnValuesSize) {
-      final T[] columnValue = columnValueGetter.apply(columnIndex);
-      for (int j = 0; j < columnValue.length; j++) {
-        row[columnIndex] = columnValue[j];
-        permutations(resultAdder, columnValueGetter, columnValuesSize, row, columnIndex + 1); // NOTE: recursive
+    if (columnIndex < columnValuesDomainSize) {
+      // Reach into the collection of arrays of column values and grab
+      // the relevant one.  (The total number of arrays will be equal
+      // to columnValuesDomainSize.)
+      final T[] columnValues = columnValuesGetter.apply(columnIndex);
+
+      for (int i = 0; i < columnValues.length; i++) {
+        // Set the column we're working on.
+        row[columnIndex] = columnValues[i];
+        // Set the next column in the same row.
+        permutations(resultAdder, columnValuesGetter, columnValuesDomainSize, row, rowCloner, columnIndex + 1); // NOTE: recursive
       }
     } else {
-      resultAdder.accept(row.clone());
-    }
-  }
-  
-  // This does cartesian product for exactly two arrays.  I need to
-  // expand this to n arrays.
-  private static final Type[][] cp(final Type[] as, final Type[] bs) {
-    final List<Type[]> list = new ArrayList<>(as.length * bs.length);
-    for (final Type a : as) {
-      for (final Type b : bs) {
-        list.add(new Type[] { a, b });
-      }
-    }
-    final Type[][] r = new Type[list.size()][2];
-    for (int i = 0; i < r.length; i++){
-      r[i] = list.get(i).clone();
-    }
-    return r;
-  }
-
-  // Can we do it without lists?
-  // Yes we can.
-  private static final Type[][] cp2(final Type[] as, final Type[] bs) {
-    final Type[][] list = new Type[as.length * bs.length][2];
-    int rowIndex = 0;
-    for (final Type a : as) {
-      for (final Type b : bs) {
-        final Type[] row = list[rowIndex++];
-        row[0] = a;
-        row[1] = b;
-      }
-    }
-    return list;
-  }
-
-  // Can we do it multidimensionally?
-  private static final Type[][] cp3(final Type[]... as) {
-    if (as == null || as.length <= 0) {
-      return new Type[0][0];
-    } else if (as.length == 1) {
-      return new Type[][] { as[0] };
-    } else {
-      int permutations = 1;
-      for (final Object[] x : as) {
-        permutations *= x.length;
-      }
-      final Type[][] r = new Type[permutations][as.length];
-      int rowIndex = 0;
-
-      // Now the problem is: if we got three as, then we need three
-      // loops (i, j, k).  If we got four, then we need four loops (i,
-      // j, k, l) and so on.
-      
-      for (int i = 0; i < as.length; i++) {
-        
-
-
-        
-        final Type[] a0 = as[i++];
-        final Type[] a1 = as[i];
-        final Type[][] reduced = cp3(a0, a1);
-        for (int j = 0; j < reduced.length; j++) {
-          assert reduced[j].length == as.length;
-          r[rowIndex++] = reduced[j];
-        }
-      }
-      return r;
+      resultAdder.accept(rowCloner.apply(row));
     }
   }
 
-  // Sets r[rowIndex] to r[stuff.length] to stuff's contents; returns new rowIndex
-  private static final int set(final Type[][] r, int rowIndex, final Type[][] stuff) {
-    if (r == null || r.length <= 0 || stuff == null || stuff.length <= 0) {
-      return rowIndex;
-    }
-    final int columnLength = r[rowIndex].length;
-    for (int i = 0; i < stuff.length; i++) {
-      assert stuff[i].length == columnLength;
-      for (int j = 0; j < columnLength; j++) {
-        r[rowIndex++][j] = stuff[i][j];
-      }
-    }
-    return rowIndex;
-  }
-  
-
-  // Let's do the two argument one for lists.
-  // Done.
-  private static final List<List<Type>> cp(final List<Type> as, final List<Type> bs) {
-    final List<List<Type>> list = new ArrayList<>(as.size() * bs.size());
-    for (final Type a : as) {
-      for (final Type b : bs) {
-        list.add(List.of(a, b));
-      }
-    }
-    return Collections.unmodifiableList(list);
-  }
-  
 }
