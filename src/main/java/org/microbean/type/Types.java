@@ -50,8 +50,10 @@ import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import org.microbean.development.annotation.Experimental;
 import org.microbean.development.annotation.Incomplete;
@@ -1846,6 +1848,50 @@ public final class Types {
         assert actualTypeArguments != newType.getActualTypeArguments();
       }
       return directSupertypes.toArray(new Type[directSupertypes.size()]);
+    }
+  }
+
+  static final <T> List<T[]> permutations(List<? extends T[]> columnValues, final IntFunction<? extends T[]> constructor) {
+    if (columnValues.isEmpty()) {
+      return List.of();
+    } else {
+      columnValues = List.copyOf(columnValues);
+      int permutations = 1;
+      for (final Object[] x : columnValues) {
+        permutations *= x.length;
+      }
+      final List<T[]> result = new ArrayList<>(permutations);
+      final int columnCount = columnValues.size();
+      final T[] row = constructor.apply(columnCount);
+      if (row.length != columnCount) {
+        throw new IllegalArgumentException("constructor: " + constructor);
+      }
+      permutations(result::add, columnValues::get, row);
+      return Collections.unmodifiableList(result);
+    }
+  }
+
+  private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
+                                             final IntFunction<? extends T[]> columnValuesGetter,
+                                             final T[] row) { // mutated and reused
+    permutations(resultAdder, columnValuesGetter, row, r -> r.clone(), 0);
+  }
+
+  private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
+                                             final IntFunction<? extends T[]> columnValuesGetter,
+                                             final T[] row, // mutated and reused
+                                             final UnaryOperator<T[]> rowCloner,
+                                             final int columnIndex) {
+    if (columnIndex < row.length) {
+      for (final T columnValue : columnValuesGetter.apply(columnIndex)) {
+        row[columnIndex] = columnValue;
+        permutations(resultAdder, columnValuesGetter, row, rowCloner, columnIndex + 1); // NOTE: recursive
+      }
+    } else {
+      final T[] clonedRow = rowCloner.apply(row);
+      assert clonedRow != row;
+      assert clonedRow.length == row.length;
+      resultAdder.accept(clonedRow);
     }
   }
 

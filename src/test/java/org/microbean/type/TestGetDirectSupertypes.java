@@ -19,35 +19,20 @@ package org.microbean.type;
 import java.io.Serializable;
 
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-
-import java.util.function.Consumer;
-import java.util.function.IntFunction;
-import java.util.function.UnaryOperator;
-
-import java.util.stream.Stream;
 
 import jakarta.enterprise.util.TypeLiteral;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import static org.microbean.type.Types.toString;
-import static org.microbean.type.Types.getContainingTypeArguments;
 
 final class TestGetDirectSupertypes {
 
@@ -55,8 +40,7 @@ final class TestGetDirectSupertypes {
     super();
   }
 
-  @Test
-  final void testCompilationThings() {
+  private static final void testCompilationThings() {
     // Does not work, obviously.
     // final ArrayList<Object> l = new ArrayList<String>();
 
@@ -70,14 +54,7 @@ final class TestGetDirectSupertypes {
     // final ArrayList<? extends Integer> = l0; // nope
     final ArrayList<? extends CharSequence> l4 = l0;
     // final ArrayList<? super CharSequence> l5 = l0; // nope
-
-
   }
-
-  private static abstract class Goober implements Collection<List<String>[]> {
-
-  }
-
 
   @Test
   final void testClassDirectSupertypes() {
@@ -172,60 +149,6 @@ final class TestGetDirectSupertypes {
     assertTrue(dss.length > 2, "" + dsc); // TODO: this will change when we add wildcard handling
     assertTrue(dsc.contains(List.class), "" + dsc);
     assertTrue(dsc.contains(new TypeLiteral<Collection<String>>() {}.getType()), "" + dsc);
-  }
-
-  // Think Map<String, String>.  Explosion is:
-  // Map<String, String>
-  // Map<? extends String, String>
-  // Map<String, ? extends String>
-  // Map<? super String, String>
-  // Map<String, ? super String>
-  // Map<? extends CharSequence, String>
-  // Map<String, ? extends CharSequence>
-  // ...and so on
-
-  @Test
-  final void testPermutations() {
-    final Type[] sub1 = { String.class, Object.class };
-    final Type[] sub2 = { Number.class };
-    final List<Type[]> list = List.of(sub1, sub2);
-    final List<Type[]> result = permutations(list, Type[]::new);
-    assertEquals(2, result.size());
-    assertTrue(Arrays.equals(new Type[] { String.class, Number.class }, result.get(0)));
-    assertTrue(Arrays.equals(new Type[] { Object.class, Number.class }, result.get(1)));
-  }
-
-  private static final <T> List<T[]> permutations(List<T[]> columnValues, final IntFunction<? extends T[]> constructor) {
-    columnValues = List.copyOf(columnValues);
-    int permutations = 1;
-    for (final T[] x : columnValues) {
-      permutations *= x.length;
-    }
-    final List<T[]> result = new ArrayList<>(permutations);
-    final T[] row = constructor.apply(columnValues.size());
-    if (row.length != columnValues.size()) {
-      throw new IllegalArgumentException("constructor: " + constructor);
-    }
-    permutations(result::add, columnValues::get, columnValues.size(), row, r -> r.clone(), 0);
-    return Collections.unmodifiableList(result);
-  }
-
-  private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
-                                             final IntFunction<? extends T[]> columnValuesGetter,
-                                             final int columnCount,
-                                             final T[] row, // mutated and reused
-                                             final UnaryOperator<T[]> rowCloner,
-                                             final int columnIndex) {
-    // See https://stackoverflow.com/a/10262388/208288 for inspiration
-    assert row.length == columnCount;
-    if (columnIndex < columnCount) {
-      for (final T columnValue : columnValuesGetter.apply(columnIndex)) {
-        row[columnIndex] = columnValue;
-        permutations(resultAdder, columnValuesGetter, columnCount, row, rowCloner, columnIndex + 1); // NOTE: recursive
-      }
-    } else {
-      resultAdder.accept(rowCloner.apply(row));
-    }
   }
 
 }
