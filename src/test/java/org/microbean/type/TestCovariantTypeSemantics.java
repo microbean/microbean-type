@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020 microBean™.
+ * Copyright © 2020–2021 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,13 +55,13 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class TestIsAssignable {
+final class TestCovariantTypeSemantics {
 
   private TypeSemantics invariantTypeSemantics;
 
   private CovariantTypeSemantics covariantTypeSemantics;
 
-  private TestIsAssignable() {
+  private TestCovariantTypeSemantics() {
     super();
   }
 

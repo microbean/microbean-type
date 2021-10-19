@@ -29,6 +29,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,8 +51,10 @@ import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import org.microbean.development.annotation.Experimental;
 import org.microbean.development.annotation.Incomplete;
@@ -508,54 +511,25 @@ public final class Types {
   }
 
   static final boolean isSupertype(final Type s, final Type t) {
-    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
-    // 4.10. Subtyping
-    // …
-    // The supertypes of a type are obtained by reflexive and
-    // transitive closure over the direct supertype relation [see
-    // getDirectSupertypes()], written S >₁ T, which is defined by
-    // rules given later in this section.
-
     if (s == null) {
       // The null type is the supertype of no other type.
       return false;
-    } else if (t == null) {
+    } else if (t == null || equals(s, t)) {
       // The null type is a subtype of all other types.
-      return true;
-    } else if (equals(s, t)) {
-      // Reflexive.
+      // Supertype is a reflexive relation.
       return true;
     } else if (s instanceof Class && t instanceof Class) {
-      return isSupertype((Class<?>)s, (Class<?>)t);
+      // Let the JDK's native bits handle this for us.
+      return ((Class<?>)s).isAssignableFrom((Class<?>)t);
     } else {
-      final Type[] tDirectSupertypes = getDirectSupertypes(t);
-      for (final Type tDirectSupertype : tDirectSupertypes) {
-        if (!equals(t, tDirectSupertype) && isSupertype(s, tDirectSupertype)) { // NOTE: recursive
-          // A parameterized type, but no other type, can be its own
-          // direct supertype. We already handled this case with the
-          // equals() check a few lines up.
+      final Type[] supertypes = getSupertypes(t); // getSupertypes() is already transitive
+      for (final Type supertype : supertypes) {
+        if (equals(s, supertype)) {
           return true;
         }
       }
       return false;
     }
-  }
-
-  private static final boolean isSupertype(final Class<?> s, final Class<?> t) {
-    // The null type is the supertype of no other type.  So if s is
-    // null we return false.
-    //
-    // The null type is the subtype of all other types.  So if t is
-    // null we return true.
-    //
-    // A class is its own supertype because "the supertypes of a type
-    // are obtained by reflexive and transitive closure over the
-    // direct supertype relation" (note the "reflexive" part).  So if
-    // equals(s, t) we return true.
-    //
-    // The isAssignable() call lets the JDK do the transitive bits for
-    // us in native code in this case.  So if it returns true, so do we.
-    return s != null && (t == null || equals(s, t) || s.isAssignableFrom(t));
   }
 
   private static final boolean isProperSupertype(final Type s, final Type t) {
@@ -567,22 +541,22 @@ public final class Types {
     //
     // S is a proper supertype of T, written S > T, if S :> T and S ≠ T.
     // …
-    return isSupertype(s, t) && !equals(s, t);
+    return !equals(s, t) && isSupertype(s, t);
   }
 
   /**
-   * Returns {@code true} if {@code t} is a <em>direct supertype</em>
-   * of {@code s}, according to <a
+   * Returns {@code true} if {@code s} is a <em>direct supertype</em>
+   * of {@code t}, according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10"
    * target="_parent">the rules of the Java Language Specification,
    * section 4.10</a>.
    *
-   * @param t the purported direct supertype
+   * @param s the purported direct supertype
    *
-   * @param s the purported subtype
+   * @param t the purported subtype
    *
-   * @return {@code true} if {@code t} is a <em>direct supertype</em>
-   * of {@code s}, according to <a
+   * @return {@code true} if {@code s} is a <em>direct supertype</em>
+   * of {@code t}, according to <a
    * href="https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10"
    * target="_parent">the rules of the Java Language Specification,
    * section 4.10</a>; {@code false} otherwise
@@ -593,10 +567,9 @@ public final class Types {
    *
    * @see #getDirectSupertypes(Type)
    */
-  private static final boolean isDirectSupertype(final Type t, final Type s) {
-    final Type[] directSupertypes = getDirectSupertypes(s);
-    for (final Type directSupertype : directSupertypes) {
-      if (equals(directSupertype, t)) {
+  private static final boolean isDirectSupertype(final Type s, final Type t) {
+    for (final Type directSupertype : getDirectSupertypes(t)) {
+      if (equals(directSupertype, s)) {
         return true;
       }
     }
@@ -678,7 +651,7 @@ public final class Types {
    *
    * @idempotency This method is idempotent and deterministic.
    */
-  public static final Type resolve(Type type,
+  public static final Type resolve(final Type type,
                                    final Function<? super Type, ? extends Type> typeResolver) {
     if (type == null) {
       return null;
@@ -1422,22 +1395,10 @@ public final class Types {
     if (Objects.requireNonNull(type, "type") == Object.class) {
       return new Type[] { Object.class, new LowerBoundedWildcardType(Object.class), UnboundedWildcardType.INSTANCE };
     } else {
-      final Collection<TypeWrapper> typeWrappers = new ArrayList<>();
-      getContainingTypeArguments(type, t -> {
-          final TypeWrapper wrapper = new TypeWrapper(t);
-          if (typeWrappers.contains(wrapper)) {
-            return false;
-          } else {
-            return typeWrappers.add(wrapper);
-          }
-        });
-      /*
-      final SortedSet<TypeWrapper> typeWrappers = new TreeSet<>();
-      getContainingTypeArguments(type, t -> typeWrappers.add(new TypeWrapper(t)));
-      */
+      final TypeWrapperSet typeWrappers = new TypeWrapperSet();
+      getContainingTypeArguments(type, typeWrappers::add);
       typeWrappers.add(new TypeWrapper(UnboundedWildcardType.INSTANCE));
-      return typeWrappers.isEmpty() ? emptyTypeArray() : typeWrappers.stream().map(tw -> tw.t).toArray(Type[]::new);
-      // return types.isEmpty() ? emptyTypeArray() : types.toArray(new Type[types.size()]);
+      return typeWrappers.isEmpty() ? emptyTypeArray() : typeWrappers.toTypeArray();
     }
   }
 
@@ -1445,9 +1406,11 @@ public final class Types {
                                                        final Predicate<? super Type> adder) {
     assert type != null;
     assert type != Object.class;
-    if (type instanceof WildcardType) {
+    if (type instanceof FreshTypeVariable) {
+      adder.test(type); // and no further processing; non-spec; turns out to be critical
+    } else if (type instanceof WildcardType) {
       getContainingTypeArguments((WildcardType)type, adder);
-    } else if (adder.test(type)) { // T <= T
+    } else if (adder.test(type)) {  // T <= T
       getContainingTypeArguments(new UpperBoundedWildcardType(type), adder); // NOTE: recursive
       final boolean added = adder.test(new LowerBoundedWildcardType(type));
       assert added;
@@ -1463,41 +1426,49 @@ public final class Types {
       final Type upperBound = upperBounds[0];
       assert upperBound != null;
       assert !(upperBound instanceof WildcardType) : "Upper bound was somehow a WildcardType: " + toString(upperBound);
-      if (upperBound != Object.class &&
-          adder.test(type)) { // T <= T
+      // 1. If the upper bound is Object, then type is an unbounded
+      //    wildcard, and we already handle that in the single-arg
+      //    version of this method.
+      //
+      // 2. It turns out to be critical that for purposes of reporting
+      //    containing type arguments a wildcard cannot be bounded by
+      //    a FreshTypeVariable.  This is non-spec but is critical to
+      //    avoid infinite loops.
+      // 3. Note the adder.test(type) call which will return true only
+      //    if we haven't seen this wildcard type before.
+      if (upperBound != Object.class && !(upperBound instanceof FreshTypeVariable) && adder.test(type)) {
         for (final Type upperBoundSupertype : getSupertypes(upperBound)) {
           assert upperBoundSupertype != null;
           if (upperBoundSupertype != Object.class && !equals(upperBound, upperBoundSupertype)) {
             adder.test(new UpperBoundedWildcardType(upperBoundSupertype));
           }
         }
-        /*
-        for (final Type upperBoundDirectSupertype : getDirectSupertypes(upperBound, true)) {
-          assert upperBoundDirectSupertype != null;
-          if (upperBoundDirectSupertype != Object.class && !Types.equals(upperBound, upperBoundDirectSupertype)) {
-            getContainingTypeArguments(new UpperBoundedWildcardType(upperBoundDirectSupertype), adder); // NOTE: recursive
-          }
-        }
-        */
       }
     }
   }
 
   static final Type[] getSupertypes(final Type type) {
-    if (type == null) {
-      return emptyTypeArray();
-    } else {
-      final Set<TypeWrapper> supertypes = new HashSet<>();
-      for (final Type directSupertype : getDirectSupertypes(type)) {
-        assert !equals(type, directSupertype);
-        supertypes.add(new TypeWrapper(directSupertype));
-        for (final Type transitiveDirectSupertype : getDirectSupertypes(directSupertype)) {
-          supertypes.add(new TypeWrapper(transitiveDirectSupertype));
+    final TypeWrapperSet supertypes = new TypeWrapperSet();
+    getSupertypes(type, supertypes, new TypeWrapperSet());
+    return supertypes.toTypeArray();
+  }
+
+  private static final void getSupertypes(final Type type, final TypeWrapperSet supertypes, final TypeWrapperSet seen) {
+    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10
+    // 4.10. Subtyping
+    // …
+    // The supertypes of a type are obtained by reflexive and
+    // transitive closure over the direct supertype relation [see
+    // getDirectSupertypes()], written S >₁ T, which is defined by
+    // rules given later in this section.
+    if (type != null) {
+      supertypes.add(type);
+      if (seen.add(type)) {
+        final Type[] directSupertypes = getDirectSupertypes(type);
+        for (final Type directSupertype : directSupertypes) {
+          getSupertypes(directSupertype, supertypes, seen);
         }
       }
-      assert !supertypes.contains(new TypeWrapper(type)) : "supertypes.contains(type): supertypes: " + toString(supertypes) + "; type: " + toString(type);
-      supertypes.add(new TypeWrapper(type));
-      return supertypes.stream().map(tw -> tw.t).toArray(Type[]::new);
     }
   }
 
@@ -1640,9 +1611,15 @@ public final class Types {
           //   type with no direct superinterfaces (§9.1.3)
           // […]
           final Type[] returnValue;
-          final Type directSuperclass = erase(getDirectSuperclass(type));
-          assert (directSuperclass == null ? type.isInterface() : directSuperclass instanceof Class) : directSuperclass == null ? "Unexpected class; should have been an interface: " + toString(type) : "Unexpected type erasure of direct superclass: " + toString(directSuperclass);
-          final Type[] directSuperinterfaces = erase(type.getGenericInterfaces());
+          final Type directSuperclass;
+          final Type[] directSuperinterfaces;
+          if (isGeneric(type)) {
+            directSuperclass = getDirectSuperclass(type);
+            directSuperinterfaces = type.getGenericInterfaces();
+          } else {
+            directSuperclass = erase(getDirectSuperclass(type));
+            directSuperinterfaces = erase(type.getGenericInterfaces());
+          }
           if (directSuperinterfaces.length <= 0) {
             if (directSuperclass == null) {
               assert type.isInterface() : "Unexpected class; should have been an interface: " + toString(type);
@@ -1690,7 +1667,6 @@ public final class Types {
         // [We already handled the case where T is Object, i.e. where
         // T has no direct superclass.]
         final Type[] componentTypeDirectSupertypes = getDirectSupertypes(ct, includeContainingTypeArguments);
-        assert componentTypeDirectSupertypes != null;
         assert componentTypeDirectSupertypes.length > 0 : "Unexpected zero length direct supertypes for " + ct;
         final Type[] returnValue = new Type[componentTypeDirectSupertypes.length];
         for (int i = 0; i < componentTypeDirectSupertypes.length; i++) {
@@ -1779,6 +1755,8 @@ public final class Types {
 
       final List<Type> directSupertypes = new ArrayList<>();
 
+      final Type ownerType = type.getOwnerType();
+
       final Type C = type.getRawType();
       assert C instanceof Class : "Unexpected raw type C: " + toString(C);
       assert isGeneric((Class<?>)C) : "Unexpected non-generic rawType: " + toString(C);
@@ -1794,7 +1772,6 @@ public final class Types {
       assert actualTypeArguments != type.getActualTypeArguments();
 
       for (final Type directSupertypeOfC : directSupertypesOfC) {
-        assert directSupertypeOfC instanceof Class : "Unexpected erasure of direct supertype of " + toString(C) + ": " + toString(directSupertypeOfC);
         directSupertypes.add(theta(getOwnerType(directSupertypeOfC), directSupertypeOfC, actualTypeArguments));
       }
 
@@ -1809,42 +1786,59 @@ public final class Types {
 
       if (includeContainingTypeArguments) {
         // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝘪 ≤ 𝘯)
-        for (int i = 0; i < actualTypeArguments.length; i++) {
-          final Type Ti = actualTypeArguments[i];
-          assert !(Ti instanceof WildcardType) : "Ti was a WildcardType (didn't we do capture conversion already?): " + toString(Ti);
-          // TODO: Tentative assertion.
-          // assert !(Ti instanceof FreshTypeVariable) : "Ti was a FreshTypeVariable: " + Ti;
-          for (final Type Si : getContainingTypeArguments(Ti)) {
-            assert (equals(Ti, Si) ? true : Si instanceof WildcardType) : "Si was not a WildcardType: " + toString(Si);
-            // System.out.println("Ti <= Si: " + toString(Ti) + " <= " + toString(Si));
-            if (!equals(Ti, Si)) {
-              // In the JLS, parameterized types are unique among all
-              // other types in that they are their own direct
-              // supertype.  This is because, given List<String>, some
-              // of its supertypes are List<T that contains String>.
-              // One example of a T that contains String is T itself
-              // (all types contain themselves).  So it follows that
-              // List<String> is its own direct supertype.
-              //
-              // This complicates matters because every other relation
-              // having to do with subtyping "goes through"
-              // getDirectSupertype() as the spec requires, applying
-              // it reflexively as well as transitively.
-              //
-              // If we allow this one case where List<String> is its
-              // own direct supertype, then in getSupertypes() and
-              // elsewhere we have to special-case ParameterizedType
-              // situations.  That is undesirable.  So we eliminate
-              // the reflexivity here.
-              actualTypeArguments[i] = Si; // XXX TODO FIXME NO NO NO NO this needs to be combinatorial
-            }
-          }
+        final List<Type[]> containingTypeArguments = new ArrayList<>();
+        for (final Type actualTypeArgument : actualTypeArguments) {
+          containingTypeArguments.add(getContainingTypeArguments(actualTypeArgument));
         }
-        final ParameterizedType newType = new DefaultParameterizedType(type.getOwnerType(), C, actualTypeArguments);
-        directSupertypes.add(newType);
-        assert actualTypeArguments != newType.getActualTypeArguments();
+        permutations(ts -> directSupertypes.add(new DefaultParameterizedType(ownerType, C, ts)),
+                     containingTypeArguments::get,
+                     new Type[containingTypeArguments.size()]);
       }
       return directSupertypes.toArray(new Type[directSupertypes.size()]);
+    }
+  }
+
+  static final <T> List<T[]> permutations(List<? extends T[]> columnValues, final IntFunction<? extends T[]> constructor) {
+    if (columnValues.isEmpty()) {
+      return List.of();
+    } else {
+      columnValues = List.copyOf(columnValues);
+      int permutations = 1;
+      for (final Object[] x : columnValues) {
+        permutations *= x.length;
+      }
+      final List<T[]> result = new ArrayList<>(permutations);
+      final int columnCount = columnValues.size();
+      final T[] row = constructor.apply(columnCount);
+      if (row.length != columnCount) {
+        throw new IllegalArgumentException("constructor: " + constructor);
+      }
+      permutations(result::add, columnValues::get, row);
+      return Collections.unmodifiableList(result);
+    }
+  }
+
+  private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
+                                             final IntFunction<? extends T[]> columnValuesGetter,
+                                             final T[] row) { // mutated and reused
+    permutations(resultAdder, columnValuesGetter, row, r -> r.clone(), 0);
+  }
+
+  private static final <T> void permutations(final Consumer<? super T[]> resultAdder,
+                                             final IntFunction<? extends T[]> columnValuesGetter,
+                                             final T[] row, // mutated and reused
+                                             final UnaryOperator<T[]> rowCloner,
+                                             final int columnIndex) {
+    if (columnIndex < row.length) {
+      for (final T columnValue : columnValuesGetter.apply(columnIndex)) {
+        row[columnIndex] = columnValue;
+        permutations(resultAdder, columnValuesGetter, row, rowCloner, columnIndex + 1); // NOTE: recursive
+      }
+    } else {
+      final T[] clonedRow = rowCloner.apply(row);
+      assert clonedRow != row;
+      assert clonedRow.length == row.length;
+      resultAdder.accept(clonedRow);
     }
   }
 
@@ -2355,6 +2349,12 @@ public final class Types {
       // represent an array of infinite size so we use an empty one instead.]
       return emptyTypeArray();
     } else {
+      // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.10.2
+      // 4.10.2. Subtyping among [non-array] Class and Interface Types
+      // […]
+      // The direct supertypes of a type variable are the types listed
+      // in its bound.
+      // […]
       return new Type[] { type.getUpperBound() };
     }
   }
@@ -2560,7 +2560,8 @@ public final class Types {
   }
 
   private static final int hashCode(final FreshTypeVariable type) {
-    return type == null ? 0 : hashCode(type.getUpperBound()) ^ hashCode(type.getLowerBound());
+    return System.identityHashCode(type);
+    // return type == null ? 0 : hashCode(type.getUpperBound()) ^ hashCode(type.getLowerBound());
   }
 
   private static final int hashCode(final IntersectionType type) {
@@ -2677,7 +2678,8 @@ public final class Types {
     } else if (tv0 == tv1) {
       return true;
     } else {
-      System.out.println("*** equals called with two non-identical FreshTypeVariable arguments: " + toString(tv0) + ", " + toString(tv1));
+      return false;
+      /*
       // TODO: REALLY not sure about this.
       // My rationale is as follows:
       // Two TypeVariables are equal to one another if their
@@ -2685,9 +2687,14 @@ public final class Types {
       // A FreshTypeVariable has no GenericDeclaration.
       // A FreshTypeVariable has no name.
       // So the only thing left to look at is the bounds.
-      return
+      final boolean returnValue =
         equals(tv0.getUpperBound(), tv1.getUpperBound()) &&
         equals(tv0.getLowerBound(), tv1.getLowerBound());
+      if (returnValue) {
+        System.out.println("*** equals called successfully with two non-identical FreshTypeVariable arguments: " + toString(tv0) + ", " + toString(tv1));
+      }
+      return returnValue;
+      */
     }
   }
 
@@ -3003,7 +3010,12 @@ public final class Types {
     } else if (types.length == 1) {
       return types[0];
     } else {
-      return new IntersectionType(types);
+      for (int i = 1; i < types.length; i++) {
+        if (!equals(types[0], types[i])) {
+          return new IntersectionType(types);
+        }
+      }
+      return types[0];
     }
   }
 
@@ -3018,6 +3030,14 @@ public final class Types {
 
   private static final boolean formalTypeParametersAreTypeVariableInstances(final Type[] formalTypeParameters) {
     return formalTypeParameters instanceof TypeVariable<?>[];
+  }
+
+  private static final boolean parameterizedTypeIsItsOwnDirectSupertype(final Type type, final Type directSupertype) {
+    if (type instanceof GenericArrayType || type instanceof ParameterizedType) {
+      return equals(type, directSupertype);
+    } else {
+      return false;
+    }
   }
 
   public static final Type[] emptyTypeArray() {
@@ -3141,7 +3161,7 @@ public final class Types {
       }
     }
 
-    private FreshTypeVariable() {
+    FreshTypeVariable() {
       super();
       this.upperBound = Object.class;
       this.lowerBound = null;
@@ -3204,7 +3224,7 @@ public final class Types {
 
     private TypeWrapper(final Type t) {
       super();
-      this.t = Objects.requireNonNull(t, "t");
+      this.t = t;
     }
 
     @Override
@@ -3243,6 +3263,49 @@ public final class Types {
     @Override
     public final String toString() {
       return Types.toString(this.t);
+    }
+
+    private static final TypeWrapper of(final Type type) {
+      return new TypeWrapper(type);
+    }
+
+  }
+
+  private static final class TypeWrapperSet extends HashSet<TypeWrapper> {
+
+    private static final long serialVersionUID = 1L;
+
+    private TypeWrapperSet() {
+      super();
+    }
+
+    private final boolean add(final Type type) {
+      return super.add(TypeWrapper.of(type));
+    }
+
+    @Override
+    public final boolean contains(final Object o) {
+      if (super.contains(o)) {
+        return true;
+      } else if (o instanceof Type) {
+        return super.contains(TypeWrapper.of((Type)o));
+      } else {
+        return false;
+      }
+    }
+
+    private final Type[] toTypeArray() {
+      final int size = this.size();
+      if (size <= 0) {
+        return emptyTypeArray();
+      } else {
+        final Type[] returnValue = new Type[size];
+        int i = 0;
+        for (final TypeWrapper tw : this) {
+          returnValue[i++] = tw.t;
+        }
+        return returnValue;
+      }
     }
 
   }
