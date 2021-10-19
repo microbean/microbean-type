@@ -19,6 +19,7 @@ package org.microbean.type;
 import java.io.Serializable;
 
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import java.util.Arrays;
@@ -31,6 +32,7 @@ import jakarta.enterprise.util.TypeLiteral;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -125,6 +127,14 @@ final class TestGetDirectSupertypes {
     assertSame(Object[].class, ds[0]);
   }
 
+  @Test
+  final void testNonObjectArrayDoesNotHaveObjectAsADirectSupertype() {
+    final Type[] ds = Types.getDirectSupertypes(Comparable[].class);
+    assertEquals(1, ds.length, Types.toString(ds));
+    assertSame(Object[].class, ds[0]);
+    // Note: no Object.class
+  }
+
   @SuppressWarnings("rawtypes")
   @Test
   final void testGenericArrayTypeDirectSupertypes() {
@@ -135,6 +145,73 @@ final class TestGetDirectSupertypes {
     assertTrue(dss.length > 2, "" + dsc); // TODO: this will change when we add wildcard handling
     assertTrue(dsc.contains(List[].class), "" + dsc);
     assertTrue(dsc.contains(new TypeLiteral<Collection<String>[]>() {}.getType()), "" + dsc);
+  }
+
+  @Test
+  final void testComparableObjectArrayDirectSupertypes() {
+    final GenericArrayType type = (GenericArrayType)new TypeLiteral<Comparable<Object>[]>() {}.getType();
+    final Type[] ds = Types.getDirectSupertypes(type);
+    assertEquals(5, ds.length, Types.toString(ds));
+    Collection<Type> dsc = Arrays.asList(ds);
+    // S[] >₁ T[] iff S >₁ T
+    // So array versions of the direct supertypes of the generic component type.
+    // So the generic component type is Comparable<Object>.
+    // You can see the test below for what its direct supertypes are.
+    // We'll list the array versions here.
+    assertTrue(dsc.contains(Comparable[].class));
+    assertTrue(dsc.contains(Object[].class));    
+    // Now for the containing types.
+    // A GenericArrayType is its own direct supertype because one of
+    // its containing type arguments is its own type argument
+    // (T <= T).
+    assertTrue(dsc.contains(type)); // GenericArrayTypes are their own direct supertype
+    assertTrue(dsc.contains(new TypeLiteral<Comparable<?>[]>() {}.getType()));
+    assertTrue(dsc.contains(new TypeLiteral<Comparable<? super Object>[]>() {}.getType()));
+
+    // Object.class is NOT a *direct* supertype of
+    // Comparable<Object>[].  (Object[].class is, which we covered
+    // above.)
+    assertFalse(dsc.contains(Object.class), Types.toString(dsc));
+  }
+
+  @Test
+  final void testComparableObjectDirectSupertypes() {
+    final ParameterizedType type = (ParameterizedType)new TypeLiteral<Comparable<Object>>() {}.getType();
+    final Type[] ds = Types.getDirectSupertypes(type);
+    assertEquals(5, ds.length, Types.toString(ds));
+    final Collection<Type> dsc = Arrays.asList(ds);
+    
+    assertTrue(dsc.contains(Comparable.class)); // the raw type Comparable ("the raw type C")
+    assertTrue(dsc.contains(Object.class)); // ...because Comparable is "a generic class with no direct superinterfaces (§9.1.3)"
+    // Now for the containing types.
+    // A ParameterizedType is its own direct supertype because one of
+    // its containing type arguments is its own type argument (T <= T).
+    assertTrue(dsc.contains(type));
+    assertTrue(dsc.contains(new TypeLiteral<Comparable<?>>() {}.getType()));
+    assertTrue(dsc.contains(new TypeLiteral<Comparable<? super Object>>() {}.getType()));
+  }
+
+  @Test
+  final void testIterableExtendsObjectDirectSupertypes() {
+    final ParameterizedType type = (ParameterizedType)new TypeLiteral<Iterable<?>>() {}.getType();
+    final Type[] ds = Types.getDirectSupertypes(type);
+  }
+  
+  @Test
+  final void testIterableObjectDirectSupertypes() {
+    final ParameterizedType type = (ParameterizedType)new TypeLiteral<Iterable<Object>>() {}.getType();
+    final Type[] ds = Types.getDirectSupertypes(type);
+    assertEquals(5, ds.length, Types.toString(ds));
+    final Collection<Type> dsc = Arrays.asList(ds);
+    
+    assertTrue(dsc.contains(Iterable.class)); // the raw type Iterable ("the raw type C")
+    assertTrue(dsc.contains(Object.class)); // ...because Iterable is "a generic class with no direct superinterfaces (§9.1.3)"
+    // Now for the containing types.
+    // A ParameterizedType is its own direct supertype because one of
+    // its containing type arguments is its own type argument (T <= T).
+    assertTrue(dsc.contains(type));
+    assertTrue(dsc.contains(new TypeLiteral<Iterable<?>>() {}.getType()));
+    assertTrue(dsc.contains(new TypeLiteral<Iterable<? super Object>>() {}.getType()));
   }
 
   @Test

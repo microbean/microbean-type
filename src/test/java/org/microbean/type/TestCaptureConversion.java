@@ -51,7 +51,14 @@ final class TestCaptureConversion {
     final Type[] S = GS.getActualTypeArguments();
     assertNotNull(S);
     assertEquals(2, S.length);
+
+    // GT: C<V, W extends List<V>>
+    // GS: C<Number, ?>
+
+    // V -> Number
     assertSame(Number.class, S[0]);
+
+    // W -> List<CAP extends Number>
     final FreshTypeVariable S1 = (FreshTypeVariable)S[1];
     assertNull(S1.getLowerBound());
     final ParameterizedType S1UB = (ParameterizedType)S1.getUpperBound();
