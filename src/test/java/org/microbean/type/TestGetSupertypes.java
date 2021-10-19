@@ -42,7 +42,7 @@ final class TestGetSupertypes {
     super();
   }
 
-  @Disabled // TODO: causes infinite loops
+  // @Disabled // TODO: causes infinite loops
   @Test
   final void testGetSupertypesListString() {
     final ParameterizedType listString = (ParameterizedType)new TypeLiteral<List<String>>() {}.getType();
@@ -59,34 +59,33 @@ final class TestGetSupertypes {
     }
   }
 
-  @Disabled // TODO: causes infinite loops
+  // @Disabled // TODO: causes infinite loops
   @Test
   final void testGetSupertypesIterableCAPExtendsObject() {
     final Types.FreshTypeVariable CAP = new Types.FreshTypeVariable();
     final ParameterizedType iterableCAP = new DefaultParameterizedType(null, Iterable.class, CAP);
     final Type[] supertypes = Types.getSupertypes(iterableCAP);
-    
   }
 
-  @Disabled // TODO: causes infinite loops
+  // @Disabled // TODO: causes infinite loops
   @Test
   final void testGetSupertypesIterableExtendsObject() {
     final ParameterizedType type = (ParameterizedType)new TypeLiteral<Iterable<?>>() {}.getType();
     final Type[] supertypes = Types.getSupertypes(type);
   }
 
-  @Disabled // TODO: causes infinite loops
+  // @Disabled // TODO: causes infinite loops
   @Test
   final void testGetSupertypesIterableObjectArray() {
     final GenericArrayType type = (GenericArrayType)new TypeLiteral<Iterable<Object>[]>() {}.getType();
     final Type[] supertypes = Types.getSupertypes(type);
   }
 
-  @Disabled // TODO: causes infinite loops
+  // @Disabled // TODO: causes infinite loops
   @Test
   final void testGetSupertypesCollectionArray() {
     final Type[] supertypes = Types.getSupertypes(Collection[].class);
-    assertEquals(6, supertypes.length, Types.toString(supertypes));
+    assertEquals(13, supertypes.length, Types.toString(supertypes));
     final Collection<Type> dsc = Arrays.asList(supertypes);
     assertTrue(dsc.contains(Collection[].class)); // reflexive
     assertTrue(dsc.contains(Iterable[].class));

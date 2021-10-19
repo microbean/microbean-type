@@ -56,7 +56,7 @@ final class TestGetContainingTypeArguments {
     assertTrue(c.contains(UnboundedWildcardType.INSTANCE));
   }
 
-  @Disabled // TODO: causes infinite loops
+  // @Disabled // TODO: causes infinite loops
   @Test
   final void testGetContainingTypeArgumentsListString() {
     final ParameterizedType type = (ParameterizedType)new TypeLiteral<List<String>>() {}.getType();

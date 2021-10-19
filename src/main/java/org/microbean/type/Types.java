@@ -1395,22 +1395,10 @@ public final class Types {
     if (Objects.requireNonNull(type, "type") == Object.class) {
       return new Type[] { Object.class, new LowerBoundedWildcardType(Object.class), UnboundedWildcardType.INSTANCE };
     } else {
-      final Collection<TypeWrapper> typeWrappers = new ArrayList<>();
-      getContainingTypeArguments(type, t -> {
-          final TypeWrapper wrapper = new TypeWrapper(t);
-          if (typeWrappers.contains(wrapper)) {
-            return false;
-          } else {
-            return typeWrappers.add(wrapper);
-          }
-        });
-      /*
-      final SortedSet<TypeWrapper> typeWrappers = new TreeSet<>();
-      getContainingTypeArguments(type, t -> typeWrappers.add(new TypeWrapper(t)));
-      */
+      final TypeWrapperSet typeWrappers = new TypeWrapperSet();
+      getContainingTypeArguments(type, typeWrappers::add);
       typeWrappers.add(new TypeWrapper(UnboundedWildcardType.INSTANCE));
-      return typeWrappers.isEmpty() ? emptyTypeArray() : typeWrappers.stream().map(tw -> tw.t).toArray(Type[]::new);
-      // return types.isEmpty() ? emptyTypeArray() : types.toArray(new Type[types.size()]);
+      return typeWrappers.isEmpty() ? emptyTypeArray() : typeWrappers.toTypeArray();
     }
   }
 
@@ -1418,9 +1406,11 @@ public final class Types {
                                                        final Predicate<? super Type> adder) {
     assert type != null;
     assert type != Object.class;
-    if (type instanceof WildcardType) {
+    if (type instanceof FreshTypeVariable) {
+      adder.test(type); // and no further processing; non-spec; turns out to be critical
+    } else if (type instanceof WildcardType) {
       getContainingTypeArguments((WildcardType)type, adder);
-    } else if (adder.test(type)) { // T <= T
+    } else if (adder.test(type)) {  // T <= T
       getContainingTypeArguments(new UpperBoundedWildcardType(type), adder); // NOTE: recursive
       final boolean added = adder.test(new LowerBoundedWildcardType(type));
       assert added;
@@ -1436,22 +1426,23 @@ public final class Types {
       final Type upperBound = upperBounds[0];
       assert upperBound != null;
       assert !(upperBound instanceof WildcardType) : "Upper bound was somehow a WildcardType: " + toString(upperBound);
-      if (upperBound != Object.class &&
-          adder.test(type)) { // T <= T
+      // 1. If the upper bound is Object, then type is an unbounded
+      //    wildcard, and we already handle that in the single-arg
+      //    version of this method.
+      //
+      // 2. It turns out to be critical that for purposes of reporting
+      //    containing type arguments a wildcard cannot be bounded by
+      //    a FreshTypeVariable.  This is non-spec but is critical to
+      //    avoid infinite loops.
+      // 3. Note the adder.test(type) call which will return true only
+      //    if we haven't seen this wildcard type before.
+      if (upperBound != Object.class && !(upperBound instanceof FreshTypeVariable) && adder.test(type)) {
         for (final Type upperBoundSupertype : getSupertypes(upperBound)) {
           assert upperBoundSupertype != null;
           if (upperBoundSupertype != Object.class && !equals(upperBound, upperBoundSupertype)) {
             adder.test(new UpperBoundedWildcardType(upperBoundSupertype));
           }
         }
-        /*
-        for (final Type upperBoundDirectSupertype : getDirectSupertypes(upperBound, true)) {
-          assert upperBoundDirectSupertype != null;
-          if (upperBoundDirectSupertype != Object.class && !Types.equals(upperBound, upperBoundDirectSupertype)) {
-            getContainingTypeArguments(new UpperBoundedWildcardType(upperBoundDirectSupertype), adder); // NOTE: recursive
-          }
-        }
-        */
       }
     }
   }
@@ -1620,9 +1611,15 @@ public final class Types {
           //   type with no direct superinterfaces (§9.1.3)
           // […]
           final Type[] returnValue;
-          final Type directSuperclass = erase(getDirectSuperclass(type));
-          assert (directSuperclass == null ? type.isInterface() : directSuperclass instanceof Class) : directSuperclass == null ? "Unexpected class; should have been an interface: " + toString(type) : "Unexpected type erasure of direct superclass: " + toString(directSuperclass);
-          final Type[] directSuperinterfaces = erase(type.getGenericInterfaces());
+          final Type directSuperclass;
+          final Type[] directSuperinterfaces;
+          if (isGeneric(type)) {
+            directSuperclass = getDirectSuperclass(type);
+            directSuperinterfaces = type.getGenericInterfaces();
+          } else {
+            directSuperclass = erase(getDirectSuperclass(type));
+            directSuperinterfaces = erase(type.getGenericInterfaces());
+          }
           if (directSuperinterfaces.length <= 0) {
             if (directSuperclass == null) {
               assert type.isInterface() : "Unexpected class; should have been an interface: " + toString(type);
@@ -1775,7 +1772,6 @@ public final class Types {
       assert actualTypeArguments != type.getActualTypeArguments();
 
       for (final Type directSupertypeOfC : directSupertypesOfC) {
-        assert directSupertypeOfC instanceof Class : "Unexpected erasure of direct supertype of " + toString(C) + ": " + toString(directSupertypeOfC);
         directSupertypes.add(theta(getOwnerType(directSupertypeOfC), directSupertypeOfC, actualTypeArguments));
       }
 
@@ -1789,9 +1785,7 @@ public final class Types {
       directSupertypes.add(C);
 
       if (includeContainingTypeArguments) {
-
         // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝘪 ≤ 𝘯)
-
         final List<Type[]> containingTypeArguments = new ArrayList<>();
         for (final Type actualTypeArgument : actualTypeArguments) {
           containingTypeArguments.add(getContainingTypeArguments(actualTypeArgument));
@@ -1799,43 +1793,6 @@ public final class Types {
         permutations(ts -> directSupertypes.add(new DefaultParameterizedType(ownerType, C, ts)),
                      containingTypeArguments::get,
                      new Type[containingTypeArguments.size()]);
-
-        /*
-        for (int i = 0; i < actualTypeArguments.length; i++) {
-          final Type Ti = actualTypeArguments[i];
-          assert !(Ti instanceof WildcardType) : "Ti was a WildcardType (didn't we do capture conversion already?): " + toString(Ti);
-          // TODO: Tentative assertion.
-          // assert !(Ti instanceof FreshTypeVariable) : "Ti was a FreshTypeVariable: " + Ti;
-          for (final Type Si : getContainingTypeArguments(Ti)) {
-            assert (equals(Ti, Si) ? true : Si instanceof WildcardType) : "Si was not a WildcardType: " + toString(Si);
-            // System.out.println("Ti <= Si: " + toString(Ti) + " <= " + toString(Si));
-            if (!equals(Ti, Si)) {
-              // In the JLS, parameterized types are unique among all
-              // other types in that they are their own direct
-              // supertype.  This is because, given List<String>, some
-              // of its supertypes are List<T that contains String>.
-              // One example of a T that contains String is T itself
-              // (all types contain themselves).  So it follows that
-              // List<String> is its own direct supertype.
-              //
-              // This complicates matters because every other relation
-              // having to do with subtyping "goes through"
-              // getDirectSupertype() as the spec requires, applying
-              // it reflexively as well as transitively.
-              //
-              // If we allow this one case where List<String> is its
-              // own direct supertype, then in getSupertypes() and
-              // elsewhere we have to special-case ParameterizedType
-              // situations.  That is undesirable.  So we eliminate
-              // the reflexivity here.
-              actualTypeArguments[i] = Si; // XXX TODO FIXME NO NO NO NO this needs to be combinatorial
-            }
-          }
-        }
-        final ParameterizedType newType = new DefaultParameterizedType(type.getOwnerType(), C, actualTypeArguments);
-        directSupertypes.add(newType);
-        assert actualTypeArguments != newType.getActualTypeArguments();
-        */
       }
       return directSupertypes.toArray(new Type[directSupertypes.size()]);
     }

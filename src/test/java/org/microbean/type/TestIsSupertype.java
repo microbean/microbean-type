@@ -42,7 +42,7 @@ final class TestIsSupertype {
     assertFalse(Types.isSupertype(String.class, Object.class));
   }
 
-  @Disabled // TODO: isSupertype is all fouled up; results in infinite loops
+  // @Disabled // TODO: isSupertype is all fouled up; results in infinite loops
   @Test
   final void testIsSupertypeRawTypes() {
     assertTrue(Types.isSupertype(List.class, List.class));
@@ -51,7 +51,7 @@ final class TestIsSupertype {
     assertTrue(Types.isSupertype(listString, listString));
   }
 
-  @Disabled // TODO: isSupertype is all fouled up; results in infinite loops
+  // @Disabled // TODO: isSupertype is all fouled up; results in infinite loops
   @Test
   final void testNoParameterizedTypeSubtyping() {
     final Type listString = new TypeLiteral<List<String>>() {}.getType();
@@ -68,7 +68,7 @@ final class TestIsSupertype {
     assertTrue(Types.isSupertype(Object.class, Object[].class));
   }
 
-  @Disabled // TODO: isSupertype is all fouled up; results in infinite loops
+  // @Disabled // TODO: isSupertype is all fouled up; results in infinite loops
   @Test
   final void testCollectionStringArray() {
     final Type collectionStringArray = new TypeLiteral<Collection<String>[]>() {}.getType();
