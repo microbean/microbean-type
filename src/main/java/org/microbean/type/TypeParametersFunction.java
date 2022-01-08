@@ -14,12 +14,11 @@
  * implied.  See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
-/**
- * Provides classes and interfaces related to Java {@link
- * java.lang.reflect.Type Type} instances.
- *
- * @author <a href="https://about.me/lairdnelson"
- * target="_parent">Laird Nelson</a>
- */
 package org.microbean.type;
+
+@FunctionalInterface
+public interface TypeParametersFunction<T> {
+
+  public T[] typeParameters(final T type);
+  
+}

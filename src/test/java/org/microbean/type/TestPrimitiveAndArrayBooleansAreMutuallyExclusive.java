@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2021 microBean™.
+ * Copyright © 2022 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,31 +16,22 @@
  */
 package org.microbean.type;
 
-import java.lang.reflect.Type;
-
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class TestPermutations {
+final class TestPrimitiveAndArrayBooleansAreMutuallyExclusive {
 
-  private TestPermutations() {
+  private TestPrimitiveAndArrayBooleansAreMutuallyExclusive() {
     super();
   }
 
   @Test
-  final void testPermutations() {
-    final List<? extends Type[]> list =
-      List.of(new Type[] { String.class, Object.class },
-              new Type[] { Number.class });
-    final List<Type[]> result = Types.permutations(list, Type[]::new);
-    assertEquals(2, result.size());
-    assertTrue(Arrays.equals(new Type[] { String.class, Number.class }, result.get(0)));
-    assertTrue(Arrays.equals(new Type[] { Object.class, Number.class }, result.get(1)));
+  final void testPrimitiveAndArrayBooleansAreMutuallyExclusive() {
+    final Class<?> c = int[].class;
+    assertTrue(c.isArray());
+    assertFalse(c.isPrimitive());
   }
 
 }

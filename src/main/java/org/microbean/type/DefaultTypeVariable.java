@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020–2021 microBean™.
+ * Copyright © 2022 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * An {@link AbstractType} and a {@link TypeVariable} implementation.
+ * A {@link TypeVariable} implementation.
  *
  * @param <T> the kind of {@link GenericDeclaration} that this {@link
  * DefaultTypeVariable} was declared by
@@ -45,15 +45,7 @@ import java.util.function.Predicate;
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  */
-public final class DefaultTypeVariable<T extends GenericDeclaration> extends AbstractType implements TypeVariable<T> {
-
-
-  /*
-   * Static fields.
-   */
-
-
-  private static final long serialVersionUID = 2L;
+public final class DefaultTypeVariable<T extends GenericDeclaration> implements TypeVariable<T> {
 
 
   /*
@@ -61,9 +53,9 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> extends Abs
    */
 
 
-  private transient int hashCode;
+  private final int hashCode;
 
-  private transient TypeVariable<? extends T> delegate;
+  private final TypeVariable<? extends T> delegate;
 
 
   /*
@@ -126,15 +118,17 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> extends Abs
   @SuppressWarnings("unchecked")
   public DefaultTypeVariable(final GenericDeclaration genericDeclaration, final Predicate<? super TypeVariable<?>> predicate) {
     super();
+    TypeVariable<? extends T> delegate = null;
     for (final TypeVariable<?> tv : genericDeclaration.getTypeParameters()) {
       if (predicate.test(tv)) {
-        this.delegate = (TypeVariable<? extends T>)tv;
+        delegate = (TypeVariable<? extends T>)tv;
         break;
       }
     }
-    if (this.delegate == null) {
+    if (delegate == null) {
       throw new IllegalArgumentException("genericDeclaration: " + genericDeclaration + "; predicate: " + predicate);
     }
+    this.delegate = delegate;
     this.hashCode = this.computeHashCode();
   }
 
@@ -222,15 +216,15 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> extends Abs
   }
 
   private final int computeHashCode() {
-    return Types.hashCode(this.delegate);
+    return JavaTypes.hashCode(this.delegate);
   }
 
   @Override
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
-    } else if (other instanceof TypeVariable<?>) {
-      return Types.equals(this, (TypeVariable<?>)other);
+    } else if (other instanceof TypeVariable<?> tv) {
+      return JavaTypes.equals(this, tv);
     } else {
       return false;
     }
@@ -238,62 +232,7 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> extends Abs
 
   @Override
   public final String toString() {
-    return this.delegate.toString();
-  }
-
-  @SuppressWarnings("unchecked")
-  private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
-    stream.defaultReadObject();
-    final T gd;
-    final Object o = stream.readObject();
-    if (o instanceof Class) {
-      gd = (T)o;
-    } else if (o instanceof String) {
-      final String name = (String)o;
-      final Class<?>[] parameterTypes = (Class<?>[])stream.readObject();
-      final Class<?> declaringClass = (Class<?>)stream.readObject();
-      T temp = null;
-      try {
-        if ("<init>".equals(name)) {
-          temp = (T)declaringClass.getDeclaredConstructor(parameterTypes);
-        } else {
-          temp = (T)declaringClass.getDeclaredMethod(name, parameterTypes);
-        }
-      } catch (final ReflectiveOperationException reflectiveOperationException) {
-        throw new IOException(reflectiveOperationException.getMessage(), reflectiveOperationException);
-      } finally {
-        gd = temp;
-      }
-    } else {
-      throw new IllegalStateException();
-    }
-    final String name = (String)stream.readObject();
-    for (final TypeVariable<?> tv : gd.getTypeParameters()) {
-      if (tv.getName().equals(name)) {
-        this.delegate = (TypeVariable<? extends T>)tv;
-        break;
-      }
-    }
-    if (this.delegate == null) {
-      throw new IllegalStateException();
-    }
-    this.hashCode = this.computeHashCode();
-  }
-
-  private final void writeObject(final ObjectOutputStream stream) throws IOException {
-    stream.defaultWriteObject();
-    final GenericDeclaration gd = this.getGenericDeclaration();
-    if (gd instanceof Class) {
-      stream.writeObject(gd);
-    } else if (gd instanceof Executable) {
-      final Executable e = (Executable)gd;
-      stream.writeObject(e instanceof Constructor ? "<init>" : ((Method)e).getName());
-      stream.writeObject(e.getParameterTypes());
-      stream.writeObject(e.getDeclaringClass());
-    } else {
-      throw new AssertionError();
-    }
-    stream.writeObject(this.delegate.getName());
+    return JavaTypes.toString(this);
   }
 
   /**
@@ -331,8 +270,8 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> extends Abs
   public static final <T extends GenericDeclaration> DefaultTypeVariable<T> valueOf(final TypeVariable<T> type) {
     if (type == null) {
       return null;
-    } else if (type instanceof DefaultTypeVariable) {
-      return (DefaultTypeVariable<T>)type;
+    } else if (type instanceof DefaultTypeVariable<T> tv) {
+      return tv;
     } else {
       return new DefaultTypeVariable<>(type);
     }

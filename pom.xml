@@ -4,12 +4,12 @@
 
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
-  <version>0.0.15-SNAPSHOT</version>
+  <version>0.2.0-SNAPSHOT</version>
 
   <parent>
     <groupId>org.microbean</groupId>
     <artifactId>microbean-pluginmanagement-pom</artifactId>
-    <version>17</version>
+    <version>18</version>
     <relativePath />
   </parent>
 
@@ -155,13 +155,13 @@
     <jdkToolchainVendor>openjdk</jdkToolchainVendor>
 
     <!-- maven-compiler-plugin properties -->
-    <maven.compiler.release>11</maven.compiler.release>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
 
     <!-- maven-javadoc-plugin properties -->
     <detectJavaApiLink>false</detectJavaApiLink>
-    <links>https://docs.oracle.com/en/java/javase/11/docs/api,https://microbean.github.io/microbean-development-annotations/apidocs/</links>
+    <links>https://docs.oracle.com/en/java/javase/17/docs/api,https://microbean.github.io/microbean-development-annotations/apidocs/</links>
 
   </properties>
 

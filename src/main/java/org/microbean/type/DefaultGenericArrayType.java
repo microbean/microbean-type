@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020–2021 microBean™.
+ * Copyright © 2022 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,8 @@
  */
 package org.microbean.type;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-
-import java.util.Objects;
 
 /**
  * A {@link GenericArrayType} implementation.
@@ -35,25 +27,17 @@ import java.util.Objects;
  *
  * @see GenericArrayType
  */
-public final class DefaultGenericArrayType extends AbstractType implements GenericArrayType {
+public final class DefaultGenericArrayType implements GenericArrayType {
 
-
-  /*
-   * Static fields.
-   */
-
-
-  private static final long serialVersionUID = 2L;
-
-
+  
   /*
    * Instance fields.
    */
 
 
-  private transient Type genericComponentType;
+  private final Type genericComponentType;
 
-  private transient int hashCode;
+  private final int hashCode;
 
 
   /*
@@ -66,7 +50,8 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
    *
    * @param genericComponentType the generic component type; must not
    * be {@code null}; should almost certainly be a {@link
-   * ParameterizedType}
+   * java.lang.reflect.ParameterizedType} or a {@link
+   * java.lang.reflect.TypeVariable}
    *
    * @exception NullPointerException if {@code genericComponentType}
    * is {@code null}
@@ -75,12 +60,6 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
     super();
     this.genericComponentType = genericComponentType;
     this.hashCode = this.computeHashCode();
-  }
-
-  DefaultGenericArrayType(final Class<?> rawType, final Type... actualTypeArguments) {
-    this(new DefaultParameterizedType(rawType == null ? null : rawType.getDeclaringClass(),
-                                      rawType,
-                                      actualTypeArguments));
   }
 
 
@@ -100,15 +79,15 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
   }
 
   private final int computeHashCode() {
-    return Types.hashCode(this);
+    return JavaTypes.hashCode(this);
   }
 
   @Override
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
-    } else if (other instanceof GenericArrayType) {
-      return Types.equals(this, (GenericArrayType)other);
+    } else if (other instanceof GenericArrayType g) {
+      return JavaTypes.equals(this, g);
     } else {
       return false;
     }
@@ -116,22 +95,7 @@ public final class DefaultGenericArrayType extends AbstractType implements Gener
 
   @Override
   public final String toString() {
-    return this.getGenericComponentType().getTypeName() + "[]";
-  }
-
-  private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
-    stream.defaultReadObject();
-    final Object genericComponentType = stream.readObject();
-    if (genericComponentType == null) {
-      throw new IOException(new NullPointerException("genericComponentType"));
-    }
-    this.genericComponentType = (Type)genericComponentType;
-    this.hashCode = this.computeHashCode();
-  }
-
-  private final void writeObject(final ObjectOutputStream stream) throws IOException {
-    stream.defaultWriteObject();
-    stream.writeObject(Types.toSerializableType(this.getGenericComponentType()));
+    return JavaTypes.toString(this);
   }
 
   public static final DefaultGenericArrayType valueOf(final GenericArrayType genericArrayType) {

@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020–2021 microBean™.
+ * Copyright © 2022 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@
  */
 package org.microbean.type;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.StringJoiner;
 
 /**
  * A {@link ParameterizedType} implementation.
@@ -36,15 +30,7 @@ import java.util.StringJoiner;
  *
  * @see ParameterizedType
  */
-public final class DefaultParameterizedType extends AbstractType implements ParameterizedType {
-
-
-  /*
-   * Static fields.
-   */
-
-
-  private static final long serialVersionUID = 2L;
+public final class DefaultParameterizedType implements ParameterizedType {
 
 
   /*
@@ -52,13 +38,13 @@ public final class DefaultParameterizedType extends AbstractType implements Para
    */
 
 
-  private transient Type ownerType;
+  private final Type ownerType;
 
-  private transient Type rawType;
+  private final Type rawType;
 
-  private transient Type[] actualTypeArguments;
+  private final Type[] actualTypeArguments;
 
-  private transient int hashCode;
+  private final int hashCode;
 
 
   /*
@@ -96,15 +82,14 @@ public final class DefaultParameterizedType extends AbstractType implements Para
     this.ownerType = ownerType;
     this.rawType = Objects.requireNonNull(rawType, "rawType");
     if (actualTypeArguments == null || actualTypeArguments.length <= 0) {
-      this.actualTypeArguments = Types.emptyTypeArray();
+      this.actualTypeArguments = JavaTypes.emptyTypeArray();
     } else {
       this.actualTypeArguments = actualTypeArguments.clone();
     }
-    if (rawType instanceof Class) {
-      final Class<?> cls = (Class<?>)rawType;
+    if (rawType instanceof Class<?> cls) {
       final Type[] typeParameters = cls.getTypeParameters();
       if (typeParameters.length != this.actualTypeArguments.length) {
-        throw new IllegalArgumentException("rawType: " + Types.toString(rawType) +
+        throw new IllegalArgumentException("rawType: " + JavaTypes.toString(rawType) +
                                            "; actualTypeArguments: " + Arrays.asList(actualTypeArguments));
       }
     }
@@ -152,91 +137,23 @@ public final class DefaultParameterizedType extends AbstractType implements Para
   }
 
   private final int computeHashCode() {
-    return Types.hashCode(this);
+    return JavaTypes.hashCode(this);
   }
 
   @Override
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
-    } else if (other instanceof ParameterizedType) {
-      final ParameterizedType her = (ParameterizedType)other;
-      return
-        Objects.equals(this.ownerType, her.getOwnerType()) &&
-        Objects.equals(this.rawType, her.getRawType()) &&
-        Arrays.equals(this.actualTypeArguments, her.getActualTypeArguments());
+    } else if (other instanceof ParameterizedType p) {
+      return JavaTypes.equals(this, p);
     } else {
       return false;
     }
   }
 
   @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    final Type ownerType = this.ownerType;
-    if (ownerType == null) {
-      sb.append(this.rawType.getTypeName());
-    } else {
-      sb.append(ownerType.getTypeName()).append("$");
-      final Type rawType = this.rawType;
-      if (ownerType instanceof ParameterizedType) {
-        sb.append(rawType.getTypeName().replace(((ParameterizedType)ownerType).getRawType().getTypeName() + "$", ""));
-      } else if (rawType instanceof Class) {
-        sb.append(((Class<?>)rawType).getSimpleName());
-      } else {
-        sb.append(rawType.getTypeName());
-      }
-    }
-    final Type[] actualTypeArguments = this.actualTypeArguments;
-    if (actualTypeArguments != null && actualTypeArguments.length > 0) {
-      final StringJoiner stringJoiner = new StringJoiner(", ", "<", ">");
-      stringJoiner.setEmptyValue("");
-      for (final Type actualTypeArgument : actualTypeArguments) {
-        stringJoiner.add(actualTypeArgument.getTypeName());
-      }
-      sb.append(stringJoiner.toString());
-    }
-    return sb.toString();
-  }
-
-  private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
-    stream.defaultReadObject();
-    final Object ownerType = stream.readObject();
-    if (ownerType == null) {
-      this.ownerType = null;
-    } else {
-      this.ownerType = (Type)ownerType;
-    }
-    final Object rawType = stream.readObject();
-    if (rawType == null) {
-      throw new IOException(new NullPointerException("rawType"));
-    } else {
-      this.rawType = (Type)rawType;
-    }
-    final Serializable[] serializableActualTypeArguments = (Serializable[])stream.readObject();
-    if (serializableActualTypeArguments == null || serializableActualTypeArguments.length <= 0) {
-      this.actualTypeArguments = Types.emptyTypeArray();
-    } else {
-      this.actualTypeArguments = new Type[serializableActualTypeArguments.length];
-      System.arraycopy(serializableActualTypeArguments, 0, this.actualTypeArguments, 0, serializableActualTypeArguments.length);
-    }
-    this.hashCode = this.computeHashCode();
-  }
-
-  private final void writeObject(final ObjectOutputStream stream) throws IOException {
-    stream.defaultWriteObject();
-    stream.writeObject(Types.toSerializableType(this.ownerType));
-    stream.writeObject(Types.toSerializableType(this.rawType));
-    final Type[] actualTypeArguments = this.actualTypeArguments;
-    if (actualTypeArguments == null || actualTypeArguments.length <= 0) {
-      stream.writeObject(new Serializable[0]);
-    } else {
-      final Serializable[] newTypeArguments = new Serializable[actualTypeArguments.length];
-      for (int i = 0; i < newTypeArguments.length; i++) {
-        newTypeArguments[i] = Types.toSerializableType(actualTypeArguments[i]);
-      }
-      stream.writeObject(newTypeArguments);
-    }
+  public final String toString() {
+    return JavaTypes.toString(this);
   }
 
 
@@ -248,8 +165,8 @@ public final class DefaultParameterizedType extends AbstractType implements Para
   public static final DefaultParameterizedType valueOf(final ParameterizedType type) {
     if (type == null) {
       return null;
-    } else if (type instanceof DefaultParameterizedType) {
-      return (DefaultParameterizedType)type;
+    } else if (type instanceof DefaultParameterizedType p) {
+      return p;
     } else {
       return new DefaultParameterizedType(type);
     }

@@ -14,12 +14,32 @@
  * implied.  See the License for the specific language governing
  * permissions and limitations under the License.
  */
-
-/**
- * Provides classes and interfaces related to Java {@link
- * java.lang.reflect.Type Type} instances.
- *
- * @author <a href="https://about.me/lairdnelson"
- * target="_parent">Laird Nelson</a>
- */
 package org.microbean.type;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+final class TestArrayClassName {
+
+  private TestArrayClassName() {
+    super();
+  }
+
+  @Test
+  final void testArrayClassTypeNameIsComponentClassNameWithBrackets() {
+    assertEquals("java.lang.Object[]", Object[].class.getTypeName());
+  }
+
+  @Test
+  final void testArrayClassSimpleNameIsComponentClassNameWithBrackets() {
+    assertEquals("Object[]", Object[].class.getSimpleName());
+  }
+
+  @Test
+  final void testArrayClassNameIsBinaryName() {
+    assertEquals("[Ljava.lang.Object;", Object[].class.getName());
+  }
+  
+}
