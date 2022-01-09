@@ -1,13 +1,15 @@
 # Notes
 
-The root issue is `TypeVariable`.  A Java `TypeVariable` is compared
-for equality with another `TypeVariable` without considering their
-bounds.  Instead, it's just their names and declarations (`Class`,
-`Method` or `Constructor`).
+Type resolution again.
 
-A `TypeVariable` is declared by something.
+If you have:
+```java
+final Object m = new HashMap<String, String>();
+```
+…and you do:
+```
+final ParameterizedType p = (ParameterizedType)m.getClass().getGenericSuperclass();
+```
+…then `p`'s type arguments will be `String`, `String`.
 
-A `Type`, I guess, is declared by something.
-
-_muse muse muse_
-
+TODO: verify

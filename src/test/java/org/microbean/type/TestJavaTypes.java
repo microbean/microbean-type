@@ -18,7 +18,9 @@ package org.microbean.type;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
+import java.lang.reflect.Type;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -82,7 +84,12 @@ final class TestJavaTypes {
 
   // @Test
   final void testCompilation() {
-
+    final Object m = new HashMap<String, String>();
+    final ParameterizedType p = (ParameterizedType)m.getClass().getGenericSuperclass();
+    final Type[] tas = p.getActualTypeArguments();
+    assertEquals(2, tas.length);
+    assertEquals(String.class, tas[0]); // will fail
+    
   }
   
   private static final Comparable<? super Number> comparableSuperNumber() {

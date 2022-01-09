@@ -37,6 +37,7 @@ final class TestGenericSupertype {
     assertSame(Number.class, Integer.class.getGenericSuperclass());
   }
 
+  @Test
   final void testGenericSupertypeCanBeAParameterizedType() {
     final ParameterizedType pt = (ParameterizedType)DummyClassValue.class.getGenericSuperclass();
     assertSame(ClassValue.class, pt.getRawType());

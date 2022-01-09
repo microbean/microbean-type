@@ -62,6 +62,10 @@ public final class DefaultGenericArrayType implements GenericArrayType {
     this.hashCode = this.computeHashCode();
   }
 
+  DefaultGenericArrayType(final Type rawType, final Type argument) {
+    this(new DefaultParameterizedType(null, rawType, argument));
+  }
+
 
   /*
    * Instance methods.

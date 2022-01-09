@@ -37,15 +37,24 @@ public final class JavaTypeSet implements Iterable<Type> {
     super();
     this.set = Set.of(JavaType.of(type));
   }
+
+  public JavaTypeSet(final JavaType javaType) {
+    super();
+    this.set = Set.of(javaType);
+  }
   
-  public JavaTypeSet(final Collection<? extends Type> types) {
+  public JavaTypeSet(final Collection<?> types) {
     super();
     if (types == null || types.isEmpty()) {
       this.set = Set.of();
     } else {
       final Set<JavaType> set = new HashSet<>();
-      for (final Type type : types) {
-        set.add(JavaType.of(type));
+      for (final Object type : types) {
+        if (type instanceof JavaType jt) {
+          set.add(jt);
+        } else if (type instanceof Type t) {
+          set.add(JavaType.of(t));
+        }
       }
       this.set = Collections.unmodifiableSet(set);
     }
