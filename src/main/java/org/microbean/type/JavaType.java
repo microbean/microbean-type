@@ -16,8 +16,6 @@
  */
 package org.microbean.type;
 
-import java.io.Serializable;
-
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.ParameterizedType;
@@ -34,6 +32,12 @@ import static org.microbean.type.JavaTypes.erase;
 
 public final class JavaType {
 
+
+  /*
+   * Static fields.
+   */
+
+
   public static final Map<Type, Class<?>> wrapperTypes =
     Map.of(boolean.class, Boolean.class,
            byte.class, Byte.class,
@@ -47,12 +51,30 @@ public final class JavaType {
 
   private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
 
+
+  /*
+   * Instance fields.
+   */
+
+
   private final Type type;
+
+
+  /*
+   * Constructors.
+   */
+
 
   private JavaType(final Type type) {
     super();
     this.type = Objects.requireNonNull(type, "type");
   }
+
+
+  /*
+   * Instance methods.
+   */
+
 
   public final Type type() {
     return this.type;
@@ -172,6 +194,12 @@ public final class JavaType {
     return type instanceof Class<?> c ? c.getTypeParameters() : EMPTY_TYPE_ARRAY;
   }
 
+
+  /*
+   * Inner and nested classes.
+   */
+
+
   public static final class Semantics extends org.microbean.type.Type.CovariantSemantics<java.lang.reflect.Type> {
 
     public Semantics(final boolean box) {
@@ -214,15 +242,13 @@ public final class JavaType {
    *
    * @see #type()
    */
-  public static abstract class Token<T> implements AutoCloseable, Serializable {
+  public static abstract class Token<T> implements AutoCloseable {
 
 
     /*
      * Static fields.
      */
 
-
-    private static final long serialVersionUID = 1L;
 
     private static final ActualTypeArgumentExtractor actualTypeArgumentExtractor = new ActualTypeArgumentExtractor(Token.class, 0);
 
@@ -440,7 +466,7 @@ public final class JavaType {
 
   }
 
-  public static final class ActualTypeArgumentExtractor extends ClassValue<Type> {
+  private static final class ActualTypeArgumentExtractor extends ClassValue<Type> {
 
 
     /*
@@ -504,7 +530,7 @@ public final class JavaType {
      * Class#isInterface() interface}, or not {@linkplain
      * Modifier#isAbstract(int) abstract}
      */
-    public ActualTypeArgumentExtractor(final Class<?> stopClass, final int index) {
+    private ActualTypeArgumentExtractor(final Class<?> stopClass, final int index) {
       super();
       if (index < 0 || index >= stopClass.getTypeParameters().length) {
         throw new IndexOutOfBoundsException(index);

@@ -30,11 +30,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public final class JavaTypes {
 
@@ -43,22 +49,78 @@ public final class JavaTypes {
   public static final Type[] emptyTypeArray() {
     return EMPTY_TYPE_ARRAY;
   }
-  
-  public static final Collection<Type> directSupertypes(final Type type) {
-    if (Objects.requireNonNull(type) instanceof Class<?> c) {
-      return directSupertypes(c);
+
+  // Don't get clever and add an overload without the cache; it wouldn't make any sense
+  public static final Type resolve(final Type type, final Function<? super JavaType, ? extends Type> cacheReader) {
+    if (type == null) {
+      return null;
     } else if (type instanceof ParameterizedType p) {
-      return directSupertypes(p);
+      return resolve(p, cacheReader);
     } else if (type instanceof GenericArrayType g) {
-      return directSupertypes(g);
+      return resolve(g, cacheReader);
+    } else {
+      final Type rv = cacheReader.apply(JavaType.of(type));
+      return rv == null ? type : rv;
+    }      
+  }
+  
+  private static final Type resolve(final ParameterizedType p, final Function<? super JavaType, ? extends Type> cacheReader) {
+    final Type rv = cacheReader.apply(JavaType.of(p));
+    if (rv == null) {
+      final Type[] unresolvedArguments = p.getActualTypeArguments();
+      final Type[] resolvedArguments = new Type[unresolvedArguments.length];
+      boolean createNewType = false;
+      for (int i = 0; i < unresolvedArguments.length; i++) {
+        final Type unresolvedArgument = unresolvedArguments[i];
+        final Type resolvedArgument;
+        resolvedArguments[i] = resolvedArgument = resolve(unresolvedArgument, cacheReader); // XXX recursive
+        if (!createNewType && unresolvedArgument == resolvedArgument) {
+          createNewType = true;
+        }
+      }
+      return createNewType ? new DefaultParameterizedType(p.getOwnerType(), p.getRawType(), resolvedArguments) : p;
+    }
+    return rv;
+  }
+
+  private static final Type resolve(final GenericArrayType g, final Function<? super JavaType, ? extends Type> cacheReader) {
+    final Type rv = cacheReader.apply(JavaType.of(g));
+    if (rv == null) {
+      final Type unresolvedComponentType = g.getGenericComponentType();
+      final Type resolvedComponentType = resolve(unresolvedComponentType, cacheReader); // XXX recursive
+      if (resolvedComponentType == null || resolvedComponentType == unresolvedComponentType) {
+        return g;
+      } else if (resolvedComponentType instanceof Class<?> c) {
+        return array(c);
+      } else {
+        return new DefaultGenericArrayType(resolvedComponentType);
+      }
+    }
+    return rv;
+  }
+
+  public static final Collection<Type> directSupertypes(final Type type) {
+    final Map<JavaType, Type> map = new HashMap<>();
+    final Collection<Type> returnValue = directSupertypes(type, (u, r) -> map.put(u, r));
+    
+    return returnValue;
+  }
+  
+  private static final Collection<Type> directSupertypes(final Type type, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+    if (Objects.requireNonNull(type) instanceof Class<?> c) {
+      return directSupertypes(c, cacheWriter);
+    } else if (type instanceof ParameterizedType p) {
+      return directSupertypes(p, cacheWriter);
+    } else if (type instanceof GenericArrayType g) {
+      return directSupertypes(g, cacheWriter);
     } else if (type instanceof TypeVariable<?> tv) {
-      return directSupertypes(tv);
+      return directSupertypes(tv, cacheWriter);
     } else {
       throw new IllegalArgumentException("type: " + toString(type));
     }
   }
 
-  private static final Collection<Type> directSupertypes(final Class<?> c) {
+  private static final Collection<Type> directSupertypes(final Class<?> c, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
     if (c == Object.class || c.isInterface() || c.isPrimitive()) {
       return List.of();
     } else {
@@ -106,10 +168,10 @@ public final class JavaTypes {
     }
   }
 
-  private static final Collection<Type> directSupertypes(final ParameterizedType p) {
-    return directSupertypes(p.getRawType()); // doesn't include wildcard-argumented parameterized types
+  private static final Collection<Type> directSupertypes(final ParameterizedType p, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+    return directSupertypes(p.getRawType(), cacheWriter); // doesn't include wildcard-argumented parameterized types
     /*
-    final Collection<Type> directSupertypes = new ArrayList<>(directSupertypes(p.getRawType()));
+    final Collection<Type> directSupertypes = new ArrayList<>(directSupertypes(p.getRawType(), cacheWriter));
     final Type[] arguments = p.getActualTypeArguments();
     final Type[] containingTypeArguments = new Type[arguments.length];
     OUTER_LOOP:
@@ -165,31 +227,43 @@ public final class JavaTypes {
     return Collections.unmodifiableCollection(directSupertypes);
     */
   }
-
-  private static final Collection<Type> directSupertypes(final TypeVariable<?> tv) {
-    // "The direct supertypes of a type variable are the types listed in its bound."
-    return List.of(tv.getBounds());
-  }
-
-  private static final Collection<Type> directSupertypes(final GenericArrayType g) {
-    final Collection<Type> genericComponentTypeDirectSupertypes = directSupertypes(g.getGenericComponentType());
+  
+  private static final Collection<Type> directSupertypes(final GenericArrayType g, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+    final Collection<Type> genericComponentTypeDirectSupertypes = directSupertypes(g.getGenericComponentType(), cacheWriter);
     final Collection<Type> returnValue = new ArrayList<>(genericComponentTypeDirectSupertypes.size());
     for (final Type ds : genericComponentTypeDirectSupertypes) {
       returnValue.add(array(ds));
     }
     return Collections.unmodifiableCollection(returnValue);
   }
-
-  public static final Collection<Type> supertypes(final Type type) {
-    return supertypes(type, new HashSet<>());
+  
+  private static final Collection<Type> directSupertypes(final TypeVariable<?> tv, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+    // "The direct supertypes of a type variable are the types listed in its bound."
+    return List.of(tv.getBounds());
   }
 
-  private static final Collection<Type> supertypes(final Type type, final Set<String> seen) {
-    if (seen.add(toString(type))) {
+  public static final Collection<Type> supertypes(final Type type) {
+    final Map<JavaType, Type> cache = new HashMap<>();
+    final Set<JavaType> unseen = new HashSet<>();
+    final Collection<Type> returnValue =
+      supertypes(type,
+                 unseen::add,
+                 cache::get,
+                 (u, r) -> cache.put(u, r));
+
+    return returnValue;
+  }
+
+  private static final Collection<Type> supertypes(Type type,
+                                                   final Predicate<? super JavaType> unseen,
+                                                   final Function<? super JavaType, ? extends Type> cacheReader,
+                                                   final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+    type = resolve(type, cacheReader);
+    if (unseen.test(JavaType.of(type))) {
       final Collection<Type> supertypes = new ArrayList<>();
       supertypes.add(type); // reflexive
-      for (final Type ds : directSupertypes(type)) {
-        supertypes.addAll(supertypes(ds, seen)); // XXX recursive
+      for (final Type ds : directSupertypes(type, cacheWriter)) {
+        supertypes.addAll(supertypes(ds, unseen, cacheReader, cacheWriter)); // XXX recursive
       }
       return Collections.unmodifiableCollection(supertypes);
     } else {
@@ -205,13 +279,22 @@ public final class JavaTypes {
       // Easy optimization
       return supC.isAssignableFrom(subC);
     } else {
-      for (final Type supertype : supertypes(sub)) {
+      final Set<JavaType> unseen = new HashSet<>();
+      for (final Type supertype : supertypes(sub, unseen::add, JavaTypes::returnNullCacheReader, JavaTypes::sinkCacheWriter)) {
         if (equals(supertype, sup)) {
           return true;
         }
       }
     }
     return false;
+  }
+
+  private static final Type returnNullCacheReader(final JavaType ignored) {
+    return null;
+  }
+  
+  private static final void sinkCacheWriter(final JavaType u, final Type r) {
+
   }
   
   private static final Type array(final Type type) {

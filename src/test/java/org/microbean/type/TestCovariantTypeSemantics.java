@@ -260,10 +260,6 @@ final class TestCovariantTypeSemantics {
                                                       new DefaultParameterizedType(null, List.class, Runnable.class)));
     assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Object.class),
                                                       new DefaultParameterizedType(null, List.class, Object.class)));
-    assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Runnable.class),
-                                                      new DefaultParameterizedType(null, ArrayList.class, Runnable.class)));
-    assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Object.class),
-                                                      new DefaultParameterizedType(null, ArrayList.class, Object.class)));
     assertFalse(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Object.class),
                                                        new DefaultParameterizedType(null, List.class, Number.class)));
     assertFalse(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Object.class),
@@ -276,6 +272,18 @@ final class TestCovariantTypeSemantics {
                                                        new DefaultParameterizedType(null, List.class, Number.class)));
   }
 
+  @Test
+  final void testArrayListRunnableCanBeAssignedToListRunnable() {
+    assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Runnable.class),
+                                                      new DefaultParameterizedType(null, ArrayList.class, Runnable.class)));
+  }
+
+  @Test
+  final void testArrayListObjectCanBeAssignedToListObject() {
+    assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Object.class),
+                                                      new DefaultParameterizedType(null, ArrayList.class, Object.class)));
+  }
+  
   @Test
   final void testHashMapStringIntegerCanBeAssignedToMapStringInteger() {
     assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, Map.class, String.class, Integer.class),
@@ -736,10 +744,6 @@ final class TestCovariantTypeSemantics {
   final void testGenericArrayTypeAssignableFromGenericArrayType() {
     assertTrue(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, Number.class),
                                                       new DefaultGenericArrayType(Collection.class, Number.class)));
-    assertTrue(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, Number.class),
-                                                      new DefaultGenericArrayType(List.class, Number.class)));
-    assertTrue(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, Number.class),
-                                                      new DefaultGenericArrayType(ArrayList.class, Number.class)));
     assertTrue(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, UnboundedWildcardType.INSTANCE),
                                                       new DefaultGenericArrayType(ArrayList.class, Number.class)));
     assertFalse(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, Number.class),
@@ -751,6 +755,18 @@ final class TestCovariantTypeSemantics {
     assertFalse(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, Number.class),
                                                        new DefaultGenericArrayType(Collection.class, Double.class)));
 
+  }
+
+  @Test
+  final void testArrayListNumberArrayCanBeAssignedToCollectionNumberArray() {
+    assertTrue(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, Number.class),
+                                                      new DefaultGenericArrayType(ArrayList.class, Number.class)));
+  }
+  
+  @Test
+  final void testListNumberArrayCanBeAssignedToCollectionNumberArray() {
+    assertTrue(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(Collection.class, Number.class),
+                                                      new DefaultGenericArrayType(List.class, Number.class)));
   }
 
   @Test
