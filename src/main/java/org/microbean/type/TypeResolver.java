@@ -16,11 +16,11 @@
  */
 package org.microbean.type;
 
-import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 @FunctionalInterface
-public interface DirectSupertypesFunction<T> {
+public interface TypeResolver<T> {
 
-  public T[] directSupertypes(final T type, final BiConsumer<? super org.microbean.type.Type, ? super T> cacheWriter);
+  public T resolve(final T type, final Function<? super org.microbean.type.Type, ? extends T> cacheReader);
   
 }

@@ -19,14 +19,42 @@ package org.microbean.type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Objects;
 
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public interface Type {
+
+  /**
+   * Returns a hashcode for this {@link Type}.
+   *
+   * @return a hashcode for this type
+   *
+   * @see #equals(Object)
+   */
+  public int hashCode();
+
+  /**
+   * Returns {@code true} if the supplied {@link Object} is equal to
+   * this {@link Type}.
+   *
+   * @param other the {@link Object} to test; may be {@code null} in
+   * which case {@code false} will be returned
+   *
+   * @return {@code true} if the supplied {@link Object} is equal to
+   * this {@link Type}; {@code false} otherwise
+   *
+   * @see #hashCode()
+   */
+  public boolean equals(final Object other);
 
 
   /*
@@ -59,7 +87,7 @@ public interface Type {
       super();
       this.equalityBiPredicate = Objects.requireNonNull(equalityBiPredicate, "equalityBiPredicate");
     }
-    
+
     protected final boolean equals(final T receiverType, final T payloadType) {
       return this.equalityBiPredicate.equals(receiverType, payloadType);
     }
@@ -79,8 +107,10 @@ public interface Type {
 
     private final UnaryOperator<T> boxFunction;
 
-    private final ToStringFunction<T> toStringFunction;
+    private final ToTypeFunction<T> toTypeFunction;
 
+    private final TypeResolver<T> typeResolver;
+    
     private final DirectSupertypesFunction<T> directSupertypesFunction;
 
     private final TypeFunction<T> typeFunction;
@@ -106,7 +136,8 @@ public interface Type {
     public CovariantSemantics(final NameFunction<T> nameFunction,
                               final EqualityBiPredicate<T> equalityBiPredicate,
                               final UnaryOperator<T> boxFunction,
-                              final ToStringFunction<T> toStringFunction,
+                              final ToTypeFunction<T> toTypeFunction,
+                              final TypeResolver<T> typeResolver,
                               final DirectSupertypesFunction<T> directSupertypesFunction,
                               final TypeFunction<T> typeFunction,
                               final GenericTypePredicate<T> genericTypePredicate,
@@ -118,10 +149,11 @@ public interface Type {
                               final BoundsFunction<T> upperBoundsFunction,
                               final LowerBoundsPredicate<T> lowerBoundsPredicate,
                               final BoundsFunction<T> lowerBoundsFunction) {
-      super(equalityBiPredicate);      
+      super(equalityBiPredicate);
       this.nameFunction = Objects.requireNonNull(nameFunction, "nameFunction");
       this.boxFunction = boxFunction == null ? UnaryOperator.identity() : boxFunction;
-      this.toStringFunction = Objects.requireNonNull(toStringFunction, "toStringFunction");
+      this.toTypeFunction = Objects.requireNonNull(toTypeFunction, "toTypeFunction");
+      this.typeResolver = Objects.requireNonNull(typeResolver, "typeResolver");
       this.directSupertypesFunction = Objects.requireNonNull(directSupertypesFunction, "directSupertypesFunction");
       this.typeFunction = Objects.requireNonNull(typeFunction, "typeFunction");
       this.genericTypePredicate = Objects.requireNonNull(genericTypePredicate, "genericTypePredicate");
@@ -147,7 +179,7 @@ public interface Type {
     private final T box(final T type) {
       return this.boxFunction.apply(type);
     }
-    
+
     private final boolean hasTypeParameters(final T type) {
       return this.genericTypePredicate.hasTypeParameters(type);
     }
@@ -204,8 +236,12 @@ public interface Type {
       return this.typeFunction.type(type);
     }
 
-    private final T[] directSupertypes(final T type) {
-      return this.directSupertypesFunction.directSupertypes(type);
+    private final T resolve(final T type, final Function<? super Type, ? extends T> cacheReader) {
+      return this.typeResolver.resolve(type, cacheReader);
+    }
+
+    private final T[] directSupertypes(final T type, final BiConsumer<? super Type, ? super T> cacheWriter) {
+      return this.directSupertypesFunction.directSupertypes(type, cacheWriter);
     }
 
     @Override
@@ -307,27 +343,48 @@ public interface Type {
       // Is sup a supertype of sub?
       if (equals(sup, sub)) {
         return true;
-      }
-      for (final T supertype : supertypes(sub)) {
-        if (supertype == sup || equals(supertype, sup)) {
-          return true;
+      } else if (sup instanceof Class<?> supC && sub instanceof Class<?> subC) {
+        // Easy optimization
+        return supC.isAssignableFrom(subC);
+      } else {
+        final Set<? super Type> unseen = new HashSet<>();
+        for (final T supertype : supertypes(sub, unseen::add, CovariantSemantics::returnNullCacheReader, CovariantSemantics::sinkCacheWriter)) {
+          if (supertype == sup || equals(supertype, sup)) {
+            return true;
+          }
         }
       }
       return false;
     }
 
+    private static final <T> T returnNullCacheReader(final Type ignored) {
+      return null;
+    }
+
+    private static final <T> void sinkCacheWriter(final Type u, final T r) {
+
+    }
+
     protected final T[] supertypes(final T type) {
-      return supertypes(type, new HashSet<>());
+      final Set<? super Type> unseen = new HashSet<>();
+      final Map<? super Type, T> cache = new HashMap<>();
+      final T[] returnValue = supertypes(type, unseen::add, cache::get, cache::put);
+
+      return returnValue;
     }
 
     @SuppressWarnings("unchecked")
-    private final T[] supertypes(final T type, final Set<String> seen) {
+    private final T[] supertypes(T type,
+                                 final Predicate<? super Type> unseen,
+                                 final Function<? super Type, ? extends T> cacheReader,
+                                 final BiConsumer<? super Type, ? super T> cacheWriter) {
+      type = this.resolve(type, cacheReader);
       final Collection<T> supertypes;
-      if (seen.add(this.toStringFunction.toString(type))) {
+      if (unseen.test(this.toTypeFunction.toType(type))) {
         supertypes = new ArrayList<>();
         supertypes.add(type); // the supertype relation is reflexive as well as transitive
-        for (final T directSupertype : directSupertypes(type)) {
-          supertypes.addAll(Arrays.asList(supertypes(directSupertype, seen)));
+        for (final T directSupertype : this.directSupertypes(type, cacheWriter)) {
+          supertypes.addAll(Arrays.asList(this.supertypes(directSupertype, unseen, cacheReader, cacheWriter)));
         }
         return (T[])supertypes.toArray();
       } else {

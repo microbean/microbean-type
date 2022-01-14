@@ -16,6 +16,8 @@
  */
 package org.microbean.type;
 
+import java.io.Serializable;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.GenericDeclaration;
@@ -51,7 +53,7 @@ public final class JavaTypes {
   }
 
   // Don't get clever and add an overload without the cache; it wouldn't make any sense
-  public static final Type resolve(final Type type, final Function<? super JavaType, ? extends Type> cacheReader) {
+  public static final Type resolve(final Type type, final Function<? super org.microbean.type.Type, ? extends Type> cacheReader) {
     if (type == null) {
       return null;
     } else if (type instanceof ParameterizedType p) {
@@ -64,7 +66,7 @@ public final class JavaTypes {
     }      
   }
   
-  private static final Type resolve(final ParameterizedType p, final Function<? super JavaType, ? extends Type> cacheReader) {
+  private static final Type resolve(final ParameterizedType p, final Function<? super org.microbean.type.Type, ? extends Type> cacheReader) {
     final Type rv = cacheReader.apply(JavaType.of(p));
     if (rv == null) {
       final Type[] unresolvedArguments = p.getActualTypeArguments();
@@ -83,7 +85,7 @@ public final class JavaTypes {
     return rv;
   }
 
-  private static final Type resolve(final GenericArrayType g, final Function<? super JavaType, ? extends Type> cacheReader) {
+  private static final Type resolve(final GenericArrayType g, final Function<? super org.microbean.type.Type, ? extends Type> cacheReader) {
     final Type rv = cacheReader.apply(JavaType.of(g));
     if (rv == null) {
       final Type unresolvedComponentType = g.getGenericComponentType();
@@ -100,13 +102,13 @@ public final class JavaTypes {
   }
 
   public static final Collection<Type> directSupertypes(final Type type) {
-    final Map<JavaType, Type> map = new HashMap<>();
+    final Map<? super org.microbean.type.Type, ? super Type> map = new HashMap<>();
     final Collection<Type> returnValue = directSupertypes(type, (u, r) -> map.put(u, r));
     
     return returnValue;
   }
   
-  private static final Collection<Type> directSupertypes(final Type type, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+  public static final Collection<Type> directSupertypes(final Type type, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
     if (Objects.requireNonNull(type) instanceof Class<?> c) {
       return directSupertypes(c, cacheWriter);
     } else if (type instanceof ParameterizedType p) {
@@ -120,42 +122,37 @@ public final class JavaTypes {
     }
   }
 
-  private static final Collection<Type> directSupertypes(final Class<?> c, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
-    if (c == Object.class || c.isInterface() || c.isPrimitive()) {
+  private static final Collection<Type> directSupertypes(final Class<?> c, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
+    if (c == Object.class || c.isPrimitive()) {
       return List.of();
     } else {
       final Collection<Type> directSupertypes = new ArrayList<>(11);
       final Class<?> componentType = c.getComponentType();
       if (componentType == null) {
         final Type genericSuperclass = c.getGenericSuperclass();
-        assert genericSuperclass != null;
-        assert (genericSuperclass instanceof Class) || (genericSuperclass instanceof ParameterizedType) : "Unexpected genericSuperclass: " + toString(genericSuperclass);
-        directSupertypes.add(genericSuperclass);
-        if (genericSuperclass instanceof ParameterizedType p) {
-          directSupertypes.add(erase(p));
+        if (genericSuperclass != null) {
+          assert (genericSuperclass instanceof Class) || (genericSuperclass instanceof ParameterizedType) : "Unexpected genericSuperclass: " + toString(genericSuperclass);
+          directSupertypes.add(genericSuperclass);
+          if (genericSuperclass instanceof ParameterizedType p) {
+            directSupertypes.add(erase(p));
+          }
         }
         final Type[] directSuperinterfaces = c.getGenericInterfaces();
         if (directSuperinterfaces.length > 0) {
           for (final Type directSuperinterface : directSuperinterfaces) {
             assert (directSuperinterface instanceof Class) || (directSuperinterface instanceof ParameterizedType) : "Unexpected genericInterface: " + toString(directSuperinterface);
             directSupertypes.add(directSuperinterface);
-            if (directSuperinterface instanceof ParameterizedType p) {
-              directSupertypes.add(erase(p));
-            }
           }
-        } else {
+        } else if (c.isInterface()) {
           directSupertypes.add(Object.class);
         }
       } else if (componentType == Object.class || componentType.isPrimitive()) {
         directSupertypes.add(Object.class);
         directSupertypes.add(Cloneable.class);
-        directSupertypes.add(java.io.Serializable.class);
+        directSupertypes.add(Serializable.class);
       } else {
-        final Class<?> superclass = componentType.getSuperclass();
-        assert superclass != null;
-        directSupertypes.add(superclass.arrayType());
-        final Type[] directInterfaces = componentType.getGenericInterfaces();
-        for (final Type directSuperinterface : directInterfaces) {
+        directSupertypes.add(componentType.getSuperclass().arrayType());
+        for (final Type directSuperinterface : componentType.getGenericInterfaces()) {
           assert (directSuperinterface instanceof Class) || (directSuperinterface instanceof ParameterizedType) : "Unexpected genericInterface: " + toString(directSuperinterface);
           final Type arraySuperinterface = array(directSuperinterface);
           directSupertypes.add(arraySuperinterface);
@@ -168,8 +165,31 @@ public final class JavaTypes {
     }
   }
 
-  private static final Collection<Type> directSupertypes(final ParameterizedType p, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
-    return directSupertypes(p.getRawType(), cacheWriter); // doesn't include wildcard-argumented parameterized types
+  private static final Collection<Type> directSupertypes(final ParameterizedType p, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
+    final Collection<Type> directSupertypes = new ArrayList<>(11);
+    final Type rawType = p.getRawType();
+    final Type[] arguments = p.getActualTypeArguments();
+    for (final Type rawTypeDirectSupertype : directSupertypes(rawType, cacheWriter)) {
+      final Type[] parameters;
+      final Class<?> enclosingClass;
+      if (rawTypeDirectSupertype instanceof Class<?> c) {
+        parameters = c.getTypeParameters();
+        enclosingClass = c.getEnclosingClass();
+        if (parameters.length > 0) {
+          System.out.println("*** rawTypeDirectSupertype is a class (" + toString(c) + ") but we're creating a new parameterized type, resolving the args");
+          directSupertypes.add(new DefaultParameterizedType(enclosingClass, rawTypeDirectSupertype, arguments)); // didn't we just do type resolution?
+        } else {
+          directSupertypes.add(c);
+        }
+      } else {
+        parameters = EMPTY_TYPE_ARRAY;
+        enclosingClass = null;
+        assert rawTypeDirectSupertype instanceof ParameterizedType : "Unexpected rawTypeDirectSupertype: " + toString(rawTypeDirectSupertype);
+        directSupertypes.add(rawTypeDirectSupertype);
+      }
+    }
+    directSupertypes.add(rawType);
+    return Collections.unmodifiableCollection(directSupertypes);
     /*
     final Collection<Type> directSupertypes = new ArrayList<>(directSupertypes(p.getRawType(), cacheWriter));
     final Type[] arguments = p.getActualTypeArguments();
@@ -228,7 +248,7 @@ public final class JavaTypes {
     */
   }
   
-  private static final Collection<Type> directSupertypes(final GenericArrayType g, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+  private static final Collection<Type> directSupertypes(final GenericArrayType g, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
     final Collection<Type> genericComponentTypeDirectSupertypes = directSupertypes(g.getGenericComponentType(), cacheWriter);
     final Collection<Type> returnValue = new ArrayList<>(genericComponentTypeDirectSupertypes.size());
     for (final Type ds : genericComponentTypeDirectSupertypes) {
@@ -237,14 +257,15 @@ public final class JavaTypes {
     return Collections.unmodifiableCollection(returnValue);
   }
   
-  private static final Collection<Type> directSupertypes(final TypeVariable<?> tv, final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+  private static final Collection<Type> directSupertypes(final TypeVariable<?> tv, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
     // "The direct supertypes of a type variable are the types listed in its bound."
+    // TODO: do I need to resolve these bounds?  I think I do.
     return List.of(tv.getBounds());
   }
 
   public static final Collection<Type> supertypes(final Type type) {
-    final Map<JavaType, Type> cache = new HashMap<>();
-    final Set<JavaType> unseen = new HashSet<>();
+    final Set<? super org.microbean.type.Type> unseen = new HashSet<>();
+    final Map<? super org.microbean.type.Type, Type> cache = new HashMap<>();
     final Collection<Type> returnValue =
       supertypes(type,
                  unseen::add,
@@ -254,10 +275,11 @@ public final class JavaTypes {
     return returnValue;
   }
 
-  private static final Collection<Type> supertypes(Type type,
-                                                   final Predicate<? super JavaType> unseen,
-                                                   final Function<? super JavaType, ? extends Type> cacheReader,
-                                                   final BiConsumer<? super JavaType, ? super Type> cacheWriter) {
+  // TODO: Does this in fact have to be public?
+  public static final Collection<Type> supertypes(Type type,
+                                                  final Predicate<? super org.microbean.type.Type> unseen,
+                                                  final Function<? super org.microbean.type.Type, ? extends Type> cacheReader,
+                                                  final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
     type = resolve(type, cacheReader);
     if (unseen.test(JavaType.of(type))) {
       final Collection<Type> supertypes = new ArrayList<>();
@@ -279,7 +301,7 @@ public final class JavaTypes {
       // Easy optimization
       return supC.isAssignableFrom(subC);
     } else {
-      final Set<JavaType> unseen = new HashSet<>();
+      final Set<org.microbean.type.Type> unseen = new HashSet<>();
       for (final Type supertype : supertypes(sub, unseen::add, JavaTypes::returnNullCacheReader, JavaTypes::sinkCacheWriter)) {
         if (equals(supertype, sup)) {
           return true;
@@ -289,11 +311,11 @@ public final class JavaTypes {
     return false;
   }
 
-  private static final Type returnNullCacheReader(final JavaType ignored) {
+  private static final Type returnNullCacheReader(final org.microbean.type.Type ignored) {
     return null;
   }
   
-  private static final void sinkCacheWriter(final JavaType u, final Type r) {
+  private static final void sinkCacheWriter(final org.microbean.type.Type u, final Type r) {
 
   }
   

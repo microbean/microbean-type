@@ -16,11 +16,18 @@
  */
 package org.microbean.type;
 
+import java.io.Serializable;
+
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.Type;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -61,8 +68,96 @@ final class TestJavaTypes {
 
   @Test
   final void testDirectSupertypesOfInteger() {
-    System.out.println(JavaTypes.directSupertypes(Integer.class));
-    System.out.println(JavaTypes.directSupertypes(Integer[].class));
+    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(Integer.class);
+    assertEquals(4, directSupertypes.size());
+    final Iterator<Type> iterator = directSupertypes.iterator();
+    assertTrue(iterator.hasNext());
+    for (int i = 0; i < directSupertypes.size(); i++) {
+      switch (i) {
+      case 0:
+        assertSame(Number.class, iterator.next());
+        break;
+      case 1:
+        assertEquals(new DefaultParameterizedType(null, Comparable.class, Integer.class), iterator.next());
+        break;
+      case 2:
+        assertSame(Constable.class, iterator.next());
+        break;
+      case 3:
+        assertSame(ConstantDesc.class, iterator.next());
+        break;
+      default:
+        throw new AssertionError("i: " + i + "; " + iterator.next());
+      }
+    }
+    assertFalse(iterator.hasNext());
+  }
+
+  @Test
+  final void testDirectSupertypesOfInt() {
+    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(int.class);
+    assertTrue(directSupertypes.isEmpty());
+  }
+
+  @Test
+  final void testDirectSupertypesOfIntArray() {
+    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(int[].class);
+    assertEquals(3, directSupertypes.size());
+    final Iterator<Type> iterator = directSupertypes.iterator();
+    assertTrue(iterator.hasNext());
+    for (int i = 0; i < directSupertypes.size(); i++) {
+      switch (i) {
+      case 0:
+        assertSame(Object.class, iterator.next());
+        break;
+      case 1:
+        assertSame(Cloneable.class, iterator.next());
+        break;
+      case 2:
+        assertSame(Serializable.class, iterator.next());
+        break;
+      default:
+        throw new AssertionError("i: " + i + "; " + iterator.next());
+      }
+    }
+    assertFalse(iterator.hasNext());
+  }
+
+  @Test
+  final void testDirectSupertypesOfIntegerArray() {
+    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(Integer[].class);
+    assertEquals(5, directSupertypes.size(), directSupertypes.toString());
+    final Iterator<Type> iterator = directSupertypes.iterator();
+    assertTrue(iterator.hasNext());
+    for (int i = 0; i < directSupertypes.size(); i++) {
+      switch (i) {
+      case 0:
+        assertSame(Number[].class, iterator.next());
+        break;
+      case 1:
+        assertEquals(new DefaultGenericArrayType(new DefaultParameterizedType(null, Comparable.class, Integer.class)), iterator.next());
+        break;
+      case 2:
+        assertSame(Comparable[].class, iterator.next());
+        break;
+      case 3:
+        assertSame(Constable[].class, iterator.next());
+        break;
+      case 4:
+        assertSame(ConstantDesc[].class, iterator.next());
+        break;
+      default:
+        throw new AssertionError("i: " + i + "; " + iterator.next());
+      }
+    }
+    assertFalse(iterator.hasNext());
+  }
+
+  @Test
+  final void testDirectSupertypesOfComparable() {
+    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(Comparable.class); // (generic class)
+    assertEquals(1, directSupertypes.size());
+    assertSame(Object.class, directSupertypes.iterator().next());
   }
 
   @Test
