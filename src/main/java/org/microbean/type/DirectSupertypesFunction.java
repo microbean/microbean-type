@@ -21,6 +21,6 @@ import java.util.function.BiConsumer;
 @FunctionalInterface
 public interface DirectSupertypesFunction<T> {
 
-  public T[] directSupertypes(final T type, final BiConsumer<? super org.microbean.type.Type, ? super T> cacheWriter);
+  public T[] directSupertypes(final T type);
   
 }

@@ -26,7 +26,6 @@ import java.lang.reflect.WildcardType;
 import java.util.Map;
 import java.util.Objects;
 
-import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 
 import static org.microbean.type.JavaTypes.erase;
@@ -117,8 +116,8 @@ public final class JavaType implements org.microbean.type.Type {
     return type == void.class || type instanceof Class<?> c && c.isPrimitive() ? wrapperTypes.get(type) : type;
   }
 
-  public static final Type[] directSupertypes(final Type type, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
-    return JavaTypes.directSupertypes(type, cacheWriter).toArray(EMPTY_TYPE_ARRAY);
+  public static final Type[] directSupertypes(final Type type) {
+    return JavaTypes.directSupertypes(type).toArray(EMPTY_TYPE_ARRAY);
   }
 
   public static final Type type(final Type type) {
@@ -208,11 +207,9 @@ public final class JavaType implements org.microbean.type.Type {
             JavaTypes::equals,
             box ? JavaType::box : UnaryOperator.identity(),
             JavaType::of,
-            JavaTypes::resolve,
             JavaType::directSupertypes,
             JavaType::type,
             JavaType::hasTypeParameters,
-            JavaType::typeParameters,
             JavaType::hasTypeArguments,
             JavaType::typeArguments,
             JavaType::componentType,

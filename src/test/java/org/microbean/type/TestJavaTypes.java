@@ -22,20 +22,17 @@ import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.TypeVariable;
 import java.lang.reflect.Type;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -61,7 +58,7 @@ final class TestJavaTypes {
     final java.lang.reflect.Type[] t = JavaTypes.emptyTypeArray();
     assertEquals(0, t.length);
   }
-  
+
   @Test
   final void testParameterizedTypeToString() {
     assertEquals("java.lang.ClassValue<X>", JavaTypes.toString(DummyClassValue.class.getGenericSuperclass()));
@@ -162,7 +159,7 @@ final class TestJavaTypes {
     final Collection<Type> directSupertypes = JavaTypes.directSupertypes(new DefaultParameterizedType(null, ArrayList.class, String.class));
     System.out.println(directSupertypes.toString());
   }
-  
+
   @Test
   final void testSupertypesOfInteger() {
     System.out.println(JavaTypes.supertypes(Integer.class));
@@ -187,19 +184,19 @@ final class TestJavaTypes {
     final Type[] tas = p.getActualTypeArguments();
     assertEquals(2, tas.length);
     assertEquals(String.class, tas[0]); // will fail
-    
+
   }
-  
+
   private static final Comparable<? super Number> comparableSuperNumber() {
     return x -> 0;
   }
-  
+
   private static final class DummyClassValue<X> extends ClassValue<X> {
 
     @Override
     protected final X computeValue(final Class<?> c) {
       return null;
     }
-    
+
   }
 }
