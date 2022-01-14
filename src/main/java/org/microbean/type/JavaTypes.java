@@ -129,35 +129,95 @@ public final class JavaTypes {
       final Collection<Type> directSupertypes = new ArrayList<>(11);
       final Class<?> componentType = c.getComponentType();
       if (componentType == null) {
-        final Type genericSuperclass = c.getGenericSuperclass();
-        if (genericSuperclass != null) {
-          assert (genericSuperclass instanceof Class) || (genericSuperclass instanceof ParameterizedType) : "Unexpected genericSuperclass: " + toString(genericSuperclass);
-          directSupertypes.add(genericSuperclass);
-          if (genericSuperclass instanceof ParameterizedType p) {
-            directSupertypes.add(erase(p));
+        final Type[] parameters = c.getTypeParameters();        
+        if (parameters.length > 0) {
+          // 4.10.2. Subtyping among Class and Interface Types
+          //
+          // […]
+          //
+          // Given a generic class or interface C with type parameters
+          // F₁,…,Fₙ (𝑛 > 0), the direct supertypes of the [this]
+          // raw type C (§4.8) are all of the following:
+          //
+          // The erasure (§4.6) of the direct superclass type of C, if
+          // C is a class [i.e. not an interface].
+          //
+          // The erasure of the direct superinterface types of C.
+          //
+          // The type Object, if C is an interface with no direct
+          // superinterface types.
+          final Class<?> directSuperclassTypeErasure = c.getSuperclass(); // let the JDK do the erasure for us
+          if (directSuperclassTypeErasure != null) {
+            directSupertypes.add(directSuperclassTypeErasure);
+          }
+          final Class<?>[] directSuperinterfaceTypeErasures = c.getInterfaces(); // let the JDK do the erasure for us
+          if (directSuperinterfaceTypeErasures.length > 0) {
+            for (final Class<?> directSuperinterfaceTypeErasure : directSuperinterfaceTypeErasures) {
+              directSupertypes.add(directSuperinterfaceTypeErasure);
+            }
+          } else if (c.isInterface()) {
+            assert directSuperclassTypeErasure == null;
+            directSupertypes.add(Object.class);
+          }
+        } else {
+          // 4.10.2. Subtyping among Class and Interface Types
+          //
+          // Given a non-generic class or interface C, the direct
+          // supertypes of the type of C are all of the following:
+          //
+          // The direct superclass type of C (§8.1.4), if C is a class.
+          //
+          // The direct superinterface types of C (§8.1.5, §9.1.3).
+          //
+          // The type Object, if C is an interface with no direct
+          // superinterface types (§9.1.3).
+          final Type directSuperclassType = c.getGenericSuperclass(); // let the JDK construct what may be either a Class or a ParameterizedType
+          if (directSuperclassType != null) {
+            assert (directSuperclassType instanceof Class<?>) || (directSuperclassType instanceof ParameterizedType) : "Unexpected directSuperclassType: " + directSuperclassType;
+            directSupertypes.add(directSuperclassType);
+          }
+          final Type[] directSuperinterfaceTypes = c.getGenericInterfaces(); // let the JDK construct what may be either Class or ParameterizedType instances
+          if (directSuperinterfaceTypes.length > 0) {
+            for (final Type directSuperinterfaceType : directSuperinterfaceTypes) {
+              assert (directSuperinterfaceType instanceof Class<?>) || (directSuperinterfaceType instanceof ParameterizedType) : "Unexpected directSuperinterfaceType: " + directSuperinterfaceType;
+              directSupertypes.add(directSuperinterfaceType);
+            }
+          } else if (c.isInterface()) {
+            assert directSuperclassType == null;
+            directSupertypes.add(Object.class);
           }
         }
-        final Type[] directSuperinterfaces = c.getGenericInterfaces();
-        if (directSuperinterfaces.length > 0) {
-          for (final Type directSuperinterface : directSuperinterfaces) {
-            assert (directSuperinterface instanceof Class) || (directSuperinterface instanceof ParameterizedType) : "Unexpected genericInterface: " + toString(directSuperinterface);
-            directSupertypes.add(directSuperinterface);
-          }
-        } else if (c.isInterface()) {
-          directSupertypes.add(Object.class);
-        }
-      } else if (componentType == Object.class || componentType.isPrimitive()) {
-        directSupertypes.add(Object.class);
-        directSupertypes.add(Cloneable.class);
-        directSupertypes.add(Serializable.class);
       } else {
-        directSupertypes.add(componentType.getSuperclass().arrayType());
-        for (final Type directSuperinterface : componentType.getGenericInterfaces()) {
-          assert (directSuperinterface instanceof Class) || (directSuperinterface instanceof ParameterizedType) : "Unexpected genericInterface: " + toString(directSuperinterface);
-          final Type arraySuperinterface = array(directSuperinterface);
-          directSupertypes.add(arraySuperinterface);
-          if (arraySuperinterface instanceof GenericArrayType g) {
-            directSupertypes.add(erase(g));
+        // 4.10.3. Subtyping among Array Types
+        //
+        // The following rules define the direct supertype relation
+        // among array types:
+        //
+        // If S and T are both reference types, then S[] >₁ T[] iff
+        // S >₁ T.
+        //
+        // Object >₁ Object[]
+        //
+        // Cloneable >₁ Object[]
+        //
+        // java.io.Serializable >₁ Object[]
+        //
+        // If P is a primitive type, then:
+        //
+        // Object >₁ P[]
+        //
+        // Cloneable >₁ P[]
+        //
+        // java.io.Serializable >₁ P[]
+        if (componentType == Object.class || componentType.isPrimitive()) {
+          // Object[] or, say, int[]
+          directSupertypes.add(Object.class);
+          directSupertypes.add(Cloneable.class);
+          directSupertypes.add(Serializable.class);
+        } else {
+          // Reference type (which could be a Class or a ParameterizedType).
+          for (final Type componentTypeDirectSypertype : directSupertypes(componentType, cacheWriter)) {
+            directSupertypes.add(array(componentTypeDirectSypertype));
           }
         }
       }
@@ -167,85 +227,73 @@ public final class JavaTypes {
 
   private static final Collection<Type> directSupertypes(final ParameterizedType p, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
     final Collection<Type> directSupertypes = new ArrayList<>(11);
-    final Type rawType = p.getRawType();
-    final Type[] arguments = p.getActualTypeArguments();
-    for (final Type rawTypeDirectSupertype : directSupertypes(rawType, cacheWriter)) {
-      final Type[] parameters;
-      final Class<?> enclosingClass;
-      if (rawTypeDirectSupertype instanceof Class<?> c) {
-        parameters = c.getTypeParameters();
-        enclosingClass = c.getEnclosingClass();
-        if (parameters.length > 0) {
-          System.out.println("*** rawTypeDirectSupertype is a class (" + toString(c) + ") but we're creating a new parameterized type, resolving the args");
-          directSupertypes.add(new DefaultParameterizedType(enclosingClass, rawTypeDirectSupertype, arguments)); // didn't we just do type resolution?
-        } else {
-          directSupertypes.add(c);
+    // 4.10.2. Subtyping among Class and Interface Types
+    //
+    // […]
+    //
+    // Given a generic class or interface C with type parameters
+    // F₁,…,Fₙ (𝑛 > 0), the direct supertypes of the parameterized
+    // type C<T₁,…,Tₙ>, where each of Tᵢ (1 ≤ 𝑖 ≤ 𝑛) is a type, are
+    // all of the following:
+    //
+    // The substitution [F₁:=T₁,…,Fₙ:=Tₙ] applied to the direct
+    // superclass type of C, if C is a class [i.e. not an interface].
+    //
+    // The substitution [F₁:=T₁,…,Fₙ:=Tₙ] applied to the direct
+    // superinterface types of C.
+    //
+    // C<S₁,…,Sₙ>, where Sᵢ contains Tᵢ (1 ≤ 𝑖 ≤ 𝑛) (§4.5.1) [we're
+    // going to skip this].
+    //
+    // The type Object, if C is an interface with no direct
+    // superinterface types.
+    //
+    // The raw type C.
+    final Class<?> c = erase(p.getRawType());
+    final Type[] typeArguments = p.getActualTypeArguments();
+    final Type directSuperclassType = c.getGenericSuperclass();
+    if (directSuperclassType != null) {
+      if (directSuperclassType instanceof ParameterizedType dst) {
+        final Class<?> directSuperclassTypeErasure = erase(dst.getRawType());
+        final Type[] typeParameters = directSuperclassTypeErasure.getTypeParameters();
+        assert typeParameters.length > 0 : "Unexpected empty type parameters";
+        assert typeArguments.length == typeParameters.length;
+        for (int i = 0; i < typeParameters.length; i++) {
+          cacheWriter.accept(JavaType.of(typeParameters[i]), typeArguments[i]);
         }
+        directSupertypes.add(new DefaultParameterizedType(directSuperclassTypeErasure.getEnclosingClass(), directSuperclassTypeErasure, typeArguments));
+      } else if (directSuperclassType instanceof Class<?> nonGenericClass) {
+        assert nonGenericClass.getTypeParameters().length == 0;
+        directSupertypes.add(nonGenericClass);
       } else {
-        parameters = EMPTY_TYPE_ARRAY;
-        enclosingClass = null;
-        assert rawTypeDirectSupertype instanceof ParameterizedType : "Unexpected rawTypeDirectSupertype: " + toString(rawTypeDirectSupertype);
-        directSupertypes.add(rawTypeDirectSupertype);
+        throw new AssertionError("Unexpected directSuperclassType: " + directSuperclassType);
       }
     }
-    directSupertypes.add(rawType);
-    return Collections.unmodifiableCollection(directSupertypes);
-    /*
-    final Collection<Type> directSupertypes = new ArrayList<>(directSupertypes(p.getRawType(), cacheWriter));
-    final Type[] arguments = p.getActualTypeArguments();
-    final Type[] containingTypeArguments = new Type[arguments.length];
-    OUTER_LOOP:
-    for (int i = 0; i < 3; i++) {
-      boolean atLeastOneContainingArgument = false;
-      for (int j = 0; j < arguments.length; j++) {
-        final Type argument = arguments[j];
-        if (argument instanceof WildcardType w) {
-          final Type[] lowerBounds = w.getLowerBounds();
-          if (lowerBounds.length <= 0) {
-            final Type[] upperBounds = w.getUpperBounds();
-            if (upperBounds.length <= 0 || upperBounds[0] == Object.class) {
-              // Wildcard is unbounded; leave it as is
-              containingTypeArguments[j] = argument;
-            } else {
-              // Wildcard is upper-bounded (extends)
-              containingTypeArguments[j] = UnboundedWildcardType.INSTANCE;
-              if (!atLeastOneContainingArgument) {
-                atLeastOneContainingArgument = true;
-              }
-            }
-          } else {
-            // Wildcard is lower-bounded (super)
-            containingTypeArguments[j] = new LowerBoundedWildcardType(Object.class);
-            if (!atLeastOneContainingArgument) {
-              atLeastOneContainingArgument = true;
-            }
+    final Type[] directSuperinterfaceTypes = c.getGenericInterfaces();
+    if (directSuperinterfaceTypes.length > 0) {
+      for (final Type directSuperinterfaceType : directSuperinterfaceTypes) {
+        if (directSuperinterfaceType instanceof ParameterizedType dst) {
+          final Class<?> directSuperinterfaceTypeErasure = erase(dst.getRawType());
+          final Type[] typeParameters = directSuperinterfaceTypeErasure.getTypeParameters();
+          assert typeParameters.length > 0 : "Unexpected empty type parameters";
+          assert typeArguments.length == typeParameters.length;
+          for (int i = 0; i < typeParameters.length; i++) {
+            cacheWriter.accept(JavaType.of(typeParameters[i]), typeArguments[i]);
           }
+          directSupertypes.add(new DefaultParameterizedType(directSuperinterfaceTypeErasure.getEnclosingClass(), directSuperinterfaceTypeErasure, typeArguments));
+        } else if (directSuperinterfaceType instanceof Class<?> nonGenericInterface) {
+          assert nonGenericInterface.getTypeParameters().length == 0;
+          directSupertypes.add(nonGenericInterface);
         } else {
-          if (!atLeastOneContainingArgument) {
-            atLeastOneContainingArgument = true;
-          }
-          switch (i) {
-          case 0:
-            containingTypeArguments[j] = UnboundedWildcardType.INSTANCE;
-            break;
-          case 1:
-            containingTypeArguments[j] = new UpperBoundedWildcardType(argument);
-            break;
-          case 2:
-            containingTypeArguments[j] = new LowerBoundedWildcardType(argument);
-            break;
-          default:
-            throw new AssertionError("Bad i: " + i);
-          }
+          throw new AssertionError("Unexpected directSuperinterfaceType: " + directSuperinterfaceType);
         }
       }
-      if (!atLeastOneContainingArgument) {
-        break OUTER_LOOP;
-      }
-      directSupertypes.add(new DefaultParameterizedType(p.getOwnerType(), p.getRawType(), containingTypeArguments)); // containingTypeArguments will be cloned
+    } else if (c.isInterface()) {
+      assert directSuperclassType == null;
+      directSupertypes.add(Object.class);
     }
+    directSupertypes.add(c);
     return Collections.unmodifiableCollection(directSupertypes);
-    */
   }
   
   private static final Collection<Type> directSupertypes(final GenericArrayType g, final BiConsumer<? super org.microbean.type.Type, ? super Type> cacheWriter) {
@@ -339,7 +387,6 @@ public final class JavaTypes {
   }
 
   private static final Class<?> array(final Class<?> type) {
-    // return type.isArray() ? type : Array.newInstance(type, 0).getClass();
     return type.isArray() ? type : type.arrayType();
   }
 
@@ -410,7 +457,7 @@ public final class JavaTypes {
     // the erasure of type T. The erasure mapping is defined as
     // follows:
     //
-    // The erasure of a parameterized type (§4.5) G<T1,...,Tn> is |G|.
+    // The erasure of a parameterized type (§4.5) G<T1,…,Tn> is |G|.
     //
     // The erasure of a nested type T.C is |T|.C.
     //
@@ -457,7 +504,7 @@ public final class JavaTypes {
   private static final Class<?> erase(final ParameterizedType type) {
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6
     // …
-    // The erasure of a parameterized type (§4.5) G<T1,...,Tn> is |G|
+    // The erasure of a parameterized type (§4.5) G<T1,…,Tₙ> is |G|
     // [|G| means the erasure of G, i.e. the erasure of
     // type.getRawType()].
     return erase(type.getRawType());

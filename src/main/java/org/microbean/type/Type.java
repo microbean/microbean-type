@@ -225,7 +225,7 @@ public interface Type {
     }
 
     protected final boolean wildcard(final T type) {
-      return name(type) == null && lowerBounded(type) || upperBounded(type);
+      return name(type) == null && (lowerBounded(type) || upperBounded(type));
     }
 
     protected final boolean typeVariable(final T type) {
@@ -316,7 +316,7 @@ public interface Type {
       final T payloadComponentType = componentType(payloadType);
       if (payloadComponentType == null) {
         if (lowerBounded(payloadType)) {
-          assert !lowerBounded(payloadType);
+          assert !upperBounded(payloadType);
           returnValue = classIsAssignableFromWildcardType(receiverType, payloadType, true);
         } else if (upperBounded(payloadType)) {
           final String name = name(payloadType);
@@ -409,11 +409,7 @@ public interface Type {
 
     protected boolean classIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
       final T receiverComponentType = this.componentType(receiverType);
-      if (receiverComponentType == null) {
-        return false;
-      } else {
-        return this.assignable(receiverComponentType, this.componentType(payloadType));
-      }
+      return this.assignable(receiverComponentType == null ? receiverType : receiverComponentType, this.componentType(payloadType));
     }
 
     protected boolean classIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {

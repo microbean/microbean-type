@@ -25,6 +25,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.Type;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -95,8 +96,7 @@ final class TestJavaTypes {
 
   @Test
   final void testDirectSupertypesOfInt() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(int.class);
-    assertTrue(directSupertypes.isEmpty());
+    assertTrue(JavaTypes.directSupertypes(int.class).isEmpty());
   }
 
   @Test
@@ -126,7 +126,7 @@ final class TestJavaTypes {
   @Test
   final void testDirectSupertypesOfIntegerArray() {
     final Collection<Type> directSupertypes = JavaTypes.directSupertypes(Integer[].class);
-    assertEquals(5, directSupertypes.size(), directSupertypes.toString());
+    assertEquals(4, directSupertypes.size(), directSupertypes.toString());
     final Iterator<Type> iterator = directSupertypes.iterator();
     assertTrue(iterator.hasNext());
     for (int i = 0; i < directSupertypes.size(); i++) {
@@ -138,12 +138,9 @@ final class TestJavaTypes {
         assertEquals(new DefaultGenericArrayType(new DefaultParameterizedType(null, Comparable.class, Integer.class)), iterator.next());
         break;
       case 2:
-        assertSame(Comparable[].class, iterator.next());
-        break;
-      case 3:
         assertSame(Constable[].class, iterator.next());
         break;
-      case 4:
+      case 3:
         assertSame(ConstantDesc[].class, iterator.next());
         break;
       default:
@@ -160,6 +157,12 @@ final class TestJavaTypes {
     assertSame(Object.class, directSupertypes.iterator().next());
   }
 
+  @Test
+  final void testDirectSupertypesOfArrayListString() {
+    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(new DefaultParameterizedType(null, ArrayList.class, String.class));
+    System.out.println(directSupertypes.toString());
+  }
+  
   @Test
   final void testSupertypesOfInteger() {
     System.out.println(JavaTypes.supertypes(Integer.class));
