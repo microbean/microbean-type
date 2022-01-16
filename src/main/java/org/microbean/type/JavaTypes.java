@@ -268,13 +268,10 @@ public final class JavaTypes {
   }
 
   public static final Collection<Type> supertypes(final Type type) {
-    final Set<? super org.microbean.type.Type> unseen = new HashSet<>();
-    final Collection<Type> returnValue = supertypes(type, unseen::add);
-    return returnValue;
+    return supertypes(type, new HashSet<>()::add);
   }
 
-  // TODO: Does this in fact have to be public?
-  public static final Collection<Type> supertypes(final Type type, final Predicate<? super org.microbean.type.Type> unseen) {
+  private static final Collection<Type> supertypes(final Type type, final Predicate<? super org.microbean.type.Type> unseen) {
     if (unseen.test(JavaType.of(type))) {
       final Collection<Type> supertypes = new ArrayList<>();
       supertypes.add(type); // reflexive
@@ -295,8 +292,7 @@ public final class JavaTypes {
       // Easy optimization
       return supC.isAssignableFrom(subC);
     } else {
-      final Set<org.microbean.type.Type> unseen = new HashSet<>();
-      for (final Type supertype : supertypes(sub, unseen::add)) {
+      for (final Type supertype : supertypes(sub, new HashSet<>()::add)) {
         if (equals(supertype, sup)) {
           return true;
         }
@@ -353,8 +349,8 @@ public final class JavaTypes {
    *
    * <li>If a {@link GenericArrayType} is supplied, the result of
    * invoking {@link Object#getClass()} on an invocation of {@link
-   * Array#newInstance(Class, int)} with the return value of an
-   * invocation of {@link #erase(Type)} on its {@linkplain
+   * java.lang.reflect.Array#newInstance(Class, int)} with the return
+   * value of an invocation of {@link #erase(Type)} on its {@linkplain
    * GenericArrayType#getGenericComponentType() generic component
    * type} and {@code 0} as its arguments is returned.</li>
    *
@@ -375,8 +371,9 @@ public final class JavaTypes {
    * erasure is to be returned; may be {@code null} in which case
    * {@code null} will be returned
    *
-   * @return a {@link Class}, or {@code null} if a suitable type
-   * erasure could not be determined
+   * @return a {@link Class}, or {@code null} if a suitable {@link
+   * Class}-typed type erasure could not be determined, indicating
+   * that the type erasure is the supplied {@link Type} itself
    *
    * @nullability This method may return {@code null}.
    *
@@ -453,14 +450,11 @@ public final class JavaTypes {
     // The erasure of an array type T[] is |T|[]. [|T| means the
     // erasure of T. We erase the genericComponentType() and use
     // Class#arrayType() to find the "normal" array class.]
-    final Class<?> candidate = erase(type.getGenericComponentType());
-    if (candidate == null) {
+    final Class<?> componentType = erase(type.getGenericComponentType());
+    if (componentType == null) {
       return null;
     } else {
-      assert !candidate.isArray(); // it's the component type
-      final Class<?> returnValue = candidate.arrayType();
-      assert returnValue.isArray();
-      return returnValue;
+      return componentType.arrayType();
     }
   }
 
@@ -472,7 +466,7 @@ public final class JavaTypes {
     // multiple bounds, we know they will start with a class, not an
     // interface and not a type variable.]
     final Type[] bounds = type.getBounds();
-    return bounds != null && bounds.length > 0 ? erase(bounds[0]) : Object.class;
+    return bounds.length > 0 ? erase(bounds[0]) : Object.class;
   }
 
   private static final Class<?> erase(final WildcardType type) {

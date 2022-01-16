@@ -80,12 +80,12 @@ public final class JavaType implements org.microbean.type.Type {
     return this.type;
   }
 
-  @Override
+  @Override // Type
   public final int hashCode() {
     return JavaTypes.hashCode(this.type);
   }
 
-  @Override
+  @Override // Type
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
@@ -168,14 +168,8 @@ public final class JavaType implements org.microbean.type.Type {
     return type instanceof WildcardType w && w.getLowerBounds().length > 0;
   }
 
-  public static final String name(final Type type) {
-    if (type instanceof Class<?> c) {
-      return c.getName();
-    } else if (type instanceof TypeVariable<?> tv) {
-      return tv.getName();
-    } else {
-      return null;
-    }
+  public static final boolean named(final Type type) {
+    return (type instanceof Class) || (type instanceof TypeVariable);
   }
 
   public static final boolean hasTypeArguments(final Type type) {
@@ -190,10 +184,6 @@ public final class JavaType implements org.microbean.type.Type {
     return type instanceof Class<?> c && c.getTypeParameters().length > 0;
   }
 
-  public static final Type[] typeParameters(final Type type) {
-    return type instanceof Class<?> c ? c.getTypeParameters() : EMPTY_TYPE_ARRAY;
-  }
-
 
   /*
    * Inner and nested classes.
@@ -203,7 +193,7 @@ public final class JavaType implements org.microbean.type.Type {
   public static final class Semantics extends org.microbean.type.Type.CovariantSemantics<java.lang.reflect.Type> {
 
     public Semantics(final boolean box) {
-      super(JavaType::name,
+      super(JavaType::named,
             JavaTypes::equals,
             box ? JavaType::box : UnaryOperator.identity(),
             JavaType::of,
