@@ -112,15 +112,15 @@ public final class JavaType implements org.microbean.type.Type {
    */
 
 
-  public static final Type box(final Type type) {
+  private static final Type box(final Type type) {
     return type == void.class || type instanceof Class<?> c && c.isPrimitive() ? wrapperTypes.get(type) : type;
   }
 
-  public static final Type[] directSupertypes(final Type type) {
+  private static final Type[] directSupertypes(final Type type) {
     return JavaTypes.directSupertypes(type).toArray(EMPTY_TYPE_ARRAY);
   }
 
-  public static final Type type(final Type type) {
+  private static final Type type(final Type type) {
     if (type instanceof ParameterizedType p) {
       return type(p.getRawType());
     } else if (type instanceof GenericArrayType g) {
@@ -130,7 +130,7 @@ public final class JavaType implements org.microbean.type.Type {
     }
   }
 
-  public static final Type componentType(final Type type) {
+  private static final Type componentType(final Type type) {
     if (type instanceof Class<?> c) {
       return c.getComponentType();
     } else if (type instanceof GenericArrayType g) {
@@ -140,7 +140,7 @@ public final class JavaType implements org.microbean.type.Type {
     }
   }
 
-  public static final Type[] upperBounds(final Type type) {
+  private static final Type[] upperBounds(final Type type) {
     if (type instanceof TypeVariable<?> tv) {
       return tv.getBounds();
     } else if (type instanceof WildcardType w) {
@@ -150,7 +150,7 @@ public final class JavaType implements org.microbean.type.Type {
     }
   }
 
-  public static final boolean upperBounded(final Type type) {
+  private static final boolean upperBounded(final Type type) {
     if (type instanceof TypeVariable) {
       return true;
     } else if (type instanceof WildcardType w) {
@@ -160,27 +160,27 @@ public final class JavaType implements org.microbean.type.Type {
     }
   }
 
-  public static final Type[] lowerBounds(final Type type) {
+  private static final Type[] lowerBounds(final Type type) {
     return type instanceof WildcardType w ? w.getLowerBounds() : EMPTY_TYPE_ARRAY;
   }
 
-  public static final boolean lowerBounded(final Type type) {
+  private static final boolean lowerBounded(final Type type) {
     return type instanceof WildcardType w && w.getLowerBounds().length > 0;
   }
 
-  public static final boolean named(final Type type) {
+  private static final boolean named(final Type type) {
     return (type instanceof Class) || (type instanceof TypeVariable);
   }
 
-  public static final boolean hasTypeArguments(final Type type) {
+  private static final boolean hasTypeArguments(final Type type) {
     return type instanceof ParameterizedType;
   }
 
-  public static final Type[] typeArguments(final Type type) {
+  private static final Type[] typeArguments(final Type type) {
     return type instanceof ParameterizedType p ? p.getActualTypeArguments() : EMPTY_TYPE_ARRAY;
   }
 
-  public static final boolean hasTypeParameters(final Type type) {
+  private static final boolean hasTypeParameters(final Type type) {
     return type instanceof Class<?> c && c.getTypeParameters().length > 0;
   }
 
