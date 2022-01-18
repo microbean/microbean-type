@@ -23,6 +23,7 @@ import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
@@ -116,10 +117,6 @@ public final class JavaType implements org.microbean.type.Type {
     return type == void.class || type instanceof Class<?> c && c.isPrimitive() ? wrapperTypes.get(type) : type;
   }
 
-  private static final Type[] directSupertypes(final Type type) {
-    return JavaTypes.directSupertypes(type).toArray(EMPTY_TYPE_ARRAY);
-  }
-
   private static final Type type(final Type type) {
     if (type instanceof ParameterizedType p) {
       return type(p.getRawType());
@@ -197,7 +194,7 @@ public final class JavaType implements org.microbean.type.Type {
             JavaTypes::equals,
             box ? JavaType::box : UnaryOperator.identity(),
             JavaType::of,
-            JavaType::directSupertypes,
+            JavaTypes::directSupertypes,
             JavaType::type,
             JavaType::hasTypeParameters,
             JavaType::hasTypeArguments,

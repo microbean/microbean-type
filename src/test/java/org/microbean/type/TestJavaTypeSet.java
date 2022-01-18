@@ -16,6 +16,9 @@
  */
 package org.microbean.type;
 
+import java.util.Iterator;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,36 +33,59 @@ final class TestJavaTypeSet {
   }
 
   @Test
-  final void testJavaTypeSetOfIntegerHasIntegerAsItsMostSpecializedClass() {
+  final void testJavaTypeSetOfIntegerHasIntegerAsItsMostSpecializedNonInterfaceType() {
     final JavaTypeSet jts = JavaTypeSet.of(Integer.class);
     assertEquals(1, jts.size());
-    assertSame(Integer.class, jts.mostSpecializedClass());
-    assertNull(jts.mostSpecializedInterface());
+    assertSame(Integer.class, jts.mostSpecializedNonInterfaceType());
+    assertNull(jts.mostSpecializedInterfaceType());
   }
 
   @Test
-  final void testJavaTypeSetOfIntegerAndNumberHasIntegerAsItsMostSpecializedClass() {
+  final void testJavaTypeSetOfIntegerAndNumberHasIntegerAsItsMostSpecializedNonInterfaceType() {
     final JavaTypeSet jts = JavaTypeSet.of(Number.class, Integer.class);
     assertEquals(2, jts.size());
-    assertSame(Integer.class, jts.mostSpecializedClass());
-    assertNull(jts.mostSpecializedInterface());
+    assertSame(Integer.class, jts.mostSpecializedNonInterfaceType());
+    assertNull(jts.mostSpecializedInterfaceType());
   }
 
   @Test
-  final void testJavaTypeSetOfIntegerAndComparableHasIntegerAsItsMostSpecializedClass() {
+  final void testJavaTypeSetOfIntegerAndComparableHasIntegerAsItsMostSpecializedNonInterfaceType() {
     final JavaTypeSet jts = JavaTypeSet.of(Comparable.class, Integer.class);
     assertEquals(2, jts.size());
-    assertSame(Integer.class, jts.mostSpecializedClass());
-    assertSame(Comparable.class, jts.mostSpecializedInterface());
+    assertSame(Integer.class, jts.mostSpecializedNonInterfaceType());
+    assertSame(Comparable.class, jts.mostSpecializedInterfaceType());
   }
 
   @Test
-  final void testJavaTypeSetOfIntegerAndStringHasEitherStringOrIntegerAsItsMostSpecializedClass() {
+  final void testJavaTypeSetOfIntegerAndStringHasEitherStringOrIntegerAsItsMostSpecializedNonInterfaceType() {
     final JavaTypeSet jts = JavaTypeSet.of(Integer.class, String.class);
     assertEquals(2, jts.size());
-    final java.lang.reflect.Type mssc = jts.mostSpecializedClass();
+    final java.lang.reflect.Type mssc = jts.mostSpecializedNonInterfaceType();
     assertTrue(mssc == String.class || mssc == Integer.class);
-    assertNull(jts.mostSpecializedInterface());
+    assertNull(jts.mostSpecializedInterfaceType());
+  }
+
+  @Test
+  final void testOrdering() {
+    final JavaTypeSet jts = JavaTypeSet.of(List.of(Integer.class, String.class, Number.class));
+    for (int i = 0; i < 10; i++) {
+      final Iterator<java.lang.reflect.Type> iterator = jts.iterator();
+      for (int j = 0; j < jts.size(); j++) {
+        switch (j) {
+        case 0:
+          assertSame(Integer.class, iterator.next());
+          break;
+        case 1:
+          assertSame(String.class, iterator.next());
+          break;
+        case 2:
+          assertSame(Number.class, iterator.next());
+          break;
+        default:
+          throw new AssertionError();
+        }
+      }
+    }
   }
 
 

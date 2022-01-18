@@ -18,10 +18,11 @@ package org.microbean.type;
 
 import java.lang.reflect.Type;
 
+import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
@@ -31,28 +32,45 @@ import java.util.function.Predicate;
 
 import java.util.stream.Stream;
 
+import org.microbean.development.annotation.Convenience;
+
 import static java.util.Spliterator.DISTINCT;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.NONNULL;
+import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterator.SIZED;
 import static java.util.Spliterator.SUBSIZED;
 
-public final class JavaTypeSet implements Iterable<Type> {
+/**
+ * An immutable {@link AbstractSet} of {@link Type}s that ensures that
+ * {@link Type} implementations from different vendors use the same
+ * equality semantics.
+ *
+ * @author <a href="https://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
+ */
+public final class JavaTypeSet extends AbstractSet<Type> {
 
-  private final Set<JavaType> set;
 
-  private volatile Type mostSpecializedClass;
+  /*
+   * Instance fields.
+   */
 
-  private volatile Type mostSpecializedInterface;
+
+  private final Set<? extends JavaType> set;
+
+  private volatile Type mostSpecializedNonInterfaceType;
+
+  private volatile Type mostSpecializedInterfaceType;
+
+
+  /*
+   * Constructors.
+   */
+
 
   private JavaTypeSet(final Type type) {
-    super();
-    this.set = Set.of(JavaType.of(type));
-  }
-
-  private JavaTypeSet(final Type t0, final Type t1) {
-    super();
-    this.set = Set.of(JavaType.of(t0), JavaType.of(t1));
+    this(JavaType.of(type));
   }
 
   private JavaTypeSet(final JavaType javaType) {
@@ -62,10 +80,20 @@ public final class JavaTypeSet implements Iterable<Type> {
 
   private JavaTypeSet(final Collection<?> types) {
     super();
-    if (types == null || types.isEmpty()) {
+    final int size = types == null ? 0 : types.size();
+    if (size <= 0) {
       this.set = Set.of();
+    } else if (size == 1) {
+      final Object o = types instanceof List<?> list ? list.get(0) : types.iterator().next();
+      if (o instanceof JavaType jt) {
+        this.set = Set.of(jt);
+      } else if (o instanceof Type t) {
+        this.set = Set.of(JavaType.of(t));
+      } else {
+        this.set = Set.of();
+      }
     } else {
-      final Set<JavaType> set = new HashSet<>(8);
+      final Set<JavaType> set = new LinkedHashSet<>(8); // LinkedHashSet is critical for ordering
       for (final Object type : types) {
         if (type instanceof JavaType jt) {
           set.add(jt);
@@ -77,7 +105,55 @@ public final class JavaTypeSet implements Iterable<Type> {
     }
   }
 
-   /**
+
+  /*
+   * Instance methods.
+   */
+
+
+  public final JavaTypeSet nonInterfaceTypes() {
+    return new JavaTypeSet(this.set.stream()
+                           .filter(JavaTypeSet::nonInterfaceType)
+                           .toList());
+  }
+
+  public final JavaTypeSet interfaceTypes() {
+    return new JavaTypeSet(this.set.stream()
+                           .filter(JavaTypeSet::interfaceType)
+                           .toList());
+  }
+
+  @Override // Set<Type>
+  public final boolean add(final Type type) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override // Set<Type>
+  public final boolean addAll(final Collection<? extends Type> c) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override // Set<Type>
+  public final void clear() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override // Set<Type>
+  public final boolean remove(final Object o) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override // Set<Type>
+  public final boolean removeAll(final Collection<?> c) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override // Set<Type>
+  public final boolean retainAll(final Collection<?> c) {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
    * Returns an arbitrarily selected {@link Type} that is guaranteed
    * to represent the most specialized subclass drawn from the types
    * in this {@link JavaTypeSet}.
@@ -107,17 +183,17 @@ public final class JavaTypeSet implements Iterable<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #mostSpecializedInterface()
+   * @see #mostSpecializedInterfaceType()
    */
-  public final Type mostSpecializedClass() {
-    Type mostSpecializedClass = this.mostSpecializedClass;
-    if (mostSpecializedClass == NullType.INSTANCE) {
+  public final Type mostSpecializedNonInterfaceType() {
+    Type mostSpecializedNonInterfaceType = this.mostSpecializedNonInterfaceType;
+    if (mostSpecializedNonInterfaceType == NullType.INSTANCE) {
       return null;
-    } else if (mostSpecializedClass == null) {
-      mostSpecializedClass = this.mostSpecialized(JavaTypeSet::isNonInterfaceClassType);
-      this.mostSpecializedClass = mostSpecializedClass == null ? NullType.INSTANCE : mostSpecializedClass;
+    } else if (mostSpecializedNonInterfaceType == null) {
+      mostSpecializedNonInterfaceType = this.mostSpecialized(JavaTypeSet::nonInterfaceType);
+      this.mostSpecializedNonInterfaceType = mostSpecializedNonInterfaceType == null ? NullType.INSTANCE : mostSpecializedNonInterfaceType;
     }
-    return mostSpecializedClass;
+    return mostSpecializedNonInterfaceType;
   }
 
   /**
@@ -157,17 +233,17 @@ public final class JavaTypeSet implements Iterable<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #mostSpecializedClass()
+   * @see #mostSpecializedNonInterfaceType()
    */
-  public final Type mostSpecializedInterface() {
-    Type mostSpecializedInterface = this.mostSpecializedInterface;
-    if (mostSpecializedInterface == NullType.INSTANCE) {
+  public final Type mostSpecializedInterfaceType() {
+    Type mostSpecializedInterfaceType = this.mostSpecializedInterfaceType;
+    if (mostSpecializedInterfaceType == NullType.INSTANCE) {
       return null;
-    } else if (mostSpecializedInterface == null) {
-      mostSpecializedInterface = this.mostSpecialized(JavaTypeSet::isInterfaceType);
-      this.mostSpecializedInterface = mostSpecializedInterface == null ? NullType.INSTANCE : mostSpecializedInterface;
+    } else if (mostSpecializedInterfaceType == null) {
+      mostSpecializedInterfaceType = this.mostSpecialized(JavaTypeSet::interfaceType);
+      this.mostSpecializedInterfaceType = mostSpecializedInterfaceType == null ? NullType.INSTANCE : mostSpecializedInterfaceType;
     }
-    return mostSpecializedInterface;
+    return mostSpecializedInterfaceType;
   }
 
   private final Type mostSpecialized(final Predicate<? super Type> p) {
@@ -180,7 +256,7 @@ public final class JavaTypeSet implements Iterable<Type> {
         }
       } else {
         for (final Type supertype : JavaTypes.supertypes(type)) {
-          if (p.test(supertype) && JavaTypes.supertype(candidate, supertype)) {
+          if (p.test(supertype) && this.set.contains(JavaType.of(supertype)) && JavaTypes.supertype(candidate, supertype)) {
             candidate = supertype;
           }
         }
@@ -189,19 +265,22 @@ public final class JavaTypeSet implements Iterable<Type> {
     return candidate;
   }
 
-  public final boolean contains(final Type type) {
-    return this.set.contains(JavaType.of(type));
+  @Override // Set<Type>
+  public final boolean contains(final Object o) {
+    return o instanceof Type t && this.set.contains(JavaType.of(t));
   }
 
+  @Override // Set<Type>
   public final boolean isEmpty() {
     return this.set.isEmpty();
   }
 
+  @Override // Set<Type>
   public final int size() {
     return this.set.size();
   }
 
-  @Override // Iterable<Type>
+  @Override // Set<Type>
   public final Iterator<Type> iterator() {
     if (this.set.isEmpty()) {
       return Collections.emptyIterator();
@@ -210,11 +289,12 @@ public final class JavaTypeSet implements Iterable<Type> {
     }
   }
 
+  @Override // Set<Type>
   public final Stream<Type> stream() {
     return this.set.stream().map(JavaType::type);
   }
 
-  @Override // Iterable<Type>
+  @Override // Set<Type>
   public final Spliterator<Type> spliterator() {
     if (this.set.isEmpty()) {
       return Spliterators.emptySpliterator();
@@ -222,7 +302,7 @@ public final class JavaTypeSet implements Iterable<Type> {
       return
         Spliterators.spliterator(this.iterator(),
                                  this.size(),
-                                 DISTINCT | IMMUTABLE | NONNULL | SIZED | SUBSIZED);
+                                 DISTINCT | IMMUTABLE | NONNULL | ORDERED | SIZED | SUBSIZED);
     }
   }
 
@@ -236,8 +316,7 @@ public final class JavaTypeSet implements Iterable<Type> {
     if (other == this) {
       return true;
     } else if (other != null && this.getClass() == other.getClass()) {
-      final JavaTypeSet her = (JavaTypeSet)other;
-      return this.set.equals(her.set);
+      return this.set.equals(((JavaTypeSet)other).set);
     } else {
       return false;
     }
@@ -254,28 +333,53 @@ public final class JavaTypeSet implements Iterable<Type> {
    */
 
 
+  @Convenience
   public static final JavaTypeSet of(final Type t) {
-    return new JavaTypeSet(t);
+    return of(JavaType.of(t));
   }
 
+  @Convenience
   public static final JavaTypeSet of(final Type t0, final Type t1) {
-    return new JavaTypeSet(t0, t1);
+    return of(List.of(JavaType.of(t0), JavaType.of(t1)));
   }
 
   public static final JavaTypeSet of(final JavaType t) {
     return new JavaTypeSet(t);
   }
 
+  @Convenience
+  public static final JavaTypeSet of(final JavaType t0, final JavaType t1) {
+    return of(List.of(t0, t1));
+  }
+
   public static final JavaTypeSet of(final Collection<?> types) {
     return new JavaTypeSet(types);
   }
 
-  private static final boolean isNonInterfaceClassType(final Type t) {
+  @Convenience
+  public static final JavaTypeSet ofSupertypes(final Type t) {
+    return of(JavaTypes.supertypes(t));
+  }
+
+  @Convenience
+  public static final JavaTypeSet ofSupertypes(final JavaType jt) {
+    return ofSupertypes(jt.type());
+  }
+
+  private static final boolean nonInterfaceType(final JavaType t) {
+    return nonInterfaceType(t.type());
+  }
+
+  private static final boolean nonInterfaceType(final Type t) {
     final Class<?> c = JavaTypes.erase(t);
     return c != null && !c.isInterface();
   }
 
-  private static final boolean isInterfaceType(final Type t) {
+  private static final boolean interfaceType(final JavaType t) {
+    return interfaceType(t.type());
+  }
+
+  private static final boolean interfaceType(final Type t) {
     final Class<?> c = JavaTypes.erase(t);
     return c != null && c.isInterface();
   }

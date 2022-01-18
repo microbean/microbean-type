@@ -48,6 +48,38 @@ public final class JavaTypes {
     return EMPTY_TYPE_ARRAY;
   }
 
+  /**
+   * Returns the <em>direct supertypes</em> of the supplied {@link
+   * Type}, provided that it is either a {@link Class}, a {@link
+   * ParameterizedType}, a {@link GenericArrayType} or a {@link
+   * TypeVariable}.
+   *
+   * <p>The direct supertypes of a type do not include the type
+   * itself.</p>
+   *
+   * <p>The returned {@link Collection} will contain no duplicate
+   * elements but is not guaranteed to be a {@link Set}
+   * implementation.</p>
+   *
+   * @param type the {@link Type} to introspect; must not be {@code
+   * null}
+   *
+   * @return a {@link Collection} of the direct supertypes of the
+   * supplied {@code type}; never {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}.
+   *
+   * @exception IllegalArgumentException if {@code type} is not a
+   * {@link Class} and not a {@link ParameterizedType} and not a
+   * {@link GenericArrayType} and not a {@link TypeVariable}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public static final Collection<Type> directSupertypes(final Type type) {
     if (Objects.requireNonNull(type) instanceof Class<?> c) {
       return directSupertypes(c);
@@ -217,7 +249,7 @@ public final class JavaTypes {
         final Class<?> directSuperclassTypeErasure = erase(dst.getRawType());
         assert directSuperclassTypeErasure.getTypeParameters().length > 0 : "Unexpected empty type parameters";
         assert typeArguments.length == directSuperclassTypeErasure.getTypeParameters().length;
-        directSupertypes.add(new DefaultParameterizedType(directSuperclassTypeErasure.getEnclosingClass(), directSuperclassTypeErasure, typeArguments));
+        directSupertypes.add(new DefaultParameterizedType(dst.getOwnerType(), directSuperclassTypeErasure, typeArguments));
       } else if (directSuperclassType instanceof Class<?> nonGenericClass) {
         assert nonGenericClass.getTypeParameters().length == 0;
         directSupertypes.add(nonGenericClass);
@@ -232,7 +264,7 @@ public final class JavaTypes {
           final Class<?> directSuperinterfaceTypeErasure = erase(dst.getRawType());
           assert directSuperinterfaceTypeErasure.getTypeParameters().length > 0 : "Unexpected empty type parameters";
           assert typeArguments.length == directSuperinterfaceTypeErasure.getTypeParameters().length;
-          directSupertypes.add(new DefaultParameterizedType(directSuperinterfaceTypeErasure.getEnclosingClass(), directSuperinterfaceTypeErasure, typeArguments));
+          directSupertypes.add(new DefaultParameterizedType(dst.getOwnerType(), directSuperinterfaceTypeErasure, typeArguments));
         } else if (directSuperinterfaceType instanceof Class<?> nonGenericInterface) {
           assert nonGenericInterface.getTypeParameters().length == 0;
           directSupertypes.add(nonGenericInterface);
@@ -267,6 +299,38 @@ public final class JavaTypes {
     return List.of(tv.getBounds());
   }
 
+  /**
+   * Returns the <em>supertypes</em> of the supplied {@link
+   * Type}, provided that it is either a {@link Class}, a {@link
+   * ParameterizedType}, a {@link GenericArrayType} or a {@link
+   * TypeVariable}.
+   *
+   * <p><strong>The supertypes of a type include the type
+   * itself.</strong></p>
+   *
+   * <p>The returned {@link Collection} will contain no duplicate
+   * elements but is not guaranteed to be a {@link Set}
+   * implementation.</p>
+   *
+   * @param type the {@link Type} to introspect; must not be {@code
+   * null}
+   *
+   * @return a {@link Collection} of the supertypes of the supplied
+   * {@code type}; never {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}.
+   *
+   * @exception IllegalArgumentException if {@code type} is not a
+   * {@link Class} and not a {@link ParameterizedType} and not a
+   * {@link GenericArrayType} and not a {@link TypeVariable}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public static final Collection<Type> supertypes(final Type type) {
     return supertypes(type, new HashSet<>()::add);
   }
@@ -286,7 +350,11 @@ public final class JavaTypes {
 
   public static final boolean supertype(final Type sup, final Type sub) {
     // Is sup a supertype of sub?
-    if (equals(Objects.requireNonNull(sup, "sup"), Objects.requireNonNull(sub, "sub"))) {
+    if (sup == null) {
+      throw new NullPointerException("sup");
+    } else if (sub == null) {
+      throw new NullPointerException("sub");
+    } else if (equals(sup, sub)) {
       return true;
     } else if (sup instanceof Class<?> supC && sub instanceof Class<?> subC) {
       // Easy optimization
@@ -324,7 +392,7 @@ public final class JavaTypes {
     return type.isArray() ? type : type.arrayType();
   }
 
-  public static final boolean isReferenceType(final Type type) {
+  static final boolean isReferenceType(final Type type) {
     // Wildcards are ruled out by the BNF in
     // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.5.1
     return !(type == null || type instanceof WildcardType || (type instanceof Class<?> c && c.isPrimitive()));

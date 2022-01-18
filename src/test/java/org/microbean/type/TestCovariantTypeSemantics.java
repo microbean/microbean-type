@@ -509,8 +509,6 @@ final class TestCovariantTypeSemantics {
 
   @Test
   final void testWildcardAssignableFromParameterizedType() {
-    assertTrue(this.covariantTypeSemantics.assignable(UnboundedWildcardType.INSTANCE,
-                                                      new DefaultParameterizedType(null, Collection.class, Number.class)));
     assertTrue(this.covariantTypeSemantics.assignable(new UpperBoundedWildcardType(new DefaultParameterizedType(null, Collection.class, Number.class)),
                                                       new DefaultParameterizedType(null, Collection.class, Number.class)));
     assertTrue(this.covariantTypeSemantics.assignable(new UpperBoundedWildcardType(new DefaultParameterizedType(null, Collection.class, Number.class)),
@@ -534,6 +532,12 @@ final class TestCovariantTypeSemantics {
     assertFalse(this.covariantTypeSemantics.assignable(new LowerBoundedWildcardType(new DefaultParameterizedType(null, Collection.class, Number.class)),
                                                        new DefaultParameterizedType(null, Collection.class, Object.class)));
 
+  }
+
+  @Test
+  final void testCollectionNumberIsAssignableToUnboundedWildcard() {
+    assertTrue(this.covariantTypeSemantics.assignable(UnboundedWildcardType.INSTANCE,
+                                                      new DefaultParameterizedType(null, Collection.class, Number.class)));
   }
 
   @Test

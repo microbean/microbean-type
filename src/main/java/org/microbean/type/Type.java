@@ -19,6 +19,7 @@ package org.microbean.type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +29,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+
+import org.microbean.development.annotation.Convenience;
 
 /**
  * An {@link Object} that represents a Java type of some kind.
@@ -46,7 +49,7 @@ public interface Type {
    *
    * @return a hashcode for this type
    *
-   * @idempotency Implementations of this method must be idempotent and 
+   * @idempotency Implementations of this method must be idempotent and
    * deterministic.
    *
    * @threadsafety Implementations of this method must be safe for concurrent
@@ -67,7 +70,7 @@ public interface Type {
    * @return {@code true} if the supplied {@link Object} is equal to
    * this {@link Type}; {@code false} otherwise
    *
-   * @idempotency Implementations of this method must be idempotent and 
+   * @idempotency Implementations of this method must be idempotent and
    * deterministic.
    *
    * @threadsafety Implementations of this method must be safe for concurrent
@@ -94,212 +97,25 @@ public interface Type {
    *
    * @see #assignable(Object, Object)
    *
-   * @see #assignable0(Object, Object)
-   *
    * @see InvariantSemantics
    *
    * @see CovariantSemantics
    */
   public static abstract class Semantics<T> {
 
-    /**
-     * Calls {@link #assignable0(Object, Object)} on the {@link
-     * Semantics} returned by the {@link #semantics(Object, Object)}
-     * method, which, if not overridden, returns {@code this}, with
-     * the supplied arguments, and returns the result.
-     *
-     * @param receiverType the type to which a reference bearing a
-     * type represented by the supplied {@code payloadType} is
-     * potentially assignable; must not be {@code null}
-     *
-     * @param payloadType the type borne by a reference that is being
-     * assigned to a reference bearing the supplied {@code
-     * receiverType}; must not be {@code null}
-     *
-     * @return {@code true} if {@code payloadType} is assignable to
-     * {@code receiverType}; {@code false} otherwise
-     *
-     * @exception NullPointerException if either argument is {@code
-     * null}
-     *
-     * @idempotency This method is idempotent and deterministic.
-     *
-     * @threadsafety This method is safe for concurrent use by
-     * multiple threads.
-     *
-     * @see #semantics(Object, Object)
-     *
-     * @see #assignable0(Object, Object)
+
+    /*
+     * Instance fields.
      */
-    public final boolean assignable(final T receiverType, final T payloadType) {
-      return
-        this.semantics(Objects.requireNonNull(receiverType, "receiverType"),
-                       Objects.requireNonNull(payloadType, "payloadType"))
-        .assignable0(receiverType, payloadType);
-    }
 
-    /**
-     * Returns a {@link Semantics} to use to {@linkplain
-     * #assignable0(Object, Object) test the assignability} of the
-     * supplied types, which most commonly is simply {@code this}.
-     *
-     * <p>This implementation returns {@code this} in all cases.</p>
-     *
-     * @param receiverType the type to which a reference bearing a
-     * type represented by the supplied {@code payloadType} is
-     * potentially assignable; must not be {@code null}
-     *
-     * @param payloadType the type borne by a reference that is being
-     * assigned to a reference bearing the supplied {@code
-     * receiverType}; must not be {@code null}
-     *
-     * @return a {@link Semantics} to use to {@linkplain
-     * #assignable0(Object, Object) test the assignability} of the
-     * supplied types, which most commonly is simply {@code this}
-     *
-     * @exception NullPointerException if either argument is {@code
-     * null}
-     *
-     * @nullability This method does not, and its overrides must not,
-     * return {@code null}.
-     *
-     * @idempotency This method is, and its overrides must be,
-     * idempotent and deterministic.
-     *
-     * @threadsafety This method is, and its overrides must be, safe
-     * for concurrent use by multiple threads.
-     */
-    protected Semantics<T> semantics(final T receiverType, final T payloadType) {
-      return this;
-    }
-
-    /**
-     * Returns {@code true} if and only if a reference bearing a type
-     * represented by the supplied {@code payloadType} may be assigned
-     * to a reference bearing a type represented by the supplied
-     * {@code receiverType} according to the rules embodied by this
-     * {@link Semantics} implementation.
-     *
-     * @param receiverType the type to which a reference bearing a
-     * type represented by the supplied {@code payloadType} is
-     * potentially assignable; must not be {@code null}
-     *
-     * @param payloadType the type borne by a reference that is being
-     * assigned to a reference bearing the supplied {@code
-     * receiverType}; must not be {@code null}
-     *
-     * @return {@code true} if and only if a reference bearing a type
-     * represented by the supplied {@code payloadType} may be assigned
-     * to a reference bearing a type represented by the supplied
-     * {@code receiverType} according to the rules embodied by this
-     * {@link Semantics} implementation; {@code false} otherwise
-     *
-     * @exception NullPointerException if either argument is {@code
-     * null}
-     *
-     * @idempotency Implementations of this method must be idempotent
-     * and deterministic.
-     *
-     * @threadsafety Implementations of this method must be safe for
-     * concurrent use by multiple threads.
-     */
-    protected abstract boolean assignable0(final T receiverType, final T payloadType);
-
-  }
-
-  
-  /**
-   * A {@link Semantics} implementation that applies invariant
-   * assignability semantics.
-   *
-   * @author <a href="https://about.me/lairdnelson"
-   * target="_parent">Laird Nelson</a>
-   *
-   * @see #assignable0(Object, Object)
-   *
-   * @see CovariantSemantics
-   */
-  public static class InvariantSemantics<T> extends Semantics<T> {
 
     private final BiPredicate<T, T> equalityBiPredicate;
 
-    /**
-     * Creates a new {@link InvariantSemantics}.
-     *
-     * @param equalityBiPredicate a {@link BiPredicate} to determine
-     * when two instances of a type are equal to each other; must not
-     * be {@code null}
-     *
-     * @exception NullPointerException if {@code equalityBiPredicate}
-     * is {@code null}
-     */
-    public InvariantSemantics(final BiPredicate<T, T> equalityBiPredicate) {
-      super();
-      this.equalityBiPredicate = Objects.requireNonNull(equalityBiPredicate, "equalityBiPredicate");
-    }
-
-    /**
-     * Returns {@code true} if and only if a reference bearing a type
-     * represented by the supplied {@code payloadType} {@linkplain
-     * BiPredicate#test(Object, Object) is equal} to a reference
-     * bearing a type represented by the supplied {@code
-     * receiverType}.
-     *
-     * @param receiverType the type to which a reference bearing a
-     * type represented by the supplied {@code payloadType} is
-     * potentially assignable; must not be {@code null}
-     *
-     * @param payloadType the type borne by a reference that is being
-     * assigned to a reference bearing the supplied {@code
-     * receiverType}; must not be {@code null}
-     *
-     * @return {@code true} if and only if a reference bearing a type
-     * represented by the supplied {@code payloadType} {@linkplain
-     * BiPredicate#test(Object, Object) is equal} to a
-     * reference bearing a type represented by the supplied {@code
-     * receiverType}; {@code false} otherwise
-     *
-     * @exception NullPointerException if either argument is {@code
-     * null}
-     *
-     * @idempotency This method is, and its overrides must be,
-     * idempotent and deterministic.
-     *
-     * @threadsafety This method is, and its overrides must be, safe
-     * for concurrent use by multiple threads.
-     */
-    @Override // Semantics
-    protected boolean assignable0(final T receiverType, final T payloadType) {
-      return this.equalityBiPredicate.test(receiverType, payloadType);
-    }
-
-  }
-
-
-  /**
-   * A {@link Semantics} implementation that applies covariant
-   * assignability semantics.
-   *
-   * @author <a href="https://about.me/lairdnelson"
-   * target="_parent">Laird Nelson</a>
-   *
-   * @see #assignable0(Object, Object)
-   *
-   * @see InvariantSemantics
-   */
-  public static class CovariantSemantics<T> extends Semantics<T> {
-
-    private final Semantics<T> typeArgumentSemantics;
-
-    private final BiPredicate<T, T> equalityBiPredicate;
-    
     private final Predicate<T> namedPredicate;
 
     private final UnaryOperator<T> boxFunction;
 
     private final Function<T, ? extends Type> toTypeFunction;
-
-    private final Function<T, T[]> directSupertypesFunction;
 
     private final UnaryOperator<T> typeFunction;
 
@@ -325,80 +141,24 @@ public interface Type {
      */
 
 
-    public CovariantSemantics(final Predicate<T> namedPredicate,
-                              final BiPredicate<T, T> equalityBiPredicate,
-                              final UnaryOperator<T> boxFunction,
-                              final Function<T, ? extends Type> toTypeFunction,
-                              final Function<T, T[]> directSupertypesFunction,
-                              final UnaryOperator<T> typeFunction,
-                              final Predicate<T> genericTypePredicate,
-                              final Function<T, T[]> typeArgumentsFunction,
-                              final UnaryOperator<T> componentTypeFunction,
-                              final Function<T, T[]> upperBoundsFunction,
-                              final Function<T, T[]> lowerBoundsFunction) {
-      this(namedPredicate,
-           equalityBiPredicate,
-           boxFunction,
-           toTypeFunction,
-           directSupertypesFunction,
-           typeFunction,
-           genericTypePredicate,
-           t -> typeArgumentsFunction.apply(t).length > 0,
-           typeArgumentsFunction,
-           componentTypeFunction,
-           t -> upperBoundsFunction.apply(t).length > 0,
-           upperBoundsFunction,
-           t -> lowerBoundsFunction.apply(t).length > 0,
-           lowerBoundsFunction);
-    }
-
-    /**
-     * Creates a new {@link CovariantSemantics}.
-     *
-     * @param namedPredicate a {@link Predicate} to return whether a
-     * type has a name; must not be {@code null}
-     *
-     * @param equalityBiPredicate a {@link BiPredicate} to determine
-     * when two instances of a type are equal to each other; must not
-     * be {@code null}
-     *
-     * @param boxFunction a {@link UnaryOperator} that returns either
-     * its supplied operand (if boxing should not be applied) or a
-     * boxed representation of its supplied operand (if boxing should
-     * be applied); may be {@code null} in which case the return value
-     * of {@link UnaryOperator#identity()} will be used instead
-     *
-     * @param toTypeFunction a {@link Function} that returns a
-     * {@link Type} representing a type; must not be {@code null}
-     *
-     * @param directSupertypesFunction a {@link Function} that is
-     * responsible for returning an array representing the <em>direct
-     * supertypes</em> of a type; must not be {@code null}
-     *
-     * @param typeFunction a {@link UnaryOperator} responsible for
-     * returning the raw type of a parameterized type; must not be
-     * {@code null}
-     */
-    public CovariantSemantics(final Predicate<T> namedPredicate,
-                              final BiPredicate<T, T> equalityBiPredicate,
-                              final UnaryOperator<T> boxFunction,
-                              final Function<T, ? extends Type> toTypeFunction,
-                              final Function<T, T[]> directSupertypesFunction,
-                              final UnaryOperator<T> typeFunction,
-                              final Predicate<T> genericTypePredicate,
-                              final Predicate<T> typeArgumentsPredicate,
-                              final Function<T, T[]> typeArgumentsFunction,
-                              final UnaryOperator<T> componentTypeFunction,
-                              final Predicate<T> upperBoundsPredicate,
-                              final Function<T, T[]> upperBoundsFunction,
-                              final Predicate<T> lowerBoundsPredicate,
-                              final Function<T, T[]> lowerBoundsFunction) {
+    protected Semantics(final Predicate<T> namedPredicate,
+                        final BiPredicate<T, T> equalityBiPredicate,
+                        final UnaryOperator<T> boxFunction,
+                        final Function<T, ? extends Type> toTypeFunction,
+                        final UnaryOperator<T> typeFunction,
+                        final Predicate<T> genericTypePredicate,
+                        final Predicate<T> typeArgumentsPredicate,
+                        final Function<T, T[]> typeArgumentsFunction,
+                        final UnaryOperator<T> componentTypeFunction,
+                        final Predicate<T> upperBoundsPredicate,
+                        final Function<T, T[]> upperBoundsFunction,
+                        final Predicate<T> lowerBoundsPredicate,
+                        final Function<T, T[]> lowerBoundsFunction) {
       super();
       this.namedPredicate = Objects.requireNonNull(namedPredicate, "namedPredicate");
       this.equalityBiPredicate = Objects.requireNonNull(equalityBiPredicate, "equalityBiPredicate");
       this.boxFunction = boxFunction == null ? UnaryOperator.identity() : boxFunction;
       this.toTypeFunction = Objects.requireNonNull(toTypeFunction, "toTypeFunction");
-      this.directSupertypesFunction = Objects.requireNonNull(directSupertypesFunction, "directSupertypesFunction");
       this.typeFunction = Objects.requireNonNull(typeFunction, "typeFunction");
       this.genericTypePredicate = Objects.requireNonNull(genericTypePredicate, "genericTypePredicate");
       this.typeArgumentsPredicate = Objects.requireNonNull(typeArgumentsPredicate, "typeArgumentsPredicate");
@@ -408,108 +168,79 @@ public interface Type {
       this.upperBoundsFunction = Objects.requireNonNull(upperBoundsFunction, "upperBoundsFunction");
       this.lowerBoundsPredicate = Objects.requireNonNull(lowerBoundsPredicate, "lowerBoundsPredicate");
       this.lowerBoundsFunction = Objects.requireNonNull(lowerBoundsFunction, "lowerBoundsFunction");
-      this.typeArgumentSemantics = new InvariantSemantics<>(equalityBiPredicate) {
-          @Override // Semantics
-          protected final Semantics<T> semantics(final T receiverType, final T payloadType) {
-            if (wildcard(receiverType) || wildcard(payloadType)) {
-              return CovariantSemantics.this;
-            }
-            return super.semantics(receiverType, payloadType);
-          }
-        };
     }
 
-    private final T box(final T type) {
+
+    /*
+     * Instance methods.
+     */
+
+
+    protected final T box(final T type) {
       return this.boxFunction.apply(type);
     }
 
-    private final boolean equals(final T receiverType, final T payloadType) {
+    protected final boolean equals(final T receiverType, final T payloadType) {
       return this.equalityBiPredicate.test(receiverType, payloadType);
     }
 
-    private final boolean hasTypeParameters(final T type) {
+    protected final boolean hasTypeParameters(final T type) {
       return this.genericTypePredicate.test(type);
     }
 
-    /**
-     * Returns a {@link Semantics} to use for {@linkplain
-     * Semantics#assignable(Object, Object) testing the assignability}
-     * of parameterized type type arguments.
-     *
-     * @return a {@link Semantics} to use for {@linkplain
-     * Semantics#assignable(Object, Object) testing the assignability}
-     * of parameterized type type arguments; never {@code null}
-     *
-     * @nullability This method never returns {@code null}.
-     *
-     * @idempotency This method is idempotent and deterministic.
-     *
-     * @threadsafety This method is safe for concurrent use by
-     * multiple threads.
-     */
-    protected final Semantics<T> typeArgumentSemantics() {
-      return this.typeArgumentSemantics;
-    }
-
-    private final boolean hasTypeArguments(final T type) {
+    protected final boolean hasTypeArguments(final T type) {
       return this.typeArgumentsPredicate.test(type);
     }
 
-    private final T[] typeArguments(final T type) {
+    protected final T[] typeArguments(final T type) {
       return this.typeArgumentsFunction.apply(type);
     }
 
-    private final boolean lowerBounded(final T type) {
+    protected final boolean lowerBounded(final T type) {
       return this.lowerBoundsPredicate.test(type);
     }
 
-    private final boolean upperBounded(final T type) {
+    protected final boolean upperBounded(final T type) {
       return this.upperBoundsPredicate.test(type);
     }
 
-    private final T[] lowerBounds(final T type) {
+    protected final T[] lowerBounds(final T type) {
       return this.lowerBoundsFunction.apply(type);
     }
 
-    private final T[] upperBounds(final T type) {
+    protected final T[] upperBounds(final T type) {
       return this.upperBoundsFunction.apply(type);
     }
 
-    private final T componentType(final T type) {
+    protected final T componentType(final T type) {
       return this.componentTypeFunction.apply(type);
     }
 
-    private final boolean named(final T type) {
+    protected final boolean named(final T type) {
       return this.namedPredicate.test(type);
     }
 
-    private final boolean wildcard(final T type) {
-      return !this.named(type) && (this.lowerBounded(type) || this.upperBounded(type));
-    }
-
-    private final boolean typeVariable(final T type) {
-      return this.named(type) && !this.lowerBounded(type) && this.upperBounded(type);
-    }
-
-    private final T type(final T type) {
+    protected final T type(final T type) {
       return this.typeFunction.apply(type);
     }
 
-    private final T[] directSupertypes(final T type) {
-      return this.directSupertypesFunction.apply(type);
+    protected final Type toType(final T type) {
+      return this.toTypeFunction.apply(type);
+    }
+
+    protected final boolean wildcard(final T type) {
+      return !this.named(type) && (this.lowerBounded(type) || this.upperBounded(type));
+    }
+
+    protected final boolean typeVariable(final T type) {
+      return this.named(type) && !this.lowerBounded(type) && this.upperBounded(type);
     }
 
     /**
      * Returns {@code true} if and only if a reference bearing a type
-     * represented by the supplied {@code payloadType} may be assigned
+     * represented by the supplied {@code payloadType} can be assigned
      * to a reference bearing a type represented by the supplied
-     * {@code receiverType} according to the rules described by the <a
-     * href="https://docs.oracle.com/javase/specs/jls/se17/html"
-     * target="_top">Java Language Specification</a>.
-     *
-     * <p>Primitive types may be assignable to suitable wrapper types
-     * if a suitable {@code boxFunction} was supplied at construction
-     * time.</p>
+     * {@code receiverType}.
      *
      * @param receiverType the type to which a reference bearing a
      * type represented by the supplied {@code payloadType} is
@@ -520,53 +251,49 @@ public interface Type {
      * receiverType}; must not be {@code null}
      *
      * @return {@code true} if and only if a reference bearing a type
-     * represented by the supplied {@code payloadType} {@linkplain
-     * BiPredicate#test(Object, Object) is equal} to a reference
-     * bearing a type represented by the supplied {@code
-     * receiverType}; {@code false} otherwise
+     * represented by the supplied {@code payloadType} can be assigned
+     * to a reference bearing a type represented by the supplied
+     * {@code receiverType}; {@code false} otherwise
      *
      * @exception NullPointerException if either argument is {@code
      * null}
      *
-     * @idempotency This method is, and its overrides must be,
-     * idempotent and deterministic.
+     * @idempotency This method is idempotent and deterministic.
      *
-     * @threadsafety This method is, and its overrides must be, safe
-     * for concurrent use by multiple threads.
+     * @threadsafety This method is safe for concurrent use by
+     * multiple threads.
      */
-    @Override
-    protected boolean assignable0(final T receiverType, final T payloadType) {
-      final boolean returnValue;
-      if (this.hasTypeArguments(receiverType)) {
-        returnValue = parameterizedTypeIsAssignableFromType(receiverType, payloadType);
+    public boolean assignable(final T receiverType, final T payloadType) {
+      if (this.equals(Objects.requireNonNull(receiverType, "receiverType"),
+                      Objects.requireNonNull(payloadType, "payloadType"))) {
+        return true;
+      } else if (this.hasTypeArguments(receiverType)) {
+        return parameterizedTypeIsAssignableFromType(receiverType, payloadType);
       } else if (this.hasTypeArguments(payloadType)) {
-        returnValue = this.nonParameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
+        return this.nonParameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
       } else {
         final T receiverComponentType = this.componentType(receiverType);
         if (receiverComponentType == null) {
           if (this.lowerBounded(receiverType)) {
             assert !this.upperBounded(receiverType);
-            returnValue = this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, true, payloadType);
+            return this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, true, payloadType);
           } else if (this.upperBounded(receiverType)) {
             if (this.named(receiverType)) {
-              returnValue = this.typeVariableIsAssignableFromNonParameterizedType(receiverType, payloadType);
+              return this.typeVariableIsAssignableFromNonParameterizedType(receiverType, payloadType);
             } else {
-              returnValue = this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, false, payloadType);
+              return this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, false, payloadType);
             }
           } else {
-            returnValue = this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
+            return this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
           }
+        } else if (this.type(receiverType) == receiverType) {
+          return this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
         } else {
-          final T receiverRawType = this.type(receiverType);
-          if (receiverRawType == receiverType) {
-            returnValue = this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
-          } else {
-            returnValue = this.genericArrayTypeIsAssignableFromNonParameterizedType(receiverType, payloadType);
-          }
+          return this.genericArrayTypeIsAssignableFromNonParameterizedType(receiverType, payloadType);
         }
       }
-      return returnValue;
     }
+
 
     private final boolean nonParameterizedTypeIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
       // assert: receiverType IS NOT a parameterized type
@@ -626,72 +353,23 @@ public interface Type {
       return returnValue;
     }
 
-    private final boolean supertype(final T sup, final T sub) {
-      // Is sup a supertype of sub?
-      if (this.equals(Objects.requireNonNull(sup, "sup"), Objects.requireNonNull(sub, "sub"))) {
-        return true;
-      } else if (sup instanceof Class<?> supC && sub instanceof Class<?> subC) {
-        // Easy optimization
-        return supC.isAssignableFrom(subC);
-      } else {
-        final Set<? super Type> unseen = new HashSet<>();
-        for (final T supertype : this.supertypes(sub, unseen::add)) {
-          if (supertype == sup || this.equals(supertype, sup)) {
-            return true;
-          }
-        }
-      }
+    protected boolean classIsAssignableFromClass(T receiverType, T payloadType) {
       return false;
     }
 
-    private final T[] supertypes(final T type) {
-      return this.supertypes(type, new HashSet<>()::add);
-    }
-
-    @SuppressWarnings("unchecked")
-    private final T[] supertypes(final T type, final Predicate<? super Type> unseen) {
-      if (unseen.test(this.toTypeFunction.apply(type))) {
-        final Collection<T> supertypes = new ArrayList<>();
-        supertypes.add(type); // the supertype relation is reflexive as well as transitive
-        for (final T directSupertype : this.directSupertypes(type)) {
-          supertypes.addAll(Arrays.asList(this.supertypes(directSupertype, unseen)));
-        }
-        return (T[])supertypes.toArray();
-      } else {
-        return (T[])List.of().toArray();
-      }
-    }
-
-    private final boolean classIsAssignableFromClass(T receiverType, T payloadType) {
-      receiverType = this.box(receiverType);
-      payloadType = this.box(payloadType);
-      if (receiverType instanceof Class<?> c0 && payloadType instanceof Class<?> c1) {
-        // Use the native code shortcut
-        return c0.isAssignableFrom(c1);
-      }
-      return this.supertype(receiverType, payloadType);
-    }
-
-    private final boolean classIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
-      return this.assignable(receiverType, this.type(payloadType));
-    }
-
-    private final boolean classIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
-      final T receiverComponentType = this.componentType(receiverType);
-      return this.assignable(receiverComponentType == null ? receiverType : receiverComponentType, this.componentType(payloadType));
-    }
-
-    private final boolean classIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
-      final T[] bounds = this.upperBounds(payloadType);
-      for (final T bound : bounds) {
-        if (this.assignable(receiverType, bound)) {
-          return true;
-        }
-      }
+    protected boolean classIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
       return false;
     }
 
-    private final boolean classIsAssignableFromWildcardType(final T receiverType, final T payloadType, final boolean lowerBounded) {
+    protected boolean classIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
+      return false;
+    }
+
+    protected boolean classIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
+      return false;
+    }
+
+    protected boolean classIsAssignableFromWildcardType(final T receiverType, final T payloadType, final boolean lowerBounded) {
       return false;
     }
 
@@ -728,63 +406,25 @@ public interface Type {
       return returnValue;
     }
 
-    private final boolean parameterizedTypeIsAssignableFromClass(final T receiverType, final T payloadClass) {
-      // Raw types are assignable and either the payload is a generic
-      // class (and therefore a raw class) or the payload is a class
-      // whose parameterized supertypes need to be evaluated.
-      return
-        this.assignable(this.type(receiverType), payloadClass) &&
-        (this.hasTypeParameters(payloadClass) ||
-         this.parameterizedTypeIsAssignableFromTypes(receiverType, this.supertypes(payloadClass)));
-    }
-
-    private final boolean parameterizedTypeIsAssignableFromTypes(final T receiverType, final T[] payloadTypes) {
-      for (final T payloadType : payloadTypes) {
-        if (this.hasTypeArguments(payloadType) &&
-            this.parameterizedTypeIsAssignableFromParameterizedType0(receiverType, payloadType)) {
-          return true;
-        }
-      }
+    protected boolean parameterizedTypeIsAssignableFromClass(final T receiverType, final T payloadClass) {
       return false;
     }
 
-    private final boolean parameterizedTypeIsAssignableFromParameterizedType(final T receiverType, final T payloadParameterizedType) {
-      return this.parameterizedTypeIsAssignableFromTypes(receiverType, this.supertypes(payloadParameterizedType));
-    }
-
-    private final boolean parameterizedTypeIsAssignableFromParameterizedType0(final T receiverParameterizedType, final T payloadParameterizedType) {
-      if (this.equals(this.type(receiverParameterizedType), this.type(payloadParameterizedType))) {
-        final T[] receiverTypeTypeArguments = this.typeArguments(receiverParameterizedType);
-        final T[] payloadTypeTypeArguments = this.typeArguments(payloadParameterizedType);
-        if (receiverTypeTypeArguments.length == payloadTypeTypeArguments.length) {
-          final Semantics<T> s = this.typeArgumentSemantics();
-          for (int i = 0; i < receiverTypeTypeArguments.length; i++) {
-            if (!s.assignable(receiverTypeTypeArguments[i], payloadTypeTypeArguments[i])) {
-              return false;
-            }
-          }
-          return true;
-        }
-      }
+    protected boolean parameterizedTypeIsAssignableFromParameterizedType(final T receiverType, final T payloadParameterizedType) {
       return false;
     }
 
-    private final boolean parameterizedTypeIsAssignableFromGenericArrayType(final T receiverParameterizedType, final T payloadGenericArrayType) {
+    protected boolean parameterizedTypeIsAssignableFromGenericArrayType(final T receiverParameterizedType, final T payloadGenericArrayType) {
       return false;
     }
 
-    private final boolean parameterizedTypeIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
-      for (final T payloadTypeBound : this.upperBounds(payloadType)) {
-        if (this.assignable(receiverType, payloadTypeBound)) {
-          return true;
-        }
-      }
+    protected boolean parameterizedTypeIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
       return false;
     }
 
-    private final boolean parameterizedTypeIsAssignableFromWildcardType(final T receiverType,
-                                                                        final T payloadType,
-                                                                        final boolean lowerBounded) {
+    protected boolean parameterizedTypeIsAssignableFromWildcardType(final T receiverType,
+                                                                    final T payloadType,
+                                                                    final boolean lowerBounded) {
       return false;
     }
 
@@ -799,7 +439,7 @@ public interface Type {
           returnValue = this.genericArrayTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
         } else if (this.upperBounded(payloadType)) {
           if (this.named(payloadType)) {
-            returnValue = this.genericArrayTypeIsAssignableFromTypeVariable(receiverType, payloadType);            
+            returnValue = this.genericArrayTypeIsAssignableFromTypeVariable(receiverType, payloadType);
           } else {
             returnValue = this.genericArrayTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
           }
@@ -817,25 +457,25 @@ public interface Type {
       return returnValue;
     }
 
-    private final boolean genericArrayTypeIsAssignableFromClass(final T receiverType, final T payloadType) {
-      return this.assignable(this.componentType(receiverType), this.componentType(payloadType));
-    }
-
-    private final boolean genericArrayTypeIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
+    protected boolean genericArrayTypeIsAssignableFromClass(final T receiverType, final T payloadType) {
       return false;
     }
 
-    private final boolean genericArrayTypeIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
-      return this.assignable(this.componentType(receiverType), this.componentType(payloadType));
-    }
-
-    private final boolean genericArrayTypeIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
+    protected boolean genericArrayTypeIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
       return false;
     }
 
-    private final boolean genericArrayTypeIsAssignableFromWildcardType(final T receiverType,
-                                                                       final T payloadType,
-                                                                       final boolean lowerBounded) {
+    protected boolean genericArrayTypeIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
+      return false;
+    }
+
+    protected boolean genericArrayTypeIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
+      return false;
+    }
+
+    protected boolean genericArrayTypeIsAssignableFromWildcardType(final T receiverType,
+                                                                   final T payloadType,
+                                                                   final boolean lowerBounded) {
       return false;
     }
 
@@ -868,29 +508,25 @@ public interface Type {
       return returnValue;
     }
 
-    private final boolean typeVariableIsAssignableFromClass(final T receiverType, final T payloadType) {
+    protected boolean typeVariableIsAssignableFromClass(final T receiverType, final T payloadType) {
       return false;
     }
 
-    private final boolean typeVariableIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
+    protected boolean typeVariableIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
       return false;
     }
 
-    private final boolean typeVariableIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
+    protected boolean typeVariableIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
       return false;
     }
 
-    private final boolean typeVariableIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
-      if (this.equals(receiverType, payloadType)) {
-        return true;
-      }
-      final T solePayloadTypeBound = this.upperBounds(payloadType)[0];
-      return this.typeVariable(solePayloadTypeBound) && this.assignable(receiverType, solePayloadTypeBound);
+    protected boolean typeVariableIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
+      return false;
     }
 
-    private final boolean typeVariableIsAssignableFromWildcardType(final T receiverType,
-                                                                   final T payloadType,
-                                                                   final boolean lowerBounded) {
+    protected boolean typeVariableIsAssignableFromWildcardType(final T receiverType,
+                                                               final T payloadType,
+                                                               final boolean lowerBounded) {
       return false;
     }
 
@@ -927,41 +563,469 @@ public interface Type {
       return returnValue;
     }
 
-    private final boolean wildcardTypeIsAssignableFromClass(final T receiverType, final boolean lowerBounded, final T payloadType) {
-      return
-        this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
-        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+    protected boolean wildcardTypeIsAssignableFromClass(final T receiverType, final boolean lowerBounded, final T payloadType) {
+      return false;
     }
 
-    private final boolean wildcardTypeIsAssignableFromParameterizedType(final T receiverType,
-                                                                        final boolean lowerBounded,
-                                                                        final T payloadType) {
-      return
-        this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
-        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+    protected boolean wildcardTypeIsAssignableFromParameterizedType(final T receiverType,
+                                                                    final boolean lowerBounded,
+                                                                    final T payloadType) {
+      return false;
     }
 
-    private final boolean wildcardTypeIsAssignableFromGenericArrayType(final T receiverType,
-                                                                       final boolean lowerBounded,
-                                                                       final T payloadType) {
-      return
-        this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
-        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
-    }
-
-    private final boolean wildcardTypeIsAssignableFromTypeVariable(final T receiverType,
+    protected boolean wildcardTypeIsAssignableFromGenericArrayType(final T receiverType,
                                                                    final boolean lowerBounded,
                                                                    final T payloadType) {
-      if (lowerBounded) {
-        return this.assignable(payloadType, this.lowerBounds(receiverType)[0]);
-      }
-      return this.assignable(this.upperBounds(receiverType)[0], payloadType);
+      return false;
     }
 
-    private final boolean wildcardTypeIsAssignableFromWildcardType(final T receiverType,
-                                                                   final boolean receiverTypeLowerBounded,
-                                                                   final T payloadType,
-                                                                   final boolean payloadTypeLowerBounded) {
+    protected boolean wildcardTypeIsAssignableFromTypeVariable(final T receiverType,
+                                                               final boolean lowerBounded,
+                                                               final T payloadType) {
+      return false;
+    }
+
+    protected boolean wildcardTypeIsAssignableFromWildcardType(final T receiverType,
+                                                               final boolean receiverTypeLowerBounded,
+                                                               final T payloadType,
+                                                               final boolean payloadTypeLowerBounded) {
+      return false;
+    }
+
+
+    @Convenience
+    protected static final <T> boolean unsupportedPredicate(final T ignored) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Convenience
+    protected static final <T, U> U unsupportedFunction(final T ignored) {
+      throw new UnsupportedOperationException();
+    }
+
+  }
+
+
+  /**
+   * A {@link Semantics} implementation that applies invariant
+   * assignability semantics, except in the case of wildcard types,
+   * which are by definition always covariant.
+   *
+   * @author <a href="https://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
+   *
+   * @see CovariantSemantics
+   */
+  public static class InvariantSemantics<T> extends Semantics<T> {
+
+    private final CovariantSemantics<T> wildcardSemantics;
+
+    /**
+     * Creates a new {@link InvariantSemantics}.
+     *
+     * @param wildcardSemantics a {@link CovariantSemantics} instance
+     * for comparing wildcard type arguments; must not be {@code null}
+     *
+     * @exception NullPointerException if {@code wildcardSemantics} is
+     * {@code null}
+     */
+    public InvariantSemantics(final CovariantSemantics<T> wildcardSemantics) {
+      super(wildcardSemantics::named,
+            wildcardSemantics::equals,
+            wildcardSemantics::box,
+            wildcardSemantics::toType,
+            wildcardSemantics::type,
+            wildcardSemantics::hasTypeParameters,
+            wildcardSemantics::hasTypeArguments,
+            wildcardSemantics::typeArguments,
+            wildcardSemantics::componentType,
+            wildcardSemantics::upperBounded,
+            wildcardSemantics::upperBounds,
+            wildcardSemantics::lowerBounded,
+            wildcardSemantics::lowerBounds);
+      this.wildcardSemantics = Objects.requireNonNull(wildcardSemantics, "wildcardSemantics");
+    }
+
+    /**
+     * Returns {@code true} if and only if a reference bearing a type
+     * represented by the supplied {@code payloadType} {@linkplain
+     * BiPredicate#test(Object, Object) is equal} to a reference
+     * bearing a type represented by the supplied {@code
+     * receiverType}.
+     *
+     * @param receiverType the type to which a reference bearing a
+     * type represented by the supplied {@code payloadType} is
+     * potentially assignable; must not be {@code null}
+     *
+     * @param payloadType the type borne by a reference that is being
+     * assigned to a reference bearing the supplied {@code
+     * receiverType}; must not be {@code null}
+     *
+     * @return {@code true} if and only if a reference bearing a type
+     * represented by the supplied {@code payloadType} {@linkplain
+     * BiPredicate#test(Object, Object) is equal} to a
+     * reference bearing a type represented by the supplied {@code
+     * receiverType}; {@code false} otherwise
+     *
+     * @exception NullPointerException if either argument is {@code
+     * null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     */
+    @Override // Semantics
+    public boolean assignable(final T receiverType, final T payloadType) {
+      if (this.wildcard(receiverType) || this.wildcard(payloadType)) {
+        return this.wildcardSemantics.assignable(receiverType, payloadType);
+      }
+      return this.equals(receiverType, payloadType);
+    }
+
+  }
+
+
+  /**
+   * A {@link Semantics} implementation that applies covariant
+   * assignability semantics.
+   *
+   * @author <a href="https://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
+   *
+   * @see InvariantSemantics
+   */
+  public static class CovariantSemantics<T> extends Semantics<T> {
+
+
+    private final Function<T, ? extends Collection<? extends T>> directSupertypesFunction;
+
+
+    /*
+     * Constructors.
+     */
+
+
+    public CovariantSemantics(final Predicate<T> namedPredicate,
+                              final BiPredicate<T, T> equalityBiPredicate,
+                              final UnaryOperator<T> boxFunction,
+                              final Function<T, ? extends Type> toTypeFunction,
+                              final Function<T, ? extends Collection<T>> directSupertypesFunction,
+                              final UnaryOperator<T> typeFunction,
+                              final Predicate<T> genericTypePredicate,
+                              final Function<T, T[]> typeArgumentsFunction,
+                              final UnaryOperator<T> componentTypeFunction,
+                              final Function<T, T[]> upperBoundsFunction,
+                              final Function<T, T[]> lowerBoundsFunction) {
+      this(namedPredicate,
+           equalityBiPredicate,
+           boxFunction,
+           toTypeFunction,
+           directSupertypesFunction,
+           typeFunction,
+           genericTypePredicate,
+           t -> typeArgumentsFunction.apply(t).length > 0,
+           typeArgumentsFunction,
+           componentTypeFunction,
+           t -> upperBoundsFunction.apply(t).length > 0,
+           upperBoundsFunction,
+           t -> lowerBoundsFunction.apply(t).length > 0,
+           lowerBoundsFunction);
+    }
+
+    /**
+     * Creates a new {@link CovariantSemantics}.
+     *
+     * @param namedPredicate a {@link Predicate} to return whether a
+     * type has a name; must not be {@code null}
+     *
+     * @param equalityBiPredicate a {@link BiPredicate} to determine
+     * when two instances of a type are equal to each other; must not
+     * be {@code null}
+     *
+     * @param boxFunction a {@link UnaryOperator} that returns either
+     * its supplied operand (if boxing should not be applied) or a
+     * boxed representation of its supplied operand (if boxing should
+     * be applied); may be {@code null} in which case the return value
+     * of {@link UnaryOperator#identity()} will be used instead
+     *
+     * @param toTypeFunction a {@link Function} that returns a
+     * {@link Type} representing a type; must not be {@code null}
+     *
+     * @param directSupertypesFunction a {@link Function} that is
+     * responsible for returning an array representing the <em>direct
+     * supertypes</em> of a type; must not be {@code null}
+     *
+     * @param typeFunction a {@link UnaryOperator} responsible for
+     * returning the raw type of a parameterized type; must not be
+     * {@code null}
+     */
+    public CovariantSemantics(final Predicate<T> namedPredicate,
+                              final BiPredicate<T, T> equalityBiPredicate,
+                              final UnaryOperator<T> boxFunction,
+                              final Function<T, ? extends Type> toTypeFunction,
+                              final Function<T, ? extends Collection<? extends T>> directSupertypesFunction,
+                              final UnaryOperator<T> typeFunction,
+                              final Predicate<T> genericTypePredicate,
+                              final Predicate<T> typeArgumentsPredicate,
+                              final Function<T, T[]> typeArgumentsFunction,
+                              final UnaryOperator<T> componentTypeFunction,
+                              final Predicate<T> upperBoundsPredicate,
+                              final Function<T, T[]> upperBoundsFunction,
+                              final Predicate<T> lowerBoundsPredicate,
+                              final Function<T, T[]> lowerBoundsFunction) {
+      super(namedPredicate,
+            equalityBiPredicate,
+            boxFunction,
+            toTypeFunction,
+            typeFunction,
+            genericTypePredicate,
+            typeArgumentsPredicate,
+            typeArgumentsFunction,
+            componentTypeFunction,
+            upperBoundsPredicate,
+            upperBoundsFunction,
+            lowerBoundsPredicate,
+            lowerBoundsFunction);
+      this.directSupertypesFunction = Objects.requireNonNull(directSupertypesFunction, "directSupertypesFunction");
+    }
+
+
+    /*
+     * Instance methods.
+     */
+
+
+    protected final Collection<? extends T> directSupertypes(final T type) {
+      return this.directSupertypesFunction.apply(type);
+    }
+
+    protected final boolean supertype(final T sup, final T sub) {
+      // Is sup a supertype of sub?
+      if (this.equals(Objects.requireNonNull(sup, "sup"), Objects.requireNonNull(sub, "sub"))) {
+        return true;
+      } else {
+        for (final T supertype : this.supertypes(sub)) {
+          if (supertype == sup || this.equals(supertype, sup)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    protected final Collection<? extends T> supertypes(final T type) {
+      return this.supertypes(type, new HashSet<>()::add);
+    }
+
+    @SuppressWarnings("unchecked")
+    private final Collection<? extends T> supertypes(final T type, final Predicate<? super Type> unseen) {
+      if (unseen.test(this.toType(type))) {
+        final Collection<? extends T> directSupertypes = this.directSupertypes(type);
+        if (directSupertypes.isEmpty()) {
+          return List.of(type); // the supertype relation is reflexive as well as transitive
+        } else {
+          final Collection<T> supertypes = new ArrayList<>();
+          supertypes.add(type); // the supertype relation is reflexive as well as transitive
+          for (final T directSupertype : directSupertypes) {
+            for (final T supertype : this.supertypes(directSupertype, unseen)) {
+              supertypes.add(supertype);
+            }
+          }
+          return Collections.unmodifiableCollection(supertypes);
+        }
+      } else {
+        return List.of();
+      }
+    }
+
+    @Override
+    protected boolean classIsAssignableFromClass(T receiverType, T payloadType) {
+      receiverType = this.box(receiverType);
+      payloadType = this.box(payloadType);
+      if (receiverType instanceof Class<?> c0 && payloadType instanceof Class<?> c1) {
+        // Use the native code shortcut
+        return c0.isAssignableFrom(c1);
+      }
+      return this.supertype(receiverType, payloadType);
+    }
+
+    @Override
+    protected final boolean classIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
+      return this.assignable(receiverType, this.type(payloadType));
+    }
+
+    @Override
+    protected final boolean classIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
+      final T receiverComponentType = this.componentType(receiverType);
+      return this.assignable(receiverComponentType == null ? receiverType : receiverComponentType, this.componentType(payloadType));
+    }
+
+    @Override
+    protected final boolean classIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
+      for (final T bound : this.upperBounds(payloadType)) {
+        if (this.assignable(receiverType, bound)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+
+    private final boolean parameterizedTypeIsAssignableFromType(final T receiverType, final T payloadType) {
+      // assert: receiverType is a parameterized type
+      final boolean returnValue;
+      if (this.hasTypeArguments(payloadType)) {
+        returnValue = this.parameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
+      } else {
+        final T payloadComponentType = this.componentType(payloadType);
+        if (payloadComponentType == null) {
+          if (this.lowerBounded(payloadType)) {
+            assert !this.upperBounded(payloadType);
+            returnValue = this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
+          } else if (this.upperBounded(payloadType)) {
+            if (this.named(payloadType)) {
+              returnValue = this.parameterizedTypeIsAssignableFromTypeVariable(receiverType, payloadType);
+            } else {
+              returnValue = this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
+            }
+          } else {
+            returnValue = this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
+          }
+        } else {
+          final T payloadRawType = this.type(payloadType);
+          if (payloadRawType == payloadType) {
+            returnValue = this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
+          } else {
+            returnValue = this.parameterizedTypeIsAssignableFromGenericArrayType(receiverType, payloadType);
+          }
+        }
+      }
+      return returnValue;
+    }
+
+    @Override
+    protected final boolean parameterizedTypeIsAssignableFromClass(final T receiverType, final T payloadClass) {
+      // Raw types are assignable and either the payload is a generic
+      // class (and therefore a raw class) or the payload is a class
+      // whose parameterized supertypes need to be evaluated.
+      return
+        this.assignable(this.type(receiverType), payloadClass) &&
+        (this.hasTypeParameters(payloadClass) ||
+         this.parameterizedTypeIsAssignableFromTypes(receiverType, this.supertypes(payloadClass)));
+    }
+
+    private final boolean parameterizedTypeIsAssignableFromTypes(final T receiverType, final Iterable<? extends T> payloadTypes) {
+      for (final T payloadType : payloadTypes) {
+        if (this.hasTypeArguments(payloadType) &&
+            this.parameterizedTypeIsAssignableFromParameterizedType0(receiverType, payloadType)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    protected final boolean parameterizedTypeIsAssignableFromParameterizedType(final T receiverType, final T payloadParameterizedType) {
+      return this.parameterizedTypeIsAssignableFromTypes(receiverType, this.supertypes(payloadParameterizedType));
+    }
+
+    private final boolean parameterizedTypeIsAssignableFromParameterizedType0(final T receiverParameterizedType, final T payloadParameterizedType) {
+      if (this.equals(this.type(receiverParameterizedType), this.type(payloadParameterizedType))) {
+        final T[] receiverTypeTypeArguments = this.typeArguments(receiverParameterizedType);
+        final T[] payloadTypeTypeArguments = this.typeArguments(payloadParameterizedType);
+        if (receiverTypeTypeArguments.length == payloadTypeTypeArguments.length) {
+          for (int i = 0; i < receiverTypeTypeArguments.length; i++) {
+            final T receiverTypeTypeArgument = receiverTypeTypeArguments[i];
+            final T payloadTypeTypeArgument = payloadTypeTypeArguments[i];
+            if (this.wildcard(receiverTypeTypeArgument) || this.wildcard(payloadTypeTypeArgument)) {
+              if (!this.assignable(receiverTypeTypeArgument, payloadTypeTypeArgument)) {
+                return false;
+              }
+            } else if (!this.equals(receiverTypeTypeArgument, payloadTypeTypeArgument)) {
+              return false;
+            }
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    protected final boolean parameterizedTypeIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
+      for (final T payloadTypeBound : this.upperBounds(payloadType)) {
+        if (this.assignable(receiverType, payloadTypeBound)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+
+    @Override
+    protected final boolean genericArrayTypeIsAssignableFromClass(final T receiverType, final T payloadType) {
+      return this.assignable(this.componentType(receiverType), this.componentType(payloadType));
+    }
+
+    @Override
+    protected final boolean genericArrayTypeIsAssignableFromGenericArrayType(final T receiverType, final T payloadType) {
+      return this.assignable(this.componentType(receiverType), this.componentType(payloadType));
+    }
+
+
+    @Override
+    protected final boolean typeVariableIsAssignableFromTypeVariable(final T receiverType, final T payloadType) {
+      if (this.equals(receiverType, payloadType)) {
+        return true;
+      }
+      final T solePayloadTypeBound = this.upperBounds(payloadType)[0];
+      return this.typeVariable(solePayloadTypeBound) && this.assignable(receiverType, solePayloadTypeBound);
+    }
+
+
+    @Override
+    protected final boolean wildcardTypeIsAssignableFromClass(final T receiverType,
+                                                              final boolean lowerBounded,
+                                                              final T payloadType) {
+      return
+        this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
+        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+    }
+
+    @Override
+    protected final boolean wildcardTypeIsAssignableFromParameterizedType(final T receiverType,
+                                                                          final boolean lowerBounded,
+                                                                          final T payloadType) {
+      return
+        this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
+        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+    }
+
+    @Override
+    protected final boolean wildcardTypeIsAssignableFromGenericArrayType(final T receiverType,
+                                                                         final boolean lowerBounded,
+                                                                         final T payloadType) {
+      return
+        this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
+        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+    }
+
+    @Override
+    protected final boolean wildcardTypeIsAssignableFromTypeVariable(final T receiverType,
+                                                                     final boolean lowerBounded,
+                                                                     final T payloadType) {
+      return
+        this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
+        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+    }
+
+    @Override
+    protected final boolean wildcardTypeIsAssignableFromWildcardType(final T receiverType,
+                                                                     final boolean receiverTypeLowerBounded,
+                                                                     final T payloadType,
+                                                                     final boolean payloadTypeLowerBounded) {
       final T receiverTypeUpperBound = this.upperBounds(receiverType)[0];
       if (this.assignable(receiverTypeUpperBound, this.upperBounds(payloadType)[0])) {
         if (receiverTypeLowerBounded) {
