@@ -129,7 +129,6 @@ final class TestCovariantTypeSemantics {
     final Type numbers = new Number[0].getClass();
     final Type numbersOfNumbers = new Number[0][].getClass();
     final Type integers = new Integer[0].getClass();
-    final Type integersOfIntegers = new Integer[0][].getClass();
     final Type ints = new int[0].getClass();
     assertTrue(this.covariantTypeSemantics.assignable(Object.class, numbers));
     assertTrue(this.covariantTypeSemantics.assignable(Object.class, integers));
@@ -146,7 +145,19 @@ final class TestCovariantTypeSemantics {
     assertFalse(this.covariantTypeSemantics.assignable(ints, numbers));
     assertTrue(this.covariantTypeSemantics.assignable(numbersOfNumbers, numbersOfNumbers));
     assertTrue(this.covariantTypeSemantics.assignable(numbersOfNumbers, new Number[0][].getClass()));
+  }
+
+  @Test
+  final void testMultiDimensionalNumberArrayClassIsAssignableFromMultiDimensionalIntegerArrayClass() {
+    final Type numbersOfNumbers = new Number[0][].getClass();
+    final Type integersOfIntegers = new Integer[0][].getClass();
     assertTrue(this.covariantTypeSemantics.assignable(numbersOfNumbers, integersOfIntegers));
+  }
+
+  @Test
+  final void testMultiDimensionalIntegerArrayClassIsNotAssignableFromMultiDimensionalNumberArrayClass() {
+    final Type numbersOfNumbers = new Number[0][].getClass();
+    final Type integersOfIntegers = new Integer[0][].getClass();
     assertFalse(this.covariantTypeSemantics.assignable(integersOfIntegers, numbersOfNumbers));
   }
 

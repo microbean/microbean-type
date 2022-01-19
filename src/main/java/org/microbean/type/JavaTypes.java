@@ -389,7 +389,7 @@ public final class JavaTypes {
   }
 
   private static final Class<?> array(final Class<?> type) {
-    return type.isArray() ? type : type.arrayType();
+    return type.arrayType();
   }
 
   static final boolean isReferenceType(final Type type) {
@@ -517,7 +517,8 @@ public final class JavaTypes {
     //
     // The erasure of an array type T[] is |T|[]. [|T| means the
     // erasure of T. We erase the genericComponentType() and use
-    // Class#arrayType() to find the "normal" array class.]
+    // Class#arrayType() to find the "normal" array class for the
+    // erasure.]
     final Class<?> componentType = erase(type.getGenericComponentType());
     if (componentType == null) {
       return null;

@@ -29,6 +29,8 @@ import java.util.Objects;
 
 import java.util.function.UnaryOperator;
 
+import org.microbean.development.annotation.Convenience;
+
 import static org.microbean.type.JavaTypes.erase;
 
 public final class JavaType implements org.microbean.type.Type {
@@ -414,9 +416,9 @@ public final class JavaType implements org.microbean.type.Type {
      * erasure cannot be determined.
      *
      * <p>If the supplied {@link Type} is an instance of {@link
-     * Token}, {@link Class}, {@link ParameterizedType}, {@link
-     * GenericArrayType}, {@link TypeVariable} or {@link WildcardType},
-     * then the return value of this method will be non-{@code null}.</p>
+     * Class}, {@link ParameterizedType}, {@link GenericArrayType},
+     * {@link TypeVariable} or {@link WildcardType}, then the return
+     * value of this method will be non-{@code null}.</p>
      *
      * @param type the {@link Type} to erase; may be {@code null} in
      * which case {@code null} will be returned
@@ -433,26 +435,9 @@ public final class JavaType implements org.microbean.type.Type {
      *
      * @idempotency This method is idempotent and deterministic.
      */
+    @Convenience
     public static final Class<?> erase(final Type type) {
-      if (type instanceof Token<?> t) {
-        return erase(t.type());
-      } else if (type instanceof Class<?> c) {
-        return c;
-      } else if (type instanceof ParameterizedType pt) {
-        return erase(pt.getRawType());
-      } else if (type instanceof GenericArrayType gat) {
-        final Class<?> c = erase(gat.getGenericComponentType());
-        return c == null ? null : c.isArray() ? c : c.arrayType();
-      } else if (type instanceof TypeVariable<?> tv) {
-        // Do note
-        // https://vmlens.com/articles/java-lang-reflect-typevariable-getbounds-is-not-thread-safe/
-        // though there's not really anything to be done about it.
-        return erase(tv.getBounds()[0]);
-      } else if (type instanceof WildcardType wt) {
-        return erase(wt.getUpperBounds()[0]);
-      } else {
-        return null;
-      }
+      return JavaTypes.erase(type);
     }
 
   }
