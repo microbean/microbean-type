@@ -157,8 +157,13 @@ public final class JavaType implements org.microbean.type.Type {
     }
   }
 
-  private static final Type[] lowerBounds(final Type type) {
-    return type instanceof WildcardType w ? w.getLowerBounds() : EMPTY_TYPE_ARRAY;
+  private static final Type lowerBound(final Type type) {
+    if (type instanceof WildcardType w) {
+      final Type[] lowerBounds = w.getLowerBounds();
+      return lowerBounds.length > 0 ? lowerBounds[0] : null;
+    } else {
+      return null;
+    }
   }
 
   private static final boolean lowerBounded(final Type type) {
@@ -203,7 +208,7 @@ public final class JavaType implements org.microbean.type.Type {
             JavaType::upperBounded,
             JavaType::upperBounds,
             JavaType::lowerBounded,
-            JavaType::lowerBounds);
+            JavaType::lowerBound);
     }
 
   }

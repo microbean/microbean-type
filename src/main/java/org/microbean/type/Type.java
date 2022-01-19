@@ -129,9 +129,9 @@ public interface Type {
 
     private final Predicate<T> upperBoundsPredicate;
 
-    private final Predicate<T> lowerBoundsPredicate;
+    private final Predicate<T> lowerBoundPredicate;
 
-    private final Function<T, T[]> lowerBoundsFunction;
+    private final UnaryOperator<T> lowerBoundFunction;
 
     private final Function<T, T[]> upperBoundsFunction;
 
@@ -152,8 +152,8 @@ public interface Type {
                         final UnaryOperator<T> componentTypeFunction,
                         final Predicate<T> upperBoundsPredicate,
                         final Function<T, T[]> upperBoundsFunction,
-                        final Predicate<T> lowerBoundsPredicate,
-                        final Function<T, T[]> lowerBoundsFunction) {
+                        final Predicate<T> lowerBoundPredicate,
+                        final UnaryOperator<T> lowerBoundFunction) {
       super();
       this.namedPredicate = Objects.requireNonNull(namedPredicate, "namedPredicate");
       this.equalityBiPredicate = Objects.requireNonNull(equalityBiPredicate, "equalityBiPredicate");
@@ -166,8 +166,8 @@ public interface Type {
       this.componentTypeFunction = Objects.requireNonNull(componentTypeFunction, "componentTypeFunction");
       this.upperBoundsPredicate = Objects.requireNonNull(upperBoundsPredicate, "upperBoundsPredicate");
       this.upperBoundsFunction = Objects.requireNonNull(upperBoundsFunction, "upperBoundsFunction");
-      this.lowerBoundsPredicate = Objects.requireNonNull(lowerBoundsPredicate, "lowerBoundsPredicate");
-      this.lowerBoundsFunction = Objects.requireNonNull(lowerBoundsFunction, "lowerBoundsFunction");
+      this.lowerBoundPredicate = Objects.requireNonNull(lowerBoundPredicate, "lowerBoundPredicate");
+      this.lowerBoundFunction = Objects.requireNonNull(lowerBoundFunction, "lowerBoundFunction");
     }
 
 
@@ -197,15 +197,15 @@ public interface Type {
     }
 
     protected final boolean lowerBounded(final T type) {
-      return this.lowerBoundsPredicate.test(type);
+      return this.lowerBoundPredicate.test(type);
     }
 
     protected final boolean upperBounded(final T type) {
       return this.upperBoundsPredicate.test(type);
     }
 
-    protected final T[] lowerBounds(final T type) {
-      return this.lowerBoundsFunction.apply(type);
+    protected final T lowerBound(final T type) {
+      return this.lowerBoundFunction.apply(type);
     }
 
     protected final T[] upperBounds(final T type) {
@@ -271,26 +271,23 @@ public interface Type {
         return parameterizedTypeIsAssignableFromType(receiverType, payloadType);
       } else if (this.hasTypeArguments(payloadType)) {
         return this.nonParameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
-      } else {
-        final T receiverComponentType = this.componentType(receiverType);
-        if (receiverComponentType == null) {
-          if (this.lowerBounded(receiverType)) {
-            assert !this.upperBounded(receiverType);
-            return this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, true, payloadType);
-          } else if (this.upperBounded(receiverType)) {
-            if (this.named(receiverType)) {
-              return this.typeVariableIsAssignableFromNonParameterizedType(receiverType, payloadType);
-            } else {
-              return this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, false, payloadType);
-            }
+      } else if (this.componentType(receiverType) == null) {
+        if (this.lowerBounded(receiverType)) {
+          assert !this.upperBounded(receiverType);
+          return this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, true, payloadType);
+        } else if (this.upperBounded(receiverType)) {
+          if (this.named(receiverType)) {
+            return this.typeVariableIsAssignableFromNonParameterizedType(receiverType, payloadType);
           } else {
-            return this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
+            return this.wildcardTypeIsAssignableFromNonParameterizedType(receiverType, false, payloadType);
           }
-        } else if (this.type(receiverType) == receiverType) {
-          return this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
         } else {
-          return this.genericArrayTypeIsAssignableFromNonParameterizedType(receiverType, payloadType);
+          return this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
         }
+      } else if (this.type(receiverType) == receiverType) {
+        return this.classIsAssignableFromNonParameterizedType(receiverType, payloadType);
+      } else {
+        return this.genericArrayTypeIsAssignableFromNonParameterizedType(receiverType, payloadType);
       }
     }
 
@@ -298,59 +295,47 @@ public interface Type {
     private final boolean nonParameterizedTypeIsAssignableFromParameterizedType(final T receiverType, final T payloadType) {
       // assert: receiverType IS NOT a parameterized type
       // assert: payloadType IS a parameterized type
-      final boolean returnValue;
-      final T receiverComponentType = this.componentType(receiverType);
-      if (receiverComponentType == null) {
+      if (this.componentType(receiverType) == null) {
         if (this.lowerBounded(receiverType)) {
           assert !this.upperBounded(receiverType);
-          returnValue = this.wildcardTypeIsAssignableFromParameterizedType(receiverType, true /* lower bounded */, payloadType);
+          return this.wildcardTypeIsAssignableFromParameterizedType(receiverType, true /* lower bounded */, payloadType);
         } else if (this.upperBounded(receiverType)) {
           if (this.named(receiverType)) {
-            returnValue = this.typeVariableIsAssignableFromParameterizedType(receiverType, payloadType);
+            return this.typeVariableIsAssignableFromParameterizedType(receiverType, payloadType);
           } else {
-            returnValue = this.wildcardTypeIsAssignableFromParameterizedType(receiverType, false /* upper bounded */, payloadType);
+            return this.wildcardTypeIsAssignableFromParameterizedType(receiverType, false /* upper bounded */, payloadType);
           }
         } else {
-          returnValue = this.classIsAssignableFromParameterizedType(receiverType, payloadType);
+          return this.classIsAssignableFromParameterizedType(receiverType, payloadType);
         }
+      } else if (this.type(receiverType) == receiverType) {
+        return this.classIsAssignableFromParameterizedType(receiverType, payloadType);
       } else {
-        final T receiverRawType = this.type(receiverType);
-        if (receiverRawType == receiverType) {
-          returnValue = this.classIsAssignableFromParameterizedType(receiverType, payloadType);
-        } else {
-          returnValue = this.genericArrayTypeIsAssignableFromParameterizedType(receiverType, payloadType);
-        }
+        return this.genericArrayTypeIsAssignableFromParameterizedType(receiverType, payloadType);
       }
-      return returnValue;
     }
 
 
     private final boolean classIsAssignableFromNonParameterizedType(final T receiverType, final T payloadType) {
       // assert: !hasTypeArguments(payloadType)
-      final boolean returnValue;
-      final T payloadComponentType = this.componentType(payloadType);
-      if (payloadComponentType == null) {
+      if (this.componentType(payloadType) == null) {
         if (this.lowerBounded(payloadType)) {
           assert !this.upperBounded(payloadType);
-          returnValue = this.classIsAssignableFromWildcardType(receiverType, payloadType, true);
+          return this.classIsAssignableFromWildcardType(receiverType, payloadType, true);
         } else if (this.upperBounded(payloadType)) {
           if (this.named(payloadType)) {
-            returnValue = this.classIsAssignableFromTypeVariable(receiverType, payloadType);
+            return this.classIsAssignableFromTypeVariable(receiverType, payloadType);
           } else {
-            returnValue = this.classIsAssignableFromWildcardType(receiverType, payloadType, false);
+            return this.classIsAssignableFromWildcardType(receiverType, payloadType, false);
           }
         } else {
-          returnValue = this.classIsAssignableFromClass(receiverType, payloadType);
+          return this.classIsAssignableFromClass(receiverType, payloadType);
         }
+      } else if (this.type(payloadType) == payloadType) {
+        return this.classIsAssignableFromClass(receiverType, payloadType);
       } else {
-        final T payloadRawType = this.type(payloadType);
-        if (payloadRawType == payloadType) {
-          returnValue = this.classIsAssignableFromClass(receiverType, payloadType);
-        } else {
-          returnValue = this.classIsAssignableFromGenericArrayType(receiverType, payloadType);
-        }
+        return this.classIsAssignableFromGenericArrayType(receiverType, payloadType);
       }
-      return returnValue;
     }
 
     protected boolean classIsAssignableFromClass(T receiverType, T payloadType) {
@@ -376,34 +361,26 @@ public interface Type {
 
     private final boolean parameterizedTypeIsAssignableFromType(final T receiverType, final T payloadType) {
       // assert: receiverType is a parameterized type
-      final boolean returnValue;
       if (this.hasTypeArguments(payloadType)) {
-        returnValue = this.parameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
-      } else {
-        final T payloadComponentType = this.componentType(payloadType);
-        if (payloadComponentType == null) {
-          if (this.lowerBounded(payloadType)) {
-            assert !this.upperBounded(payloadType);
-            returnValue = this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
-          } else if (this.upperBounded(payloadType)) {
-            if (this.named(payloadType)) {
-              returnValue = this.parameterizedTypeIsAssignableFromTypeVariable(receiverType, payloadType);
-            } else {
-              returnValue = this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
-            }
+        return this.parameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
+      } else if (this.componentType(payloadType) == null) {
+        if (this.lowerBounded(payloadType)) {
+          assert !this.upperBounded(payloadType);
+          return this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
+        } else if (this.upperBounded(payloadType)) {
+          if (this.named(payloadType)) {
+            return this.parameterizedTypeIsAssignableFromTypeVariable(receiverType, payloadType);
           } else {
-            returnValue = this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
+            return this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
           }
         } else {
-          final T payloadRawType = this.type(payloadType);
-          if (payloadRawType == payloadType) {
-            returnValue = this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
-          } else {
-            returnValue = this.parameterizedTypeIsAssignableFromGenericArrayType(receiverType, payloadType);
-          }
+          return this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
         }
+      } else if (this.type(payloadType) == payloadType) {
+        return this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
+      } else {
+        return this.parameterizedTypeIsAssignableFromGenericArrayType(receiverType, payloadType);
       }
-      return returnValue;
     }
 
     protected boolean parameterizedTypeIsAssignableFromClass(final T receiverType, final T payloadClass) {
@@ -431,30 +408,24 @@ public interface Type {
 
     private final boolean genericArrayTypeIsAssignableFromNonParameterizedType(final T receiverType, final T payloadType) {
       // assert: !hasTypeArguments(payloadType)
-      final boolean returnValue;
-      final T payloadComponentType = this.componentType(payloadType);
-      if (payloadComponentType == null) {
+      if (this.componentType(payloadType) == null) {
         if (this.lowerBounded(payloadType)) {
           assert !this.upperBounded(payloadType);
-          returnValue = this.genericArrayTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
+          return this.genericArrayTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
         } else if (this.upperBounded(payloadType)) {
           if (this.named(payloadType)) {
-            returnValue = this.genericArrayTypeIsAssignableFromTypeVariable(receiverType, payloadType);
+            return this.genericArrayTypeIsAssignableFromTypeVariable(receiverType, payloadType);
           } else {
-            returnValue = this.genericArrayTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
+            return this.genericArrayTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
           }
         } else {
-          returnValue = this.genericArrayTypeIsAssignableFromClass(receiverType, payloadType);
+          return this.genericArrayTypeIsAssignableFromClass(receiverType, payloadType);
         }
+      } else if (this.type(payloadType) == payloadType) {
+        return this.genericArrayTypeIsAssignableFromClass(receiverType, payloadType);
       } else {
-        final T payloadRawType = this.type(payloadType);
-        if (payloadRawType == payloadType) {
-          returnValue = this.genericArrayTypeIsAssignableFromClass(receiverType, payloadType);
-        } else {
-          returnValue = this.genericArrayTypeIsAssignableFromGenericArrayType(receiverType, payloadType);
-        }
+        return this.genericArrayTypeIsAssignableFromGenericArrayType(receiverType, payloadType);
       }
-      return returnValue;
     }
 
     protected boolean genericArrayTypeIsAssignableFromClass(final T receiverType, final T payloadType) {
@@ -482,30 +453,24 @@ public interface Type {
 
     private final boolean typeVariableIsAssignableFromNonParameterizedType(final T receiverType, final T payloadType) {
       // assert: !hasTypeArguments(payloadType)
-      final boolean returnValue;
-      final T payloadComponentType = this.componentType(payloadType);
-      if (payloadComponentType == null) {
+      if (this.componentType(payloadType) == null) {
         if (this.lowerBounded(payloadType)) {
           assert !this.upperBounded(payloadType);
-          returnValue = this.typeVariableIsAssignableFromWildcardType(receiverType, payloadType, true);
+          return this.typeVariableIsAssignableFromWildcardType(receiverType, payloadType, true);
         } else if (this.upperBounded(payloadType)) {
           if (this.named(payloadType)) {
-            returnValue = this.typeVariableIsAssignableFromTypeVariable(receiverType, payloadType);
+            return this.typeVariableIsAssignableFromTypeVariable(receiverType, payloadType);
           } else {
-            returnValue = this.typeVariableIsAssignableFromWildcardType(receiverType, payloadType, false);
+            return this.typeVariableIsAssignableFromWildcardType(receiverType, payloadType, false);
           }
         } else {
-          returnValue = this.typeVariableIsAssignableFromClass(receiverType, payloadType);
+          return this.typeVariableIsAssignableFromClass(receiverType, payloadType);
         }
+      } else if (this.type(payloadType) == payloadType) {
+        return this.typeVariableIsAssignableFromClass(receiverType, payloadType);
       } else {
-        final T payloadRawType = this.type(payloadType);
-        if (payloadRawType == payloadType) {
-          returnValue = this.typeVariableIsAssignableFromClass(receiverType, payloadType);
-        } else {
-          returnValue = this.typeVariableIsAssignableFromGenericArrayType(receiverType, payloadType);
-        }
+        return this.typeVariableIsAssignableFromGenericArrayType(receiverType, payloadType);
       }
-      return returnValue;
     }
 
     protected boolean typeVariableIsAssignableFromClass(final T receiverType, final T payloadType) {
@@ -535,32 +500,24 @@ public interface Type {
                                                                            final boolean lowerBounded,
                                                                            final T payloadType) {
       // assert: !hasTypeArguments(payloadType)
-      assert receiverType != null;
-      final boolean returnValue;
-      final T payloadComponentType = this.componentType(payloadType);
-      if (payloadComponentType == null) {
+      if (this.componentType(payloadType) == null) {
         if (this.lowerBounded(payloadType)) {
           assert !this.upperBounded(payloadType);
-          returnValue = this.wildcardTypeIsAssignableFromWildcardType(receiverType, lowerBounded, payloadType, true);
+          return this.wildcardTypeIsAssignableFromWildcardType(receiverType, lowerBounded, payloadType, true);
         } else if (this.upperBounded(payloadType)) {
           if (this.named(payloadType)) {
-            returnValue = this.wildcardTypeIsAssignableFromTypeVariable(receiverType, lowerBounded, payloadType);
+            return this.wildcardTypeIsAssignableFromTypeVariable(receiverType, lowerBounded, payloadType);
           } else {
-            returnValue = this.wildcardTypeIsAssignableFromWildcardType(receiverType, lowerBounded, payloadType, false);
+            return this.wildcardTypeIsAssignableFromWildcardType(receiverType, lowerBounded, payloadType, false);
           }
         } else {
-          returnValue = this.wildcardTypeIsAssignableFromClass(receiverType, lowerBounded, payloadType);
+          return this.wildcardTypeIsAssignableFromClass(receiverType, lowerBounded, payloadType);
         }
+      } else if (this.type(payloadType) == payloadType) {
+        return this.wildcardTypeIsAssignableFromClass(receiverType, lowerBounded, payloadType);
       } else {
-        final T payloadRawType = this.type(payloadType);
-        assert payloadRawType != null;
-        if (payloadRawType == payloadType) {
-          returnValue = this.wildcardTypeIsAssignableFromClass(receiverType, lowerBounded, payloadType);
-        } else {
-          returnValue = this.wildcardTypeIsAssignableFromGenericArrayType(receiverType, lowerBounded, payloadType);
-        }
+        return this.wildcardTypeIsAssignableFromGenericArrayType(receiverType, lowerBounded, payloadType);
       }
-      return returnValue;
     }
 
     protected boolean wildcardTypeIsAssignableFromClass(final T receiverType, final boolean lowerBounded, final T payloadType) {
@@ -642,7 +599,7 @@ public interface Type {
             wildcardSemantics::upperBounded,
             wildcardSemantics::upperBounds,
             wildcardSemantics::lowerBounded,
-            wildcardSemantics::lowerBounds);
+            wildcardSemantics::lowerBound);
       this.wildcardSemantics = Objects.requireNonNull(wildcardSemantics, "wildcardSemantics");
     }
 
@@ -717,7 +674,7 @@ public interface Type {
                               final Function<T, T[]> typeArgumentsFunction,
                               final UnaryOperator<T> componentTypeFunction,
                               final Function<T, T[]> upperBoundsFunction,
-                              final Function<T, T[]> lowerBoundsFunction) {
+                              final UnaryOperator<T> lowerBoundFunction) {
       this(namedPredicate,
            equalityBiPredicate,
            boxFunction,
@@ -730,8 +687,8 @@ public interface Type {
            componentTypeFunction,
            t -> upperBoundsFunction.apply(t).length > 0,
            upperBoundsFunction,
-           t -> lowerBoundsFunction.apply(t).length > 0,
-           lowerBoundsFunction);
+           t -> lowerBoundFunction.apply(t) != null,
+           lowerBoundFunction);
     }
 
     /**
@@ -773,8 +730,8 @@ public interface Type {
                               final UnaryOperator<T> componentTypeFunction,
                               final Predicate<T> upperBoundsPredicate,
                               final Function<T, T[]> upperBoundsFunction,
-                              final Predicate<T> lowerBoundsPredicate,
-                              final Function<T, T[]> lowerBoundsFunction) {
+                              final Predicate<T> lowerBoundPredicate,
+                              final UnaryOperator<T> lowerBoundFunction) {
       super(namedPredicate,
             equalityBiPredicate,
             boxFunction,
@@ -786,8 +743,8 @@ public interface Type {
             componentTypeFunction,
             upperBoundsPredicate,
             upperBoundsFunction,
-            lowerBoundsPredicate,
-            lowerBoundsFunction);
+            lowerBoundPredicate,
+            lowerBoundFunction);
       this.directSupertypesFunction = Objects.requireNonNull(directSupertypesFunction, "directSupertypesFunction");
     }
 
@@ -875,34 +832,26 @@ public interface Type {
 
     private final boolean parameterizedTypeIsAssignableFromType(final T receiverType, final T payloadType) {
       // assert: receiverType is a parameterized type
-      final boolean returnValue;
       if (this.hasTypeArguments(payloadType)) {
-        returnValue = this.parameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
-      } else {
-        final T payloadComponentType = this.componentType(payloadType);
-        if (payloadComponentType == null) {
-          if (this.lowerBounded(payloadType)) {
-            assert !this.upperBounded(payloadType);
-            returnValue = this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
-          } else if (this.upperBounded(payloadType)) {
-            if (this.named(payloadType)) {
-              returnValue = this.parameterizedTypeIsAssignableFromTypeVariable(receiverType, payloadType);
-            } else {
-              returnValue = this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
-            }
+        return this.parameterizedTypeIsAssignableFromParameterizedType(receiverType, payloadType);
+      } else if (this.componentType(payloadType) == null) {
+        if (this.lowerBounded(payloadType)) {
+          assert !this.upperBounded(payloadType);
+          return this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, true);
+        } else if (this.upperBounded(payloadType)) {
+          if (this.named(payloadType)) {
+            return this.parameterizedTypeIsAssignableFromTypeVariable(receiverType, payloadType);
           } else {
-            returnValue = this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
+            return this.parameterizedTypeIsAssignableFromWildcardType(receiverType, payloadType, false);
           }
         } else {
-          final T payloadRawType = this.type(payloadType);
-          if (payloadRawType == payloadType) {
-            returnValue = this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
-          } else {
-            returnValue = this.parameterizedTypeIsAssignableFromGenericArrayType(receiverType, payloadType);
-          }
+          return this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
         }
+      } else if (this.type(payloadType) == payloadType) {
+        return this.parameterizedTypeIsAssignableFromClass(receiverType, payloadType);
+      } else {
+        return this.parameterizedTypeIsAssignableFromGenericArrayType(receiverType, payloadType);
       }
-      return returnValue;
     }
 
     @Override
@@ -991,7 +940,7 @@ public interface Type {
                                                               final T payloadType) {
       return
         this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
-        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+        (!lowerBounded || this.assignable(payloadType, this.lowerBound(receiverType)));
     }
 
     @Override
@@ -1000,7 +949,7 @@ public interface Type {
                                                                           final T payloadType) {
       return
         this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
-        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+        (!lowerBounded || this.assignable(payloadType, this.lowerBound(receiverType)));
     }
 
     @Override
@@ -1009,7 +958,7 @@ public interface Type {
                                                                          final T payloadType) {
       return
         this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
-        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+        (!lowerBounded || this.assignable(payloadType, this.lowerBound(receiverType)));
     }
 
     @Override
@@ -1018,7 +967,7 @@ public interface Type {
                                                                      final T payloadType) {
       return
         this.assignable(this.upperBounds(receiverType)[0], payloadType) &&
-        (!lowerBounded || this.assignable(payloadType, this.lowerBounds(receiverType)[0]));
+        (!lowerBounded || this.assignable(payloadType, this.lowerBound(receiverType)));
     }
 
     @Override
@@ -1029,9 +978,9 @@ public interface Type {
       final T receiverTypeUpperBound = this.upperBounds(receiverType)[0];
       if (this.assignable(receiverTypeUpperBound, this.upperBounds(payloadType)[0])) {
         if (receiverTypeLowerBounded) {
-          return payloadTypeLowerBounded && this.assignable(this.lowerBounds(payloadType)[0], this.lowerBounds(receiverType)[0]);
+          return payloadTypeLowerBounded && this.assignable(this.lowerBound(payloadType), this.lowerBound(receiverType));
         }
-        return !payloadTypeLowerBounded || this.assignable(receiverTypeUpperBound, this.lowerBounds(payloadType)[0]);
+        return !payloadTypeLowerBounded || this.assignable(receiverTypeUpperBound, this.lowerBound(payloadType));
       }
       return false;
     }
