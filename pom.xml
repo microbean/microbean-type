@@ -127,7 +127,7 @@
             <!-- See https://github.com/apache/maven-surefire/blob/eb48f1b59ca5ccf6954ef33ecab03dbaf93214cd/surefire-providers/surefire-junit-platform/src/main/java/org/apache/maven/surefire/junitplatform/JUnitPlatformProvider.java#L242-L262 -->
             <properties>
               <configurationParameters>
-                junit.jupiter.execution.parallel.enabled=true
+                junit.jupiter.execution.parallel.enabled=false
                 junit.jupiter.execution.parallel.mode.default=concurrent
               </configurationParameters>
             </properties>

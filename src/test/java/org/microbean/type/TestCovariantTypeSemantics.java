@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TestCovariantTypeSemantics {
 
-  private final Semantics<Type> covariantTypeSemantics = new JavaType.Semantics(true);
+  private final Semantics<Type> covariantTypeSemantics = new JavaType.CovariantSemantics(true);
 
   private TestCovariantTypeSemantics() {
     super();
@@ -304,8 +304,8 @@ final class TestCovariantTypeSemantics {
   @Test
   final
     <A extends Collection<Number>,
-               B extends List<Runnable> & Comparable<CharSequence>,
-                         C extends B>
+     B extends List<Runnable> & Comparable<CharSequence>,
+     C extends B>
     void testParameterizedTypeAssignableFromTypeVariable() {
     final Type a = new JavaType.Token<A>() {}.type();
     final Type b = new JavaType.Token<B>() {}.type();
@@ -396,20 +396,22 @@ final class TestCovariantTypeSemantics {
   final <T, S extends List<Number>> void testTypeVariableAssignableFromParameterizedType() {
     final Type t = new JavaType.Token<T>() {}.type();
     final Type s = new JavaType.Token<S>() {}.type();
-    assertFalse(this.covariantTypeSemantics.assignable(t,
-                                                       new DefaultParameterizedType(null, List.class, Object.class)));
-    assertFalse(this.covariantTypeSemantics.assignable(t,
-                                                       new DefaultParameterizedType(null, List.class, Integer.class)));
-    assertFalse(this.covariantTypeSemantics.assignable(s,
-                                                       new DefaultParameterizedType(null, List.class, Object.class)));
-    assertFalse(this.covariantTypeSemantics.assignable(s,
-                                                       new DefaultParameterizedType(null, List.class, Number.class)));
-    assertFalse(this.covariantTypeSemantics.assignable(s,
-                                                       new DefaultParameterizedType(null, List.class, Long.class)));
+    assertFalse(this.covariantTypeSemantics.assignable(t, new DefaultParameterizedType(null, List.class, Object.class)));
+    assertFalse(this.covariantTypeSemantics.assignable(t, new DefaultParameterizedType(null, List.class, Integer.class)));
+    assertFalse(this.covariantTypeSemantics.assignable(s, new DefaultParameterizedType(null, List.class, Object.class)));
+    assertFalse(this.covariantTypeSemantics.assignable(s, new DefaultParameterizedType(null, List.class, Number.class)));
+    assertFalse(this.covariantTypeSemantics.assignable(s, new DefaultParameterizedType(null, List.class, Long.class)));
   }
 
   @Test
   final <A, B, C extends Number, D extends Integer> void testTypeVariableAssignableFromTypeVariable() {
+    // Note that you cannot do this in Java, even though the two type
+    // variables A and B have assignable bounds:
+    //
+    //   A a = null;
+    //   final B b = null;
+    //   a = b;
+    //
     final int count = 5;
     final Type[] typeVariables = new Type[count];
     typeVariables[0] = new JavaType.Token<A>() {}.type();
@@ -440,7 +442,7 @@ final class TestCovariantTypeSemantics {
 
     for (int i = 0; i < count; i++) {
       for (int j = 0; j < count; j++) {
-        if (i == j || i == 0 || (i < j && i != 1)) {
+        if (i == 0 || i == j || (i > 1 && i < j)) {
           assertTrue(this.covariantTypeSemantics.assignable(typeVariables[i], typeVariables[j]));
         } else {
           assertFalse(this.covariantTypeSemantics.assignable(typeVariables[i], typeVariables[j]));

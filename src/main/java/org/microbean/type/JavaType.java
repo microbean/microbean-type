@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import org.microbean.development.annotation.Convenience;
@@ -159,10 +160,9 @@ public final class JavaType implements org.microbean.type.Type {
     }
   }
 
-  private static final Type lowerBound(final Type type) {
+  private static final Type[] lowerBounds(final Type type) {
     if (type instanceof WildcardType w) {
-      final Type[] lowerBounds = w.getLowerBounds();
-      return lowerBounds.length > 0 ? lowerBounds[0] : null;
+      return w.getLowerBounds();
     } else {
       return null;
     }
@@ -194,9 +194,9 @@ public final class JavaType implements org.microbean.type.Type {
    */
 
 
-  public static final class Semantics extends org.microbean.type.Type.CovariantSemantics<java.lang.reflect.Type> {
+  public static class CovariantSemantics extends org.microbean.type.Type.CovariantSemantics<java.lang.reflect.Type> {
 
-    public Semantics(final boolean box) {
+    public CovariantSemantics(final boolean box) {
       super(JavaType::named,
             JavaTypes::equals,
             box ? JavaType::box : UnaryOperator.identity(),
@@ -210,11 +210,53 @@ public final class JavaType implements org.microbean.type.Type {
             JavaType::upperBounded,
             JavaType::upperBounds,
             JavaType::lowerBounded,
-            JavaType::lowerBound);
+            JavaType::lowerBounds);
     }
 
   }
 
+  public static final class CdiSemantics extends org.microbean.type.Type.CdiSemantics<java.lang.reflect.Type> {
+
+    public CdiSemantics() {
+      this(JavaTypes::directSupertypes);
+    }
+    
+    public CdiSemantics(final Function<java.lang.reflect.Type, ? extends Collection<java.lang.reflect.Type>> directSupertypesFunction) {
+      super(JavaType::named,
+            JavaTypes::equals,
+            JavaType::box,
+            JavaType::of,
+            directSupertypesFunction,
+            JavaType::type,
+            JavaType::hasTypeParameters,
+            JavaType::hasTypeArguments,
+            JavaType::typeArguments,
+            JavaType::componentType,
+            JavaType::upperBounded,
+            JavaType::upperBounds,
+            JavaType::lowerBounded,
+            JavaType::lowerBounds,
+            t -> t == Object.class,
+            new CdiTypeArgumentSemantics<>(JavaType::named,
+                                           JavaTypes::equals,
+                                           JavaType::box,
+                                           JavaType::of,
+                                           directSupertypesFunction,
+                                           JavaType::type,
+                                           JavaType::hasTypeParameters,
+                                           JavaType::hasTypeArguments,
+                                           JavaType::typeArguments,
+                                           JavaType::componentType,
+                                           JavaType::upperBounded,
+                                           JavaType::upperBounds,
+                                           JavaType::lowerBounded,
+                                           JavaType::lowerBounds,
+                                           new CovariantSemantics(true)));
+    }
+
+  }
+
+  
   /**
    * A holder of a {@link Type} that embodies <a
    * href="http://gafter.blogspot.com/2006/12/super-type-tokens.html"

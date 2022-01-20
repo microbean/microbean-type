@@ -208,8 +208,8 @@ public final class JavaTypes {
           directSupertypes.add(Serializable.class);
         } else {
           // Reference type (which could be a Class or a ParameterizedType).
-          for (final Type componentTypeDirectSypertype : directSupertypes(componentType)) {
-            directSupertypes.add(array(componentTypeDirectSypertype));
+          for (final Type componentTypeDirectSupertype : directSupertypes(componentType)) {
+            directSupertypes.add(array(componentTypeDirectSupertype));
           }
         }
       }
@@ -377,19 +377,15 @@ public final class JavaTypes {
     // primitive or reference.
     // …
     // [That rules out wildcards, but nothing else.]
-    if (Objects.requireNonNull(type, "type") instanceof Class<?> c) {
-      return array(c);
-    } else if (type instanceof GenericArrayType) {
-      return type;
+    if (type == null) {
+      throw new NullPointerException("type");
+    } else if (type instanceof Class<?> c) {
+      return c.arrayType();
     } else if (!(type instanceof WildcardType)) {
       return new DefaultGenericArrayType(type);
     } else {
       throw new IllegalArgumentException("type: " + toString(type));
     }
-  }
-
-  private static final Class<?> array(final Class<?> type) {
-    return type.arrayType();
   }
 
   static final boolean isReferenceType(final Type type) {
