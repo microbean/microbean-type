@@ -724,7 +724,7 @@ public interface Type {
      * @threadsafety This method is, and its overrides must be, safe
      * for concurrent use by multiple threads.
      */
-    @Override // Semantics
+    @Override // VariantSemantics
     public boolean assignable(final T receiverType, final T payloadType) {
       if (this.wildcard(receiverType) || this.wildcard(payloadType)) {
         return this.wildcardSemantics.assignable(receiverType, payloadType);
@@ -1141,25 +1141,25 @@ public interface Type {
       return false;
     }
 
-    public static final class CdiTypeArgumentSemantics<T> extends VariantSemantics<T> {
+    static final class CdiTypeArgumentSemantics<T> extends VariantSemantics<T> {
 
       private final CovariantSemantics<T> covariantSemantics;
 
-      public CdiTypeArgumentSemantics(final Predicate<T> namedPredicate,
-                                      final BiPredicate<T, T> equalityBiPredicate,
-                                      final UnaryOperator<T> boxFunction,
-                                      final Function<T, ? extends Type> toTypeFunction,
-                                      final Function<T, ? extends Collection<? extends T>> directSupertypesFunction, // may? be? JavaTypes::directSupertypes?
-                                      final UnaryOperator<T> typeFunction,
-                                      final Predicate<T> genericTypePredicate,
-                                      final Predicate<T> typeArgumentsPredicate,
-                                      final Function<T, T[]> typeArgumentsFunction,
-                                      final UnaryOperator<T> componentTypeFunction,
-                                      final Predicate<T> upperBoundsPredicate,
-                                      final Function<T, T[]> upperBoundsFunction,
-                                      final Predicate<T> lowerBoundPredicate,
-                                      final Function<T, T[]> lowerBoundsFunction,
-                                      final CovariantSemantics<T> covariantSemantics) {
+      CdiTypeArgumentSemantics(final Predicate<T> namedPredicate,
+                               final BiPredicate<T, T> equalityBiPredicate,
+                               final UnaryOperator<T> boxFunction,
+                               final Function<T, ? extends Type> toTypeFunction,
+                               final Function<T, ? extends Collection<? extends T>> directSupertypesFunction, // may? be? JavaTypes::directSupertypes?
+                               final UnaryOperator<T> typeFunction,
+                               final Predicate<T> genericTypePredicate,
+                               final Predicate<T> typeArgumentsPredicate,
+                               final Function<T, T[]> typeArgumentsFunction,
+                               final UnaryOperator<T> componentTypeFunction,
+                               final Predicate<T> upperBoundsPredicate,
+                               final Function<T, T[]> upperBoundsFunction,
+                               final Predicate<T> lowerBoundPredicate,
+                               final Function<T, T[]> lowerBoundsFunction,
+                               final CovariantSemantics<T> covariantSemantics) {
         super(namedPredicate,
               equalityBiPredicate,
               boxFunction,
