@@ -49,7 +49,7 @@ import static java.util.Spliterator.SUBSIZED;
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  */
-public final class JavaTypeSet extends AbstractSet<Type> {
+public final class NewJavaTypeSet extends AbstractSet<Type> {
 
 
   /*
@@ -57,7 +57,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
 
 
-  private final Set<? extends JavaType> set;
+  private final Set<? extends NewJavaType> set;
 
   private volatile Type mostSpecializedNonInterfaceType;
 
@@ -69,36 +69,36 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
 
 
-  private JavaTypeSet(final Type type) {
-    this(JavaType.of(type));
+  private NewJavaTypeSet(final Type type) {
+    this(NewJavaType.of(type));
   }
 
-  private JavaTypeSet(final JavaType javaType) {
+  private NewJavaTypeSet(final NewJavaType javaType) {
     super();
     this.set = Set.of(javaType);
   }
 
-  private JavaTypeSet(final Collection<?> types) {
+  private NewJavaTypeSet(final Collection<?> types) {
     super();
     final int size = types == null ? 0 : types.size();
     if (size <= 0) {
       this.set = Set.of();
     } else if (size == 1) {
       final Object o = types instanceof List<?> list ? list.get(0) : types.iterator().next();
-      if (o instanceof JavaType jt) {
+      if (o instanceof NewJavaType jt) {
         this.set = Set.of(jt);
       } else if (o instanceof Type t) {
-        this.set = Set.of(JavaType.of(t));
+        this.set = Set.of(NewJavaType.of(t));
       } else {
         this.set = Set.of();
       }
     } else {
-      final Set<JavaType> set = new LinkedHashSet<>(8); // LinkedHashSet is critical for ordering
+      final Set<NewJavaType> set = new LinkedHashSet<>(8); // LinkedHashSet is critical for ordering
       for (final Object type : types) {
-        if (type instanceof JavaType jt) {
+        if (type instanceof NewJavaType jt) {
           set.add(jt);
         } else if (type instanceof Type t) {
-          set.add(JavaType.of(t));
+          set.add(NewJavaType.of(t));
         }
       }
       this.set = Collections.unmodifiableSet(set);
@@ -111,16 +111,16 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
 
 
-  public final JavaTypeSet nonInterfaceTypes() {
-    return new JavaTypeSet(this.set.stream()
-                           .filter(JavaTypeSet::nonInterfaceType)
-                           .toList());
+  public final NewJavaTypeSet nonInterfaceTypes() {
+    return new NewJavaTypeSet(this.set.stream()
+                              .filter(NewJavaTypeSet::nonInterfaceType)
+                              .toList());
   }
 
-  public final JavaTypeSet interfaceTypes() {
-    return new JavaTypeSet(this.set.stream()
-                           .filter(JavaTypeSet::interfaceType)
-                           .toList());
+  public final NewJavaTypeSet interfaceTypes() {
+    return new NewJavaTypeSet(this.set.stream()
+                              .filter(NewJavaTypeSet::interfaceType)
+                              .toList());
   }
 
   @Override // Set<Type>
@@ -156,22 +156,22 @@ public final class JavaTypeSet extends AbstractSet<Type> {
   /**
    * Returns an arbitrarily selected {@link Type} that is guaranteed
    * to represent the most specialized subclass drawn from the types
-   * in this {@link JavaTypeSet}.
+   * in this {@link NewJavaTypeSet}.
    *
-   * <p>For example, if a {@link JavaTypeSet} contains {@link Integer
-   * Integer.class}, {@link Number Number.class} and {@link Object
-   * Object.class}, then this method will return {@link Integer
-   * Integer.class}.  If a {@link JavaTypeSet} contains {@link Integer
-   * Integer.class} and {@link String String.class}, then either
-   * {@link Integer Integer.class} or {@link String String.class} will
-   * be returned.</p>
+   * <p>For example, if a {@link NewJavaTypeSet} contains {@link
+   * Integer Integer.class}, {@link Number Number.class} and {@link
+   * Object Object.class}, then this method will return {@link Integer
+   * Integer.class}.  If a {@link NewJavaTypeSet} contains {@link
+   * Integer Integer.class} and {@link String String.class}, then
+   * either {@link Integer Integer.class} or {@link String
+   * String.class} will be returned.</p>
    *
-   * <p>In practice, most {@link JavaTypeSet}s in normal use contain
-   * classes from a single inheritance hierarchy.</p>
+   * <p>In practice, most {@link NewJavaTypeSet}s in normal use
+   * contain classes from a single inheritance hierarchy.</p>
    *
    * @return an arbitrarily selected {@link Type} that is guaranteed
    * to represent the most specialized subclass in its type hierarchy
-   * drawn from the types in this {@link JavaTypeSet}; never {@code
+   * drawn from the types in this {@link NewJavaTypeSet}; never {@code
    * null}; the {@link Type} returned is guaranteed to be either a
    * {@link Class} or a {@link java.lang.reflect.ParameterizedType}
    *
@@ -190,7 +190,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
     if (mostSpecializedNonInterfaceType == NullType.INSTANCE) {
       return null;
     } else if (mostSpecializedNonInterfaceType == null) {
-      mostSpecializedNonInterfaceType = this.mostSpecialized(JavaTypeSet::nonInterfaceType);
+      mostSpecializedNonInterfaceType = this.mostSpecialized(NewJavaTypeSet::nonInterfaceType);
       this.mostSpecializedNonInterfaceType = mostSpecializedNonInterfaceType == null ? NullType.INSTANCE : mostSpecializedNonInterfaceType;
     }
     return mostSpecializedNonInterfaceType;
@@ -200,18 +200,18 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * Returns an arbitrarily selected {@link Type} that is guaranteed
    * to be a {@link Type} representing the most specialized interface
    * drawn from types representing interfaces in this {@link
-   * JavaTypeSet}, or {@code null} if this {@link JavaTypeSet}
+   * NewJavaTypeSet}, or {@code null} if this {@link NewJavaTypeSet}
    * contains no interfaces.
    *
    * <p>The {@link Class} that is represented indirectly by the return
    * value, if any, is guaranteed to return {@code true} from its
    * {@link Class#isInterface()} method.</p>
    *
-   * <p>For example, if a {@link JavaTypeSet} {@linkplain
+   * <p>For example, if a {@link NewJavaTypeSet} {@linkplain
    * #contains(Type) contains} {@link java.io.Closeable
    * Closeable.class} and {@link AutoCloseable AutoCloseable.class},
    * then this method will return {@link java.io.Closeable
-   * Closeable.class}.  If a {@link JavaTypeSet} {@linkplain
+   * Closeable.class}.  If a {@link NewJavaTypeSet} {@linkplain
    * #contains(Type) contains} {@link AutoCloseable
    * AutoCloseable.class} and {@link java.io.Serializable
    * Serializable.class}, then either {@link AutoCloseable
@@ -221,7 +221,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @return an arbitrarily selected {@link Type} that is guaranteed
    * to be a {@link Type} representing the most specialized interface
    * drawn from types representing interfaces in this {@link
-   * JavaTypeSet}, or {@code null}; the {@link Type} returned is
+   * NewJavaTypeSet}, or {@code null}; the {@link Type} returned is
    * guaranteed to be either a {@link Class} or a {@link
    * java.lang.reflect.ParameterizedType}
    *
@@ -240,7 +240,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
     if (mostSpecializedInterfaceType == NullType.INSTANCE) {
       return null;
     } else if (mostSpecializedInterfaceType == null) {
-      mostSpecializedInterfaceType = this.mostSpecialized(JavaTypeSet::interfaceType);
+      mostSpecializedInterfaceType = this.mostSpecialized(NewJavaTypeSet::interfaceType);
       this.mostSpecializedInterfaceType = mostSpecializedInterfaceType == null ? NullType.INSTANCE : mostSpecializedInterfaceType;
     }
     return mostSpecializedInterfaceType;
@@ -248,15 +248,15 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   private final Type mostSpecialized(final Predicate<? super Type> p) {
     Type candidate = null;
-    for (final JavaType javaType : this.set) {
-      final Type type = javaType.type();
+    for (final NewJavaType javaType : this.set) {
+      final Type type = javaType.object();
       if (candidate == null) {
         if (p.test(type)) {
           candidate = type;
         }
       } else {
         for (final Type supertype : JavaTypes.supertypes(type)) {
-          if (p.test(supertype) && this.set.contains(JavaType.of(supertype)) && JavaTypes.supertype(candidate, supertype)) {
+          if (p.test(supertype) && this.set.contains(NewJavaType.of(supertype)) && JavaTypes.supertype(candidate, supertype)) {
             candidate = supertype;
           }
         }
@@ -267,7 +267,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   @Override // Set<Type>
   public final boolean contains(final Object o) {
-    return o instanceof Type t && this.set.contains(JavaType.of(t));
+    return o instanceof Type t && this.set.contains(NewJavaType.of(t));
   }
 
   @Override // Set<Type>
@@ -291,7 +291,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   @Override // Set<Type>
   public final Stream<Type> stream() {
-    return this.set.stream().map(JavaType::type);
+    return this.set.stream().map(NewJavaType::object);
   }
 
   @Override // Set<Type>
@@ -316,7 +316,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
     if (other == this) {
       return true;
     } else if (other != null && this.getClass() == other.getClass()) {
-      return this.set.equals(((JavaTypeSet)other).set);
+      return this.set.equals(((NewJavaTypeSet)other).set);
     } else {
       return false;
     }
@@ -334,39 +334,39 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
 
   @Convenience
-  public static final JavaTypeSet of(final Type t) {
-    return of(JavaType.of(t));
+  public static final NewJavaTypeSet of(final Type t) {
+    return of(NewJavaType.of(t));
   }
 
   @Convenience
-  public static final JavaTypeSet of(final Type t0, final Type t1) {
-    return of(List.of(JavaType.of(t0), JavaType.of(t1)));
+  public static final NewJavaTypeSet of(final Type t0, final Type t1) {
+    return of(List.of(NewJavaType.of(t0), NewJavaType.of(t1)));
   }
 
-  public static final JavaTypeSet of(final JavaType t) {
-    return new JavaTypeSet(t);
+  public static final NewJavaTypeSet of(final NewJavaType t) {
+    return new NewJavaTypeSet(t);
   }
 
   @Convenience
-  public static final JavaTypeSet of(final JavaType t0, final JavaType t1) {
+  public static final NewJavaTypeSet of(final NewJavaType t0, final NewJavaType t1) {
     return of(List.of(t0, t1));
   }
 
-  public static final JavaTypeSet of(final Collection<?> types) {
-    return new JavaTypeSet(types);
+  public static final NewJavaTypeSet of(final Collection<?> types) {
+    return new NewJavaTypeSet(types);
   }
 
   @Convenience
-  public static final JavaTypeSet ofSupertypes(final Type t) {
+  public static final NewJavaTypeSet ofSupertypes(final Type t) {
     return of(JavaTypes.supertypes(t));
   }
 
   @Convenience
-  public static final JavaTypeSet ofSupertypes(final JavaType jt) {
+  public static final NewJavaTypeSet ofSupertypes(final NewJavaType jt) {
     return ofSupertypes(jt.type());
   }
 
-  private static final boolean nonInterfaceType(final JavaType t) {
+  private static final boolean nonInterfaceType(final NewJavaType t) {
     return nonInterfaceType(t.type());
   }
 
@@ -375,7 +375,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
     return c != null && !c.isInterface();
   }
 
-  private static final boolean interfaceType(final JavaType t) {
+  private static final boolean interfaceType(final NewJavaType t) {
     return interfaceType(t.type());
   }
 
@@ -392,9 +392,9 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   private static final class TypeIterator implements Iterator<Type> {
 
-    private final Iterator<? extends JavaType> i;
+    private final Iterator<? extends NewJavaType> i;
 
-    private TypeIterator(final Iterator<? extends JavaType> i) {
+    private TypeIterator(final Iterator<? extends NewJavaType> i) {
       super();
       this.i = i;
     }
@@ -406,7 +406,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
     @Override // Iterator<Type>
     public final Type next() {
-      return this.i.next().type();
+      return this.i.next().object();
     }
 
     @Override // Iterator<Type>

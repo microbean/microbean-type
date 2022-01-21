@@ -34,7 +34,8 @@ import org.microbean.development.annotation.Convenience;
 
 import static org.microbean.type.JavaTypes.erase;
 
-public final class JavaType implements org.microbean.type.Type {
+@Deprecated
+public final class OldJavaType implements org.microbean.type.OldType {
 
 
   /*
@@ -69,7 +70,7 @@ public final class JavaType implements org.microbean.type.Type {
    */
 
 
-  private JavaType(final Type type) {
+  private OldJavaType(final Type type) {
     super();
     this.type = Objects.requireNonNull(type, "type");
   }
@@ -94,7 +95,7 @@ public final class JavaType implements org.microbean.type.Type {
     if (other == this) {
       return true;
     } else if (other != null && this.getClass() == other.getClass()) {
-      return JavaTypes.equals(this.type, ((JavaType)other).type);
+      return JavaTypes.equals(this.type, ((OldJavaType)other).type);
     } else {
       return false;
     }
@@ -106,8 +107,8 @@ public final class JavaType implements org.microbean.type.Type {
    */
 
 
-  public static final JavaType of(final Type type) {
-    return new JavaType(type);
+  public static final OldJavaType of(final Type type) {
+    return new OldJavaType(type);
   }
 
 
@@ -194,63 +195,63 @@ public final class JavaType implements org.microbean.type.Type {
    */
 
 
-  public static class CovariantSemantics extends org.microbean.type.Type.CovariantSemantics<java.lang.reflect.Type> {
+  public static class CovariantSemantics extends org.microbean.type.OldType.CovariantSemantics<java.lang.reflect.Type> {
 
     public CovariantSemantics(final boolean box) {
-      super(JavaType::named,
+      super(OldJavaType::named,
             JavaTypes::equals,
-            box ? JavaType::box : UnaryOperator.identity(),
-            JavaType::of,
+            box ? OldJavaType::box : UnaryOperator.identity(),
+            OldJavaType::of,
             JavaTypes::directSupertypes,
-            JavaType::type,
-            JavaType::hasTypeParameters,
-            JavaType::hasTypeArguments,
-            JavaType::typeArguments,
-            JavaType::componentType,
-            JavaType::upperBounded,
-            JavaType::upperBounds,
-            JavaType::lowerBounded,
-            JavaType::lowerBounds);
+            OldJavaType::type,
+            OldJavaType::hasTypeParameters,
+            OldJavaType::hasTypeArguments,
+            OldJavaType::typeArguments,
+            OldJavaType::componentType,
+            OldJavaType::upperBounded,
+            OldJavaType::upperBounds,
+            OldJavaType::lowerBounded,
+            OldJavaType::lowerBounds);
     }
 
   }
 
-  public static final class CdiSemantics extends org.microbean.type.Type.CdiSemantics<java.lang.reflect.Type> {
+  public static final class CdiSemantics extends org.microbean.type.OldType.CdiSemantics<java.lang.reflect.Type> {
 
     public CdiSemantics() {
       this(JavaTypes::directSupertypes);
     }
     
     public CdiSemantics(final Function<java.lang.reflect.Type, ? extends Collection<java.lang.reflect.Type>> directSupertypesFunction) {
-      super(JavaType::named,
+      super(OldJavaType::named,
             JavaTypes::equals,
-            JavaType::box,
-            JavaType::of,
+            OldJavaType::box,
+            OldJavaType::of,
             directSupertypesFunction,
-            JavaType::type,
-            JavaType::hasTypeParameters,
-            JavaType::hasTypeArguments,
-            JavaType::typeArguments,
-            JavaType::componentType,
-            JavaType::upperBounded,
-            JavaType::upperBounds,
-            JavaType::lowerBounded,
-            JavaType::lowerBounds,
+            OldJavaType::type,
+            OldJavaType::hasTypeParameters,
+            OldJavaType::hasTypeArguments,
+            OldJavaType::typeArguments,
+            OldJavaType::componentType,
+            OldJavaType::upperBounded,
+            OldJavaType::upperBounds,
+            OldJavaType::lowerBounded,
+            OldJavaType::lowerBounds,
             t -> t == Object.class,
-            new CdiTypeArgumentSemantics<>(JavaType::named,
+            new CdiTypeArgumentSemantics<>(OldJavaType::named,
                                            JavaTypes::equals,
-                                           JavaType::box,
-                                           JavaType::of,
+                                           OldJavaType::box,
+                                           OldJavaType::of,
                                            directSupertypesFunction,
-                                           JavaType::type,
-                                           JavaType::hasTypeParameters,
-                                           JavaType::hasTypeArguments,
-                                           JavaType::typeArguments,
-                                           JavaType::componentType,
-                                           JavaType::upperBounded,
-                                           JavaType::upperBounds,
-                                           JavaType::lowerBounded,
-                                           JavaType::lowerBounds,
+                                           OldJavaType::type,
+                                           OldJavaType::hasTypeParameters,
+                                           OldJavaType::hasTypeArguments,
+                                           OldJavaType::typeArguments,
+                                           OldJavaType::componentType,
+                                           OldJavaType::upperBounded,
+                                           OldJavaType::upperBounds,
+                                           OldJavaType::lowerBounded,
+                                           OldJavaType::lowerBounds,
                                            new CovariantSemantics(true)));
     }
 

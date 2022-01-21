@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import org.microbean.development.annotation.Experimental;
 
+import org.microbean.type.NewJavaType.Token;
 import org.microbean.type.NewType.CovariantSemantics;
 import org.microbean.type.NewType.Semantics;
 
@@ -62,15 +63,15 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <T, U extends TypeSet> void testLegalBeanTypeScenario2() {
-    final NewJavaType receiverType = NewJavaType.of(new JavaType.Token<Function<? super Contextual<?>, ? extends TypeSet>>() {});
-    final NewJavaType payloadType = NewJavaType.of(new JavaType.Token<Function<Contextual<T>, U>>() {});
+    final NewJavaType receiverType = NewJavaType.of(new Token<Function<? super Contextual<?>, ? extends TypeSet>>() {});
+    final NewJavaType payloadType = NewJavaType.of(new Token<Function<Contextual<T>, U>>() {});
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
 
   @Test
   final void testParameterizedReceiverTypeRawPayloadType() {
-    final NewJavaType receiverType = NewJavaType.of(new org.microbean.type.JavaType.Token<Predicate<Contextual<?>>>() {});
+    final NewJavaType receiverType = NewJavaType.of(new Token<Predicate<Contextual<?>>>() {});
     final NewJavaType payloadType = NewJavaType.of(Predicate.class);
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
@@ -79,29 +80,29 @@ final class TestNewCovariantTypeSemantics {
   @Test
   final void testRawReceiverTypeParameterizedPayloadType() {
     final NewJavaType receiverType = NewJavaType.of(Predicate.class);
-    final NewJavaType payloadType = NewJavaType.of(new JavaType.Token<Predicate<Contextual<?>>>() {});
+    final NewJavaType payloadType = NewJavaType.of(new Token<Predicate<Contextual<?>>>() {});
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testLowerBoundedWildcardCase() {
-    final NewJavaType receiverType = NewJavaType.of(new JavaType.Token<Predicate<? super Contextual<?>>>() {});
-    final NewJavaType payloadType = NewJavaType.of(new JavaType.Token<Predicate<Contextual<?>>>() {});
+    final NewJavaType receiverType = NewJavaType.of(new Token<Predicate<? super Contextual<?>>>() {});
+    final NewJavaType payloadType = NewJavaType.of(new Token<Predicate<Contextual<?>>>() {});
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
 
   @Test
   final void testResolvedWildcardCase() {
-    final NewJavaType receiverType = NewJavaType.of(new JavaType.Token<Predicate<Object>>() {});
-    final NewJavaType payloadType = NewJavaType.of(new JavaType.Token<Predicate<Contextual<Object>>>() {});
+    final NewJavaType receiverType = NewJavaType.of(new Token<Predicate<Object>>() {});
+    final NewJavaType payloadType = NewJavaType.of(new Token<Predicate<Contextual<Object>>>() {});
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
 
   @Test
   final <T extends String> void testStringAssignableFromTypeVariableThatExtendsString() {
-    final Type payloadType = new JavaType.Token<T>() {}.type();
+    final Type payloadType = new Token<T>() {}.type();
     assertTrue(payloadType instanceof TypeVariable);
     assertEquals(String.class, ((TypeVariable<?>)payloadType).getBounds()[0]);
   }
@@ -193,9 +194,9 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <A, B extends Number, C extends Runnable & CharSequence> void testRawTypeAssignableFromTypeVariable() {
-    final Type a = new JavaType.Token<A>() {}.type();
-    final Type b = new JavaType.Token<B>() {}.type();
-    final Type c = new JavaType.Token<C>() {}.type();
+    final Type a = new Token<A>() {}.type();
+    final Type b = new Token<B>() {}.type();
+    final Type c = new Token<C>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(Object.class, a));
     assertFalse(this.covariantTypeSemantics.assignable(Number.class, a));
     assertFalse(this.covariantTypeSemantics.assignable(Runnable.class, a));
@@ -314,9 +315,9 @@ final class TestNewCovariantTypeSemantics {
      B extends List<Runnable> & Comparable<CharSequence>,
      C extends B>
     void testParameterizedTypeAssignableFromTypeVariable() {
-    final Type a = new JavaType.Token<A>() {}.type();
-    final Type b = new JavaType.Token<B>() {}.type();
-    final Type c = new JavaType.Token<C>() {}.type();
+    final Type a = new Token<A>() {}.type();
+    final Type b = new Token<B>() {}.type();
+    final Type c = new Token<C>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, Collection.class, Number.class), a));
     assertTrue(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, Iterable.class, Number.class), a));
     assertFalse(this.covariantTypeSemantics.assignable(new DefaultParameterizedType(null, List.class, Number.class), a));
@@ -390,8 +391,8 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <T, S extends Number> void testTypeVariableAssignableFromRawType() {
-    final Type t = new JavaType.Token<T>() {}.type();
-    final Type s = new JavaType.Token<S>() {}.type();
+    final Type t = new Token<T>() {}.type();
+    final Type s = new Token<S>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(t, Object.class));
     assertFalse(this.covariantTypeSemantics.assignable(t, List.class));
     assertFalse(this.covariantTypeSemantics.assignable(s, Object.class));
@@ -401,8 +402,8 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <T, S extends List<Number>> void testTypeVariableAssignableFromParameterizedType() {
-    final Type t = new JavaType.Token<T>() {}.type();
-    final Type s = new JavaType.Token<S>() {}.type();
+    final Type t = new Token<T>() {}.type();
+    final Type s = new Token<S>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(t, new DefaultParameterizedType(null, List.class, Object.class)));
     assertFalse(this.covariantTypeSemantics.assignable(t, new DefaultParameterizedType(null, List.class, Integer.class)));
     assertFalse(this.covariantTypeSemantics.assignable(s, new DefaultParameterizedType(null, List.class, Object.class)));
@@ -421,11 +422,11 @@ final class TestNewCovariantTypeSemantics {
     //
     final int count = 5;
     final Type[] typeVariables = new Type[count];
-    typeVariables[0] = new JavaType.Token<A>() {}.type();
-    typeVariables[1] = new JavaType.Token<B>() {}.type();
-    typeVariables[2] = new JavaType.Token<C>() {}.type();
-    typeVariables[3] = new JavaType.Token<D>() {}.type();
-    typeVariables[4] = new JavaType.Token<D[]>() {}.type();
+    typeVariables[0] = new Token<A>() {}.type();
+    typeVariables[1] = new Token<B>() {}.type();
+    typeVariables[2] = new Token<C>() {}.type();
+    typeVariables[3] = new Token<D>() {}.type();
+    typeVariables[4] = new Token<D[]>() {}.type();
     for (int i = 0; i < count; i++) {
       for (int j = 0; j < count; j++) {
         if (i == j) {
@@ -441,11 +442,11 @@ final class TestNewCovariantTypeSemantics {
   final <A, B extends A, C extends A, D extends C, E extends D> void testTypeVariableAssignableFromTypeVariable2() {
     final int count = 5;
     final Type[] typeVariables = new Type[count];
-    typeVariables[0] = new JavaType.Token<A>() {}.type();
-    typeVariables[1] = new JavaType.Token<B>() {}.type();
-    typeVariables[2] = new JavaType.Token<C>() {}.type();
-    typeVariables[3] = new JavaType.Token<D>() {}.type();
-    typeVariables[4] = new JavaType.Token<E>() {}.type();
+    typeVariables[0] = new Token<A>() {}.type();
+    typeVariables[1] = new Token<B>() {}.type();
+    typeVariables[2] = new Token<C>() {}.type();
+    typeVariables[3] = new Token<D>() {}.type();
+    typeVariables[4] = new Token<E>() {}.type();
 
     for (int i = 0; i < count; i++) {
       for (int j = 0; j < count; j++) {
@@ -460,8 +461,8 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <A, B extends Number> void testTypeVariableAssignableFromWildcard() {
-    final Type a = new JavaType.Token<A>() {}.type();
-    final Type b = new JavaType.Token<B>() {}.type();
+    final Type a = new Token<A>() {}.type();
+    final Type b = new Token<B>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(a, UnboundedWildcardType.INSTANCE));
     assertFalse(this.covariantTypeSemantics.assignable(a, new UpperBoundedWildcardType(Number.class)));
     assertFalse(this.covariantTypeSemantics.assignable(a, new LowerBoundedWildcardType(Number.class)));
@@ -474,8 +475,8 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <A, B extends List<Integer>> void testTypeVariableAssignableFromGenericArrayType() {
-    final Type a = new JavaType.Token<A>() {}.type();
-    final Type b = new JavaType.Token<B>() {}.type();
+    final Type a = new Token<A>() {}.type();
+    final Type b = new Token<B>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(a, new DefaultGenericArrayType(List.class, Object.class)));
     assertFalse(this.covariantTypeSemantics.assignable(a, new DefaultGenericArrayType(List.class, Number.class)));
     assertFalse(this.covariantTypeSemantics.assignable(a, new DefaultGenericArrayType(List.class, Integer.class)));
@@ -499,10 +500,10 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <A, B extends Number, C extends B, D extends Number & Serializable> void testWildcardWithTypeVariableAssignableFromRawType() {
-    final Type a = new JavaType.Token<A>() {}.type();
-    final Type b = new JavaType.Token<B>() {}.type();
-    final Type c = new JavaType.Token<C>() {}.type();
-    final Type d = new JavaType.Token<D>() {}.type();
+    final Type a = new Token<A>() {}.type();
+    final Type b = new Token<B>() {}.type();
+    final Type c = new Token<C>() {}.type();
+    final Type d = new Token<D>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(new UpperBoundedWildcardType(a), Object.class));
     assertFalse(this.covariantTypeSemantics.assignable(new UpperBoundedWildcardType(b), Object.class));
     assertFalse(this.covariantTypeSemantics.assignable(new UpperBoundedWildcardType(b), Number.class));
@@ -562,9 +563,9 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <A, B extends Number, C extends Runnable & Appendable> void testWildcardAssignableFromTypeVariable() {
-    final Type a = new JavaType.Token<A>() {}.type();
-    final Type b = new JavaType.Token<B>() {}.type();
-    final Type c = new JavaType.Token<C>() {}.type();
+    final Type a = new Token<A>() {}.type();
+    final Type b = new Token<B>() {}.type();
+    final Type c = new Token<C>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(UnboundedWildcardType.INSTANCE, a));
     assertTrue(this.covariantTypeSemantics.assignable(UnboundedWildcardType.INSTANCE, b));
     assertTrue(this.covariantTypeSemantics.assignable(UnboundedWildcardType.INSTANCE, c));
@@ -588,11 +589,11 @@ final class TestNewCovariantTypeSemantics {
     void testWildcardWithTypeVariableAssignableFromTypeVariable() {
     final int count = 5;
     final Type[] typeVariables = new Type[count];
-    typeVariables[0] = new JavaType.Token<A>() {}.type();
-    typeVariables[1] = new JavaType.Token<B>() {}.type();
-    typeVariables[2] = new JavaType.Token<C>() {}.type();
-    typeVariables[3] = new JavaType.Token<D>() {}.type();
-    typeVariables[4] = new JavaType.Token<E>() {}.type();
+    typeVariables[0] = new Token<A>() {}.type();
+    typeVariables[1] = new Token<B>() {}.type();
+    typeVariables[2] = new Token<C>() {}.type();
+    typeVariables[3] = new Token<D>() {}.type();
+    typeVariables[4] = new Token<E>() {}.type();
     for (int i = 0; i < count; i++) {
       for (int j = 0; j < count; j++) {
         if (i == j || i == 0 || (i < j && i != 1)) {
@@ -627,10 +628,10 @@ final class TestNewCovariantTypeSemantics {
   final <A extends Throwable, B extends A, C extends B, D extends Exception> void testWildcardAssignableFromWildcard2() {
     final int count = 4;
     Type[] typeVariables = new Type[count];
-    final Type a = typeVariables[0] = new JavaType.Token<A>() {}.type();
-    final Type b = typeVariables[1] = new JavaType.Token<B>() {}.type();
-    final Type c = typeVariables[2] = new JavaType.Token<C>() {}.type();
-    final Type d = typeVariables[3] = new JavaType.Token<D>() {}.type();
+    final Type a = typeVariables[0] = new Token<A>() {}.type();
+    final Type b = typeVariables[1] = new Token<B>() {}.type();
+    final Type c = typeVariables[2] = new Token<C>() {}.type();
+    final Type d = typeVariables[3] = new Token<D>() {}.type();
     for (int i = 0; i < count; i++) {
       assertTrue(this.covariantTypeSemantics.assignable(UnboundedWildcardType.INSTANCE,
                                                         new UpperBoundedWildcardType(typeVariables[i])));
@@ -744,8 +745,8 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final <A, B extends List<Number>> void testGenericArrayTypeAssignableFromTypeVariable() {
-    final Type a = new JavaType.Token<A>() {}.type();
-    final Type b = new JavaType.Token<B>() {}.type();
+    final Type a = new Token<A>() {}.type();
+    final Type b = new Token<B>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(List.class, Number.class), a));
     assertFalse(this.covariantTypeSemantics.assignable(new DefaultGenericArrayType(List.class, Number.class), b));
   }
@@ -802,36 +803,36 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final void testArrayAndComponentTypeIncompatibility() {
-    final Type receiverType = new JavaType.Token<Foo<String>[]>() {}.type();
-    final Type payloadType = new JavaType.Token<Foo<String>>() {}.type();
+    final Type receiverType = new Token<Foo<String>[]>() {}.type();
+    final Type payloadType = new Token<Foo<String>>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testIncompatibleParameterizedTypeArrays() {
-    final Type receiverType = new JavaType.Token<Foo<Integer>[]>() {}.type();
-    final Type payloadType = new JavaType.Token<Foo<String>[]>() {}.type();
+    final Type receiverType = new Token<Foo<Integer>[]>() {}.type();
+    final Type payloadType = new Token<Foo<String>[]>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testRealTypeParameterAssignableToWildcard() {
-    final Type receiverType = new JavaType.Token<Foo<?>>() {}.type();
-    final Type payloadType = new JavaType.Token<Foo<String>>() {}.type();
+    final Type receiverType = new Token<Foo<?>>() {}.type();
+    final Type payloadType = new Token<Foo<String>>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testArrayOfRealParameterizedTypeAssignableToArrayOfWildcardParameterizedType() {
-    final Type receiverType = new JavaType.Token<Foo<?>[]>() {}.type();
-    final Type payloadType = new JavaType.Token<Foo<String>[]>() {}.type();
+    final Type receiverType = new Token<Foo<?>[]>() {}.type();
+    final Type payloadType = new Token<Foo<String>[]>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testFooQuestionMarkArrayIsNotAssignableToFooStringArray() {
-    final Type receiverType = new JavaType.Token<Foo<String>[]>() {}.type();
-    final Type payloadType = new JavaType.Token<Foo<?>[]>() {}.type();
+    final Type receiverType = new Token<Foo<String>[]>() {}.type();
+    final Type payloadType = new Token<Foo<?>[]>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
@@ -842,40 +843,40 @@ final class TestNewCovariantTypeSemantics {
 
   @Test
   final void testMultidimensionalArrayTypeParameterCase() {
-    final Type receiverType = new JavaType.Token<List<Number[][]>>() {}.type();
-    final Type payloadType = new JavaType.Token<List<Integer[][]>>() {}.type();
+    final Type receiverType = new Token<List<Number[][]>>() {}.type();
+    final Type payloadType = new Token<List<Integer[][]>>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final <T> void testFooTAssignableToFooStringWithBeanTypeSemantics() {
-    final Type receiverType = new JavaType.Token<Foo<String>>() {}.type();
-    final Type payloadType = new JavaType.Token<Foo<T>>() {}.type();
+    final Type receiverType = new Token<Foo<String>>() {}.type();
+    final Type payloadType = new Token<Foo<T>>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testFooObjectAssignableToFoo() {
-    final Type payloadType = new JavaType.Token<Foo<Object>>() {}.type();
+    final Type payloadType = new Token<Foo<Object>>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(Foo.class, payloadType));
   }
 
   @Test
   final <T> void testFooTAssignableToFoo() {
-    final Type payloadType = new JavaType.Token<Foo<T>>() {}.type();
+    final Type payloadType = new Token<Foo<T>>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(Foo.class, payloadType));
   }
 
   @Test
   final <N extends Number> void testFooNExtendsNumberAssignableToFoo() {
-    final Type payloadType = new JavaType.Token<Foo<N>>() {}.type();
+    final Type payloadType = new Token<Foo<N>>() {}.type();
     assertTrue(this.covariantTypeSemantics.assignable(Foo.class, payloadType));
   }
 
   @Test
   final <T1 extends Number, T2 extends T1> void testListRunnableIsNotAssignableFromListT2() {
-    final Type listT2 = new JavaType.Token<List<T2>>() {}.type();
-    final Type listRunnable = new JavaType.Token<List<Runnable>>() {}.type();
+    final Type listT2 = new Token<List<T2>>() {}.type();
+    final Type listRunnable = new Token<List<Runnable>>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(listRunnable, listT2));
     assertFalse(this.covariantTypeSemantics.assignable(listT2, listRunnable));
   }
@@ -885,15 +886,15 @@ final class TestNewCovariantTypeSemantics {
     // This doesn't compile:
     // final List<T2> lt2 = null;
     // final List<T1> lt1 = lt2;
-    final Type listT1 = new JavaType.Token<List<T1>>() {}.type();
-    final Type listT2 = new JavaType.Token<List<T2>>() {}.type();
+    final Type listT1 = new Token<List<T1>>() {}.type();
+    final Type listT2 = new Token<List<T2>>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(listT1, listT2));
   }
 
   @Test
   final <T1 extends Number, T2 extends T1> void testListNumberIsNotAssignableFromListT2ExtendsT1ExtendsNumber() {
-    final Type n1 = new JavaType.Token<List<Number>>() {}.type();
-    final Type payloadType = new JavaType.Token<List<T2>>() {}.type();
+    final Type n1 = new Token<List<Number>>() {}.type();
+    final Type payloadType = new Token<List<T2>>() {}.type();
     assertFalse(this.covariantTypeSemantics.assignable(n1, payloadType));
   }
 

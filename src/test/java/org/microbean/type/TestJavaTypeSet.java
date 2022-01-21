@@ -34,7 +34,7 @@ final class TestJavaTypeSet {
 
   @Test
   final void testJavaTypeSetOfIntegerHasIntegerAsItsMostSpecializedNonInterfaceType() {
-    final JavaTypeSet jts = JavaTypeSet.of(Integer.class);
+    final NewJavaTypeSet jts = NewJavaTypeSet.of(Integer.class);
     assertEquals(1, jts.size());
     assertSame(Integer.class, jts.mostSpecializedNonInterfaceType());
     assertNull(jts.mostSpecializedInterfaceType());
@@ -42,7 +42,7 @@ final class TestJavaTypeSet {
 
   @Test
   final void testJavaTypeSetOfIntegerAndNumberHasIntegerAsItsMostSpecializedNonInterfaceType() {
-    final JavaTypeSet jts = JavaTypeSet.of(Number.class, Integer.class);
+    final NewJavaTypeSet jts = NewJavaTypeSet.of(Number.class, Integer.class);
     assertEquals(2, jts.size());
     assertSame(Integer.class, jts.mostSpecializedNonInterfaceType());
     assertNull(jts.mostSpecializedInterfaceType());
@@ -50,7 +50,7 @@ final class TestJavaTypeSet {
 
   @Test
   final void testJavaTypeSetOfIntegerAndComparableHasIntegerAsItsMostSpecializedNonInterfaceType() {
-    final JavaTypeSet jts = JavaTypeSet.of(Comparable.class, Integer.class);
+    final NewJavaTypeSet jts = NewJavaTypeSet.of(Comparable.class, Integer.class);
     assertEquals(2, jts.size());
     assertSame(Integer.class, jts.mostSpecializedNonInterfaceType());
     assertSame(Comparable.class, jts.mostSpecializedInterfaceType());
@@ -58,7 +58,7 @@ final class TestJavaTypeSet {
 
   @Test
   final void testJavaTypeSetOfIntegerAndStringHasEitherStringOrIntegerAsItsMostSpecializedNonInterfaceType() {
-    final JavaTypeSet jts = JavaTypeSet.of(Integer.class, String.class);
+    final NewJavaTypeSet jts = NewJavaTypeSet.of(Integer.class, String.class);
     assertEquals(2, jts.size());
     final java.lang.reflect.Type mssc = jts.mostSpecializedNonInterfaceType();
     assertTrue(mssc == String.class || mssc == Integer.class);
@@ -67,7 +67,7 @@ final class TestJavaTypeSet {
 
   @Test
   final void testOrdering() {
-    final JavaTypeSet jts = JavaTypeSet.of(List.of(Integer.class, String.class, Number.class));
+    final NewJavaTypeSet jts = NewJavaTypeSet.of(List.of(Integer.class, String.class, Number.class));
     for (int i = 0; i < 10; i++) {
       final Iterator<java.lang.reflect.Type> iterator = jts.iterator();
       for (int j = 0; j < jts.size(); j++) {

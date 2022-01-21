@@ -30,37 +30,42 @@ import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
 
+import org.microbean.type.NewJavaType.Token;
+import org.microbean.type.OldJavaType.CdiSemantics;
+import org.microbean.type.OldJavaType.CovariantSemantics;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-final class TestCdiTypeSemantics {
+@Deprecated
+final class TestOldCdiTypeSemantics {
 
-  private static final JavaType.CovariantSemantics covariantTypeSemantics = new JavaType.CovariantSemantics(true);
+  private static final CovariantSemantics covariantTypeSemantics = new CovariantSemantics(true);
 
-  private static final JavaType.CdiSemantics cdiSemantics = new JavaType.CdiSemantics();
+  private static final CdiSemantics cdiSemantics = new CdiSemantics();
 
-  private TestCdiTypeSemantics() {
+  private TestOldCdiTypeSemantics() {
     super();
   }
 
   @Test
   final void testLegalBeanTypeScenario() {
-    final Type receiverType = new JavaType.Token<Function<? super Contextual<?>, ? extends TypeSet>>() {}.type();
-    final Type payloadType = new JavaType.Token<Function<Contextual<Object>, TypeSet>>() {}.type();
+    final Type receiverType = new Token<Function<? super Contextual<?>, ? extends TypeSet>>() {}.type();
+    final Type payloadType = new Token<Function<Contextual<Object>, TypeSet>>() {}.type();
     assertFalse(cdiSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final <T, U extends TypeSet> void testLegalBeanTypeScenario2() {
-    final Type receiverType = new JavaType.Token<Function<? super Contextual<?>, ? extends TypeSet>>() {}.type();
-    final Type payloadType = new JavaType.Token<Function<Contextual<T>, U>>() {}.type();
+    final Type receiverType = new Token<Function<? super Contextual<?>, ? extends TypeSet>>() {}.type();
+    final Type payloadType = new Token<Function<Contextual<T>, U>>() {}.type();
     assertFalse(cdiSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testParameterizedReceiverTypeRawPayloadType() {
-    final Type receiverType = new JavaType.Token<Predicate<Contextual<?>>>() {}.type();
+    final Type receiverType = new Token<Predicate<Contextual<?>>>() {}.type();
     final Type payloadType = Predicate.class;
     // "A raw bean type is considered assignable to a parameterized
     // required type if the raw types are identical and all type
@@ -74,7 +79,7 @@ final class TestCdiTypeSemantics {
   @Test
   final void testRawReceiverTypeParameterizedPayloadType() {
     final Type receiverType = Predicate.class;
-    final Type payloadType = new JavaType.Token<Predicate<Contextual<?>>>() {}.type();
+    final Type payloadType = new Token<Predicate<Contextual<?>>>() {}.type();
     // "A parameterized bean type is considered assignable to a raw
     // required type if the raw types are identical and all type
     // parameters of the bean type are either unbounded type variables
@@ -86,26 +91,26 @@ final class TestCdiTypeSemantics {
 
   @Test
   final void testLowerBoundedWildcardCase() {
-    final Type receiverType = new JavaType.Token<Predicate<? super Contextual<?>>>() {}.type();
-    final Type payloadType = new JavaType.Token<Predicate<Contextual<?>>>() {}.type();
+    final Type receiverType = new Token<Predicate<? super Contextual<?>>>() {}.type();
+    final Type payloadType = new Token<Predicate<Contextual<?>>>() {}.type();
     assertTrue(cdiSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testResolvedWildcardCase() {
-    Type receiverType = new JavaType.Token<Predicate<? super Contextual<?>>>() {}.type();
-    final Type payloadType = new JavaType.Token<Predicate<Contextual<Object>>>() {}.type();
+    Type receiverType = new Token<Predicate<? super Contextual<?>>>() {}.type();
+    final Type payloadType = new Token<Predicate<Contextual<Object>>>() {}.type();
     assertFalse(cdiSemantics.assignable(receiverType, payloadType));
     // This is the type you get when you call TypeResolver.resolve(receiverType).  Ugh.
     // See https://gitlab.com/microbean.systems/ristretto/-/issues/11.
-    receiverType = new JavaType.Token<Predicate<Object>>() {}.type();
+    receiverType = new Token<Predicate<Object>>() {}.type();
     assertFalse(cdiSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final <T> void testFooTAssignableToFooStringWithBeanTypeSemantics() {
-    final ParameterizedType receiverType = (ParameterizedType)new JavaType.Token<Foo<String>>() {}.type();
-    final ParameterizedType payloadType = (ParameterizedType)new JavaType.Token<Foo<T>>() {}.type();
+    final ParameterizedType receiverType = (ParameterizedType)new Token<Foo<String>>() {}.type();
+    final ParameterizedType payloadType = (ParameterizedType)new Token<Foo<T>>() {}.type();
     assertSame(Object.class, ((TypeVariable<?>)payloadType.getActualTypeArguments()[0]).getBounds()[0]);
 
     // Java/covariant semantics do not let this assignment happen.
@@ -127,7 +132,7 @@ final class TestCdiTypeSemantics {
   @Test
   final void testFooObjectAssignableToFoo() {
     final Type receiverType = Foo.class;
-    final Type payloadType = new JavaType.Token<Foo<Object>>() {}.type();
+    final Type payloadType = new Token<Foo<Object>>() {}.type();
     assertTrue(covariantTypeSemantics.assignable(receiverType, payloadType));
     assertTrue(cdiSemantics.assignable(receiverType, payloadType));
   }
@@ -135,30 +140,30 @@ final class TestCdiTypeSemantics {
   @Test
   final <T> void testFooTAssignableToFoo() {
     final Type receiverType = Foo.class;
-    final Type payloadType = new JavaType.Token<Foo<T>>() {}.type();
+    final Type payloadType = new Token<Foo<T>>() {}.type();
     assertTrue(covariantTypeSemantics.assignable(receiverType, payloadType));
     assertTrue(cdiSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final <N extends Number> void testFooNExtendsNumberAssignableToFoo() {
-    final ParameterizedType payloadType = (ParameterizedType)new JavaType.Token<Foo<N>>() {}.type();
+    final ParameterizedType payloadType = (ParameterizedType)new Token<Foo<N>>() {}.type();
     assertTrue(covariantTypeSemantics.assignable(Foo.class, payloadType));
     assertFalse(cdiSemantics.assignable(Foo.class, payloadType));
   }
 
   @Test
   final <T1 extends Number, T2 extends T1> void testTypeVariableWithTypeVariableBound() {
-    final Type n1 = new JavaType.Token<List<Number>>() {}.type();
-    final Type payloadType = new JavaType.Token<List<T2>>() {}.type();
+    final Type n1 = new Token<List<Number>>() {}.type();
+    final Type payloadType = new Token<List<T2>>() {}.type();
     assertFalse(covariantTypeSemantics.assignable(n1, payloadType));
     assertTrue(cdiSemantics.assignable(n1, payloadType));
 
-    final Type r1 = new JavaType.Token<List<Runnable>>() {}.type();
+    final Type r1 = new Token<List<Runnable>>() {}.type();
     assertFalse(covariantTypeSemantics.assignable(r1, payloadType));
     assertFalse(cdiSemantics.assignable(r1, payloadType));
 
-    final Type receiverType = new JavaType.Token<List<T1>>() {}.type();
+    final Type receiverType = new Token<List<T1>>() {}.type();
     assertFalse(covariantTypeSemantics.assignable(receiverType, payloadType));
     assertTrue(cdiSemantics.assignable(receiverType, payloadType));
 
@@ -172,11 +177,11 @@ final class TestCdiTypeSemantics {
 
   @Test
   final <T1 extends Number, T2 extends T1> void testWildcardWithTypeVariableBound() {
-    final Type n1 = new JavaType.Token<List<Number>>() {}.type();
-    final Type qet2 = new JavaType.Token<List<? extends T2>>() {}.type();
-    final Type qst2 = new JavaType.Token<List<? super T2>>() {}.type();
-    final Type i1 = new JavaType.Token<List<Integer>>() {}.type();
-    final Type o1 = new JavaType.Token<List<Object>>() {}.type();
+    final Type n1 = new Token<List<Number>>() {}.type();
+    final Type qet2 = new Token<List<? extends T2>>() {}.type();
+    final Type qst2 = new Token<List<? super T2>>() {}.type();
+    final Type i1 = new Token<List<Integer>>() {}.type();
+    final Type o1 = new Token<List<Object>>() {}.type();
     assertTrue(cdiSemantics.assignable(qet2, n1));
 
     assertTrue(cdiSemantics.assignable(qet2, i1));
@@ -198,30 +203,30 @@ final class TestCdiTypeSemantics {
      T4 extends Appendable & Iterable<?>,
      T5 extends T4>
     void testTypeVariableWithMultipleBounds() {
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<T2>>() {}.type(),
-                                       new JavaType.Token<List<T4>>() {}.type()));
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<T3>>() {}.type(),
-                                       new JavaType.Token<List<T5>>() {}.type()));
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<? extends T1>>() {}.type(),
-                                       new JavaType.Token<List<T4>>() {}.type()));
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<? extends T2>>() {}.type(),
-                                       new JavaType.Token<List<T4>>() {}.type()));
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<? extends T3>>() {}.type(),
-                                       new JavaType.Token<List<T5>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T4>>() {}.type(),
-                                        new JavaType.Token<List<T1>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T2>>() {}.type(),
-                                        new JavaType.Token<List<T1>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T4>>() {}.type(),
-                                        new JavaType.Token<List<T2>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T1>>() {}.type(),
-                                        new JavaType.Token<List<T2>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T2>>() {}.type(),
-                                        new JavaType.Token<List<T1>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<? extends T1>>() {}.type(),
-                                        new JavaType.Token<List<T2>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<? extends T2>>() {}.type(),
-                                        new JavaType.Token<List<T1>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<T2>>() {}.type(),
+                                       new Token<List<T4>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<T3>>() {}.type(),
+                                       new Token<List<T5>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<? extends T1>>() {}.type(),
+                                       new Token<List<T4>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<? extends T2>>() {}.type(),
+                                       new Token<List<T4>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<? extends T3>>() {}.type(),
+                                       new Token<List<T5>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T4>>() {}.type(),
+                                        new Token<List<T1>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T2>>() {}.type(),
+                                        new Token<List<T1>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T4>>() {}.type(),
+                                        new Token<List<T2>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T1>>() {}.type(),
+                                        new Token<List<T2>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T2>>() {}.type(),
+                                        new Token<List<T1>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<? extends T1>>() {}.type(),
+                                        new Token<List<T2>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<? extends T2>>() {}.type(),
+                                        new Token<List<T1>>() {}.type()));
   }
 
   @Test
@@ -229,8 +234,8 @@ final class TestCdiTypeSemantics {
     <T1 extends List<?> & Appendable,
      T4 extends Appendable & Iterable<?>>
     void testTypeVariableWithInterfaceBoundsIsAssignableToTypeVariableWithInterfaceBounds() {
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<T1>>() {}.type(),
-                                       new JavaType.Token<List<T4>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<T1>>() {}.type(),
+                                       new Token<List<T4>>() {}.type()));
   }
 
   @Test
@@ -243,22 +248,22 @@ final class TestCdiTypeSemantics {
     T6 extends Collection<Integer>,
     T7 extends Collection<?>>
   void testTypeVariableWithParameterizedTypesAsBounds() {
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<T5>>() {}.type(),
-                                       new JavaType.Token<List<T5>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T6>>() {}.type(),
-                                        new JavaType.Token<List<T5>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T5>>() {}.type(),
-                                        new JavaType.Token<List<T6>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T7>>() {}.type(),
-                                        new JavaType.Token<List<T5>>() {}.type()));
-    assertTrue(cdiSemantics.assignable(new JavaType.Token<List<T3>>() {}.type(),
-                                       new JavaType.Token<List<T3>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T4>>() {}.type(),
-                                        new JavaType.Token<List<T3>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T3>>() {}.type(),
-                                        new JavaType.Token<List<T4>>() {}.type()));
-    assertFalse(cdiSemantics.assignable(new JavaType.Token<List<T7>>() {}.type(),
-                                        new JavaType.Token<List<T3>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<T5>>() {}.type(),
+                                       new Token<List<T5>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T6>>() {}.type(),
+                                        new Token<List<T5>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T5>>() {}.type(),
+                                        new Token<List<T6>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T7>>() {}.type(),
+                                        new Token<List<T5>>() {}.type()));
+    assertTrue(cdiSemantics.assignable(new Token<List<T3>>() {}.type(),
+                                       new Token<List<T3>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T4>>() {}.type(),
+                                        new Token<List<T3>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T3>>() {}.type(),
+                                        new Token<List<T4>>() {}.type()));
+    assertFalse(cdiSemantics.assignable(new Token<List<T7>>() {}.type(),
+                                        new Token<List<T3>>() {}.type()));
   }
 
 

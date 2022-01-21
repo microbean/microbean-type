@@ -335,8 +335,8 @@ public final class JavaTypes {
     return supertypes(type, new HashSet<>()::add);
   }
 
-  private static final Collection<Type> supertypes(final Type type, final Predicate<? super org.microbean.type.Type> unseen) {
-    if (unseen.test(JavaType.of(type))) {
+  private static final Collection<Type> supertypes(final Type type, final Predicate<? super NewJavaType> unseen) {
+    if (unseen.test(NewJavaType.of(type))) {
       final Collection<Type> supertypes = new ArrayList<>();
       supertypes.add(type); // reflexive
       for (final Type ds : directSupertypes(type)) {

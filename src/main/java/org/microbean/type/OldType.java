@@ -42,7 +42,8 @@ import org.microbean.development.annotation.Convenience;
  *
  * @see #equals(Object)
  */
-public interface Type {
+@Deprecated
+public interface OldType {
 
   /**
    * Returns a hashcode for this {@link Type}.
@@ -115,7 +116,7 @@ public interface Type {
 
     private final UnaryOperator<T> boxFunction;
 
-    private final Function<T, ? extends Type> toTypeFunction;
+    private final Function<T, ? extends OldType> toTypeFunction;
 
     private final UnaryOperator<T> typeFunction;
 
@@ -144,7 +145,7 @@ public interface Type {
     protected Semantics(final Predicate<T> namedPredicate,
                         final BiPredicate<T, T> equalityBiPredicate,
                         final UnaryOperator<T> boxFunction,
-                        final Function<T, ? extends Type> toTypeFunction,
+                        final Function<T, ? extends OldType> toTypeFunction,
                         final UnaryOperator<T> typeFunction,
                         final Predicate<T> genericTypePredicate,
                         final Predicate<T> typeArgumentsPredicate,
@@ -224,7 +225,7 @@ public interface Type {
       return this.typeFunction.apply(type);
     }
 
-    protected final Type toType(final T type) {
+    protected final OldType toType(final T type) {
       return this.toTypeFunction.apply(type);
     }
 
@@ -556,7 +557,7 @@ public interface Type {
     protected VariantSemantics(final Predicate<T> namedPredicate,
                                final BiPredicate<T, T> equalityBiPredicate,
                                final UnaryOperator<T> boxFunction,
-                               final Function<T, ? extends Type> toTypeFunction,
+                               final Function<T, ? extends OldType> toTypeFunction,
                                final Function<T, ? extends Collection<? extends T>> directSupertypesFunction,
                                final UnaryOperator<T> typeFunction,
                                final Predicate<T> genericTypePredicate,
@@ -602,7 +603,7 @@ public interface Type {
     }
 
     @SuppressWarnings("unchecked")
-    private final Collection<? extends T> supertypes(final T type, Predicate<? super Type> unseen) {
+    private final Collection<? extends T> supertypes(final T type, Predicate<? super OldType> unseen) {
       if (unseen == null || unseen.test(this.toType(type))) {
         final Collection<? extends T> directSupertypes = this.directSupertypes(type);
         if (directSupertypes.isEmpty()) {
@@ -755,7 +756,7 @@ public interface Type {
     public CovariantSemantics(final Predicate<T> namedPredicate,
                               final BiPredicate<T, T> equalityBiPredicate,
                               final UnaryOperator<T> boxFunction,
-                              final Function<T, ? extends Type> toTypeFunction,
+                              final Function<T, ? extends OldType> toTypeFunction,
                               final Function<T, ? extends Collection<T>> directSupertypesFunction,
                               final UnaryOperator<T> typeFunction,
                               final Predicate<T> genericTypePredicate,
@@ -809,7 +810,7 @@ public interface Type {
     public CovariantSemantics(final Predicate<T> namedPredicate,
                               final BiPredicate<T, T> equalityBiPredicate,
                               final UnaryOperator<T> boxFunction,
-                              final Function<T, ? extends Type> toTypeFunction,
+                              final Function<T, ? extends OldType> toTypeFunction,
                               final Function<T, ? extends Collection<? extends T>> directSupertypesFunction,
                               final UnaryOperator<T> typeFunction,
                               final Predicate<T> genericTypePredicate,
@@ -1017,7 +1018,7 @@ public interface Type {
     public CdiSemantics(final Predicate<T> namedPredicate,
                         final BiPredicate<T, T> equalityBiPredicate,
                         final UnaryOperator<T> boxFunction,
-                        final Function<T, ? extends Type> toTypeFunction,
+                        final Function<T, ? extends OldType> toTypeFunction,
                         final Function<T, ? extends Collection<? extends T>> directSupertypesFunction, // must not be JavaTypes::directSupertypes; needs to take @Typed into account
                         final UnaryOperator<T> typeFunction,
                         final Predicate<T> genericTypePredicate,
@@ -1148,7 +1149,7 @@ public interface Type {
       CdiTypeArgumentSemantics(final Predicate<T> namedPredicate,
                                final BiPredicate<T, T> equalityBiPredicate,
                                final UnaryOperator<T> boxFunction,
-                               final Function<T, ? extends Type> toTypeFunction,
+                               final Function<T, ? extends OldType> toTypeFunction,
                                final Function<T, ? extends Collection<? extends T>> directSupertypesFunction, // may? be? JavaTypes::directSupertypes?
                                final UnaryOperator<T> typeFunction,
                                final Predicate<T> genericTypePredicate,
