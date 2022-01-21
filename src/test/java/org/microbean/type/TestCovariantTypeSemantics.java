@@ -42,7 +42,6 @@ import org.microbean.development.annotation.Experimental;
 
 import org.microbean.type.NewJavaType.Token;
 import org.microbean.type.NewType.CovariantSemantics;
-import org.microbean.type.NewType.Semantics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -53,11 +52,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Experimental
-final class TestNewCovariantTypeSemantics {
+final class TestCovariantTypeSemantics {
 
-  private final Semantics covariantTypeSemantics = new CovariantSemantics();
+  private final CovariantSemantics covariantTypeSemantics = new CovariantSemantics();
 
-  private TestNewCovariantTypeSemantics() {
+  private TestCovariantTypeSemantics() {
     super();
   }
 

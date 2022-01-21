@@ -33,19 +33,21 @@ import org.junit.jupiter.api.Test;
 import org.microbean.development.annotation.Experimental;
 
 import org.microbean.type.NewJavaType.Token;
+import org.microbean.type.NewType.CdiSemantics;
+import org.microbean.type.NewType.CovariantSemantics;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Experimental
-final class TestNewCdiTypeSemantics {
+final class TestCdiTypeSemantics {
 
-  private static final NewType.CovariantSemantics covariantTypeSemantics = new NewType.CovariantSemantics();
+  private static final CovariantSemantics covariantTypeSemantics = new CovariantSemantics();
 
-  private static final NewType.CdiSemantics cdiSemantics = new NewType.CdiSemantics();
+  private static final CdiSemantics cdiSemantics = new CdiSemantics();
 
-  private TestNewCdiTypeSemantics() {
+  private TestCdiTypeSemantics() {
     super();
   }
 
