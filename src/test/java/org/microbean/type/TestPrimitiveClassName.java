@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2021 microBean™.
+ * Copyright © 2022 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,20 @@
  */
 package org.microbean.type;
 
-import java.lang.reflect.ParameterizedType;
-
-import java.util.List;
-import java.util.RandomAccess;
-
-import jakarta.enterprise.util.TypeLiteral;
-
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-final class TestErase {
+final class TestPrimitiveClassName {
 
-  private TestErase() {
+  private TestPrimitiveClassName() {
     super();
   }
 
   @Test
-  final <T extends RandomAccess & CharSequence> void testTypeVariable() {
-    // Note the type variable in the method signature.  "The erasure
-    // of a type variable is the erasure of its leftmost bound."
-    assertSame(RandomAccess.class,
-               Types.erase(((ParameterizedType)new TypeLiteral<List<T>>() {}.getType()).getActualTypeArguments()[0]));
+  final void testPrimitiveClassNameIsSimpleReservedWord() {
+    assertEquals("int", int.class.getName());
   }
-  
+
 }

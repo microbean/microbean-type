@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2020–2021 microBean™.
+ * Copyright © 2022 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,7 @@ import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.StringJoiner;
 
-class AbstractWildcardType extends AbstractType implements WildcardType {
-
-
-  /*
-   * Static fields.
-   */
-
-
-  private static final long serialVersionUID = 2L;
+class AbstractWildcardType implements WildcardType {
 
 
   /*
@@ -43,11 +35,11 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
    */
 
 
-  private transient Type[] upperBounds;
+  private final Type[] upperBounds;
 
-  private transient Type[] lowerBounds;
+  private final Type[] lowerBounds;
 
-  private transient int hashCode;
+  private final int hashCode;
 
 
   /*
@@ -65,7 +57,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
       throw new IllegalArgumentException("upperBounds.length > 1: " + Arrays.asList(upperBounds));
     }
     if (lowerBounds == null || lowerBounds.length <= 0) {
-      this.lowerBounds = Types.emptyTypeArray();
+      this.lowerBounds = JavaTypes.emptyTypeArray();
     } else if (lowerBounds.length == 1) {
       this.lowerBounds = lowerBounds.clone();
     } else {
@@ -74,12 +66,12 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
     // Wildcards can't have primitives or other wildcards
     // (non-reference types) anywhere in their bounds.
     for (final Type upperBound : this.upperBounds) {
-      if (!Types.isReferenceType(upperBound)) {
+      if (!JavaTypes.isReferenceType(upperBound)) {
         throw new IllegalArgumentException("upperBounds contains non-reference type: " + Arrays.asList(this.upperBounds));
       }
     }
     for (final Type lowerBound : this.lowerBounds) {
-      if (!Types.isReferenceType(lowerBound)) {
+      if (!JavaTypes.isReferenceType(lowerBound)) {
         throw new IllegalArgumentException("lowerBounds contains non-reference type: " + Arrays.asList(this.lowerBounds));
       }
     }
@@ -120,15 +112,15 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
   }
 
   private final int computeHashCode() {
-    return Types.hashCode(this);
+    return JavaTypes.hashCode(this);
   }
 
   @Override // Object
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
-    } else if (other instanceof WildcardType) {
-      return Types.equals(this, (WildcardType)other);
+    } else if (other instanceof WildcardType w) {
+      return JavaTypes.equals(this, w);
     } else {
       return false;
     }
@@ -136,79 +128,7 @@ class AbstractWildcardType extends AbstractType implements WildcardType {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("?");
-    Type[] bounds = this.lowerBounds;
-    if (bounds == null || bounds.length <= 0) {
-      // Upper bounds only.
-      bounds = this.upperBounds;
-      if (bounds == null || bounds.length <= 0 || Object.class.equals(bounds[0])) {
-        bounds = null;
-      } else {
-        sb.append(" extends ");
-      }
-    } else {
-      // Lower bounds only.
-      sb.append(" super ");
-    }
-    if (bounds != null) {
-      assert bounds.length > 0;
-      final StringJoiner sj = new StringJoiner(" & ");
-      for (final Type bound: bounds) {
-        sj.add(String.valueOf(bound.getTypeName()));
-      }
-      sb.append(sj.toString());
-    }
-    return sb.toString();
-  }
-
-  private final void readObject(final ObjectInputStream stream) throws ClassNotFoundException, IOException {
-    stream.defaultReadObject();
-    Serializable[] serializableBounds = (Serializable[])stream.readObject();
-    if (serializableBounds == null || serializableBounds.length <= 0) {
-      this.lowerBounds = Types.emptyTypeArray();
-    } else {
-      this.lowerBounds = new Type[serializableBounds.length];
-      System.arraycopy(serializableBounds, 0, this.lowerBounds, 0, serializableBounds.length);
-    }
-    serializableBounds = (Serializable[])stream.readObject();
-    if (serializableBounds == null || serializableBounds.length <= 0) {
-      this.upperBounds = new Type[] { Object.class };
-    } else if (serializableBounds.length == 1) {
-      final Object bound = serializableBounds[0];
-      if (bound == null || Object.class.equals(bound)) {
-        this.upperBounds = new Type[] { Object.class };
-      } else {
-        this.upperBounds = new Type[] { (Type)bound };
-      }
-    } else {
-      this.upperBounds = new Type[serializableBounds.length];
-      System.arraycopy(serializableBounds, 0, this.upperBounds, 0, serializableBounds.length);
-    }
-    this.hashCode = this.computeHashCode();
-  }
-
-  private final void writeObject(final ObjectOutputStream stream) throws IOException {
-    stream.defaultWriteObject();
-    Type[] originalBounds = this.lowerBounds;
-    if (originalBounds == null || originalBounds.length <= 0) {
-      stream.writeObject(new Serializable[0]);
-    } else {
-      final Serializable[] newBounds = new Serializable[originalBounds.length];
-      for (int i = 0; i < newBounds.length; i++) {
-        newBounds[i] = Types.toSerializableType(originalBounds[i]);
-      }
-      stream.writeObject(newBounds);
-    }
-    originalBounds = this.upperBounds;
-    if (originalBounds == null || originalBounds.length <= 0) {
-      stream.writeObject(new Serializable[0]);
-    } else {
-      final Serializable[] newBounds = new Serializable[originalBounds.length];
-      for (int i = 0; i < newBounds.length; i++) {
-        newBounds[i] = Types.toSerializableType(originalBounds[i]);
-      }
-      stream.writeObject(newBounds);
-    }
+    return JavaTypes.toString(this);
   }
 
 
