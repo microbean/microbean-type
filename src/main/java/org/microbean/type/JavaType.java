@@ -36,6 +36,12 @@ import org.microbean.development.annotation.Experimental;
 @Experimental
 public class JavaType extends org.microbean.type.Type<Type> {
 
+
+  /*
+   * Static fields.
+   */
+
+
   public static final Map<Type, Class<?>> wrapperTypes =
     Map.of(boolean.class, Boolean.class,
            byte.class, Byte.class,
@@ -47,13 +53,25 @@ public class JavaType extends org.microbean.type.Type<Type> {
            short.class, Short.class,
            void.class, Void.class);
 
+
+  /*
+   * Constructors.
+   */
+
+
   public JavaType(final Token<?> type) {
     this(type.type());
   }
-  
+
   public JavaType(final Type type) {
     super(type);
   }
+
+
+  /*
+   * Instance methods.
+   */
+
 
   @Override
   public boolean named() {
@@ -61,6 +79,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return type instanceof Class || type instanceof TypeVariable;
   }
 
+  @Override
   public String name() {
     final Type type = this.object();
     if (type instanceof Class<?> c) {
@@ -76,7 +95,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     if (super.represents(type)) {
       return true;
     }
-    // TODO: other stuff
+    // TODO: other stuff; could use the equivalent of JavaTypes.toString() here
     return false;
   }
 
@@ -84,7 +103,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   public final boolean top() {
     return this.object() == Object.class;
   }
-  
+
   @Override
   public JavaType box() {
     final Type type = this.object();
@@ -155,7 +174,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     }
     return List.of();
   }
-  
+
   @Override
   public JavaType componentType() {
     final Type newType;
@@ -227,7 +246,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return JavaTypes.hashCode(this.object());
   }
 
-  @Override // Type
+  @Override // Object
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
@@ -236,7 +255,13 @@ public class JavaType extends org.microbean.type.Type<Type> {
     } else {
       return false;
     }
-  }  
+  }
+
+
+  /*
+   * Static methods.
+   */
+
 
   public static final JavaType of(final Token<?> type) {
     return of(type.type());
@@ -255,6 +280,12 @@ public class JavaType extends org.microbean.type.Type<Type> {
       return type;
     }
   }
+
+
+  /*
+   * Inner and nested classes.
+   */
+
 
   /**
    * A holder of a {@link Type} that embodies <a
@@ -276,15 +307,15 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see #type()
    */
-  public static abstract class Token<T> implements AutoCloseable {
+  public static abstract class Token<T> {
 
 
     /*
-     * Static fields.
+     * Instance fields.
      */
 
 
-    private static final ActualTypeArgumentExtractor actualTypeArgumentExtractor = new ActualTypeArgumentExtractor(Token.class, 0);
+    private final Type type;
 
 
     /*
@@ -297,6 +328,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
      */
     protected Token() {
       super();
+      this.type = mostSpecializedParameterizedSuperclass(this.getClass()).getActualTypeArguments()[0];
     }
 
 
@@ -319,23 +351,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
      * @idempotency This method is idempotent and deterministic.
      */
     public final Type type() {
-      return actualTypeArgumentExtractor.get(this.getClass());
-    }
-
-    /**
-     * A covenience method that clears any caches used by this {@link
-     * Token}.
-     *
-     * <p>This method does not need to be called.</p>
-     *
-     * @threadsafety This method is safe for concurrent use by multiple
-     * threads.
-     *
-     * @idempotency This method is idempotent and deterministic.
-     */
-    @Override // AutoCloseable
-    public final void close() {
-      actualTypeArgumentExtractor.remove(this.getClass());
+      return this.type;
     }
 
     /**
@@ -358,7 +374,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
      * @idempotency This method is idempotent and deterministic.
      */
     public final Class<?> erase() {
-      return erase(this.type());
+      return JavaTypes.erase(this.type());
     }
 
     /**
@@ -447,166 +463,20 @@ public class JavaType extends org.microbean.type.Type<Type> {
      */
 
 
-    /**
-     * Returns the <a
-     * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.6"
-     * target="_parent">type erasure</a> of the supplied {@link Type} as
-     * a {@link Class}, or {@code null} if erasing the supplied {@link
-     * Type} would result in a non-{@link Class} erasure (in which case
-     * the erasure is simply the supplied {@link Type} itself), or if an
-     * erasure cannot be determined.
-     *
-     * <p>If the supplied {@link Type} is an instance of {@link
-     * Class}, {@link ParameterizedType}, {@link GenericArrayType},
-     * {@link TypeVariable} or {@link WildcardType}, then the return
-     * value of this method will be non-{@code null}.</p>
-     *
-     * @param type the {@link Type} to erase; may be {@code null} in
-     * which case {@code null} will be returned
-     *
-     * @return the type erasure of the supplied {@link Type} as a {@link
-     * Class}, or {@code null} if erasing the supplied {@link Type}
-     * would result in a non-{@link Class} erasure, or if an erasure
-     * cannot be determined
-     *
-     * @nullability This method may return {@code null}
-     *
-     * @threadsafety This method is safe for concurrent use by multiple
-     * threads.
-     *
-     * @idempotency This method is idempotent and deterministic.
-     */
-    @Convenience
-    public static final Class<?> erase(final Type type) {
-      return JavaTypes.erase(type);
-    }
-
-  }
-
-  private static final class ActualTypeArgumentExtractor extends ClassValue<Type> {
-
-
-    /*
-     * Instance fields.
-     */
-
-
-    /**
-     * The parameterized {@link Class} for which a type argument will
-     * be supplied.
-     *
-     * @nullability This field is never {@code null}.
-     */
-    private final Class<?> stopClass;
-
-    /**
-     * The zero-based index of the type parameter for which a type
-     * argument will be extracted.
-     *
-     * <p>This field will never be negative.</p>
-     */
-    private final int index;
-
-
-    /*
-     * Constructors.
-     */
-
-
-    /**
-     * Creates a new {@link ActualTypeArgumentExtractor}.
-     */
-    private ActualTypeArgumentExtractor() {
-      super();
-      throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Creates a new {@link ActualTypeArgumentExtractor}.
-     *
-     * @param stopClass the parameterized {@link Class} for which a
-     * type argument will be supplied; must not be {@code null}; must
-     * be {@linkplain Modifier#isAbstract(int) abstract}; must not be
-     * an {@linkplain Class#isArray() array} or an {@linkplain
-     * Class#isInterface() interface}
-     *
-     * @param index the zero-based index of the type parameter in
-     * {@code stopClass} for which an argument should be extracted;
-     * must be greater than or equal to {@code 0} and less than the
-     * number of {@linkplain Class#getTypeParameters() type parameters
-     * in <code>stopClass</code>}
-     *
-     * @exception NullPointerException if {@code stopClass} is {@code
-     * null}
-     *
-     * @exception IndexOutOfBoundsException if {@code index} is not
-     * valid
-     *
-     * @exception IllegalArgumentException if {@code stopClass} is an
-     * {@linkplain Class#isArray() array}, an {@linkplain
-     * Class#isInterface() interface}, or not {@linkplain
-     * Modifier#isAbstract(int) abstract}
-     */
-    private ActualTypeArgumentExtractor(final Class<?> stopClass, final int index) {
-      super();
-      if (index < 0 || index >= stopClass.getTypeParameters().length) {
-        throw new IndexOutOfBoundsException(index);
-      } else if (stopClass.isInterface() || stopClass.isArray() || !Modifier.isAbstract(stopClass.getModifiers())) {
-        throw new IllegalArgumentException("stopClass: " + stopClass.getName());
-      }
-      this.stopClass = stopClass;
-      this.index = index;
-    }
-
-
-    /*
-     * Instance methods.
-     */
-
-
-    /**
-     * Returns the type argument, as specified at {@linkplain
-     * #ActualTypeArgumentExtractor(Class, int) construction time},
-     * supplied to the supplied {@link Class} as a {@link Type}, or
-     * {@code null} if such a type argument cannot be computed for any
-     * reason.
-     *
-     * @param c the {@link Class} ultimately supplying a type
-     * argument; may be {@code null} in which case {@code null} will
-     * be returned
-     *
-     * @return the type argument, as specified at {@linkplain
-     * #ActualTypeArgumentExtractor(Class, int) construction time},
-     * supplied to the supplied {@link Class} as a {@link Type}, or
-     * {@code null} if such a type argument cannot be computed for any
-     * reason
-     *
-     * @nullability This method may return {@code null}.
-     *
-     * @threadsafety This method is safe for concurrent use by
-     * multiple threads.
-     *
-     * @idempotency This method is idempotent and deterministic.
-     */
-    @Override // ClassValue<Type>
-    protected final Type computeValue(final Class<?> c) {
-      final ParameterizedType p = this.mostSpecializedParameterizedSuperclass(c);
-      return p == null ? null : p.getActualTypeArguments()[this.index];
-    }
-
-    private final ParameterizedType mostSpecializedParameterizedSuperclass(final Type type) {
-      if (type == null || type == Object.class || type == this.stopClass) {
+    private static final ParameterizedType mostSpecializedParameterizedSuperclass(final Type type) {
+      if (type == null || type == Object.class || type == Token.class) {
         return null;
       } else {
         final Class<?> erasure = JavaTypes.erase(type);
-        if (erasure == null || erasure == Object.class || !(this.stopClass.isAssignableFrom(erasure))) {
+        if (erasure == null || erasure == Object.class || !(Token.class.isAssignableFrom(erasure))) {
           return null;
         } else {
-          return type instanceof ParameterizedType p ? p : this.mostSpecializedParameterizedSuperclass(erasure.getGenericSuperclass());
+          return type instanceof ParameterizedType p ? p : mostSpecializedParameterizedSuperclass(erasure.getGenericSuperclass());
         }
       }
     }
 
+
   }
-  
+
 }

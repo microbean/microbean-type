@@ -27,19 +27,90 @@ import java.util.function.Predicate;
 
 import org.microbean.development.annotation.Convenience;
 import org.microbean.development.annotation.Experimental;
+import org.microbean.development.annotation.OverridingEncouraged;
 
+/**
+ * A value-like object representing a Java type for purposes of
+ * testing assignability.
+ *
+ * @param <T> the type of the thing representing a Java type that is
+ * being adapted; often a {@link java.lang.reflect.Type} or some other
+ * framework's representation of one
+ *
+ * @author <a href="https://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
+ *
+ * @see Semantics
+ */
 @Experimental
 public abstract class Type<T> {
 
   private final T type;
-  
-  public Type(final T type) {
+
+  /**
+   * Creates a new {@link Type}.
+   *
+   * @param type the type to represent; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}
+   */
+  protected Type(final T type) {
     super();
     this.type = Objects.requireNonNull(type, "type");
   }
 
-  public abstract boolean named();
+  /**
+   * Returns {@code true} if and only if this {@link Type} represents
+   * a Java type that has a name.
+   *
+   * <p>In the Java reflective type system, only {@link Class} and
+   * {@link java.lang.reflect.TypeVariable} instances have names.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} represents
+   * a Java type that has a name
+   *
+   * @see #name()
+   *
+   * @see Class#getName()
+   *
+   * @see java.lang.reflect.TypeVariable#getName()
+   */
+  @OverridingEncouraged
+  public boolean named() {
+    return this.name() != null;
+  }
 
+  /**
+   * Returns the name of this {@link Type} if it has one <strong>or
+   * {@code null} if it does not</strong>.
+   *
+   * <p>Only classes and type variables in the Java reflective type
+   * system have names.</p>
+   *
+   * @return the name of this {@link Type}, or {@code null}
+   *
+   * @nullability Implementations of this method may, and often will,
+   * return {@code null}.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   */
+  public abstract String name();
+  
+  /**
+   * Returns {@code true} if this {@link Type} represents the same
+   * type as that represented by the supplied {@link Type}.
+   *
+   * @param type the {@link Type} to test; may be {@code null} in
+   * which case {@code false} will be returned
+   *
+   * @return {@code true} if this {@link Type} represents the same
+   * type as that represented by the supplied {@link Type}
+   */
+  @OverridingEncouraged
   public boolean represents(final Type<?> type) {
     if (type == this) {
       return true;
@@ -52,16 +123,108 @@ public abstract class Type<T> {
     }
   }
 
+  /**
+   * Returns the object supplied at construction time that is the type
+   * this {@link Type} is representing.
+   *
+   * @return the object supplied at construction time that is the type
+   * this {@link Type} is representing
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public final T object() {
     return this.type;
   }
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} represents
+   * the uppermost reference type in the type system, e.g. {@link
+   * Object Object.class}.
+   *
+   * <p>Undefined behavior will result if these requirements are not
+   * met by all implementations.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} represents
+   * the uppermost reference type in the type system, e.g. {@link
+   * Object Object.class}
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract boolean top();
   
   public abstract Type<T> box();
 
+  /**
+   * Returns an {@linkplain
+   * Collections#unmodifiableCollection(Collection) unmodifiable and
+   * immutable <code>Collection</code>} of the <em>direct
+   * supertypes</em> of this {@link Type}, or an {@linkplain
+   * Collection#isEmpty() empty <code>Collection</code>} if there are
+   * no direct supertypes.
+   *
+   * <p>The direct supertypes of a reflective Java type may be
+   * acquired if needed via the {@link
+   * JavaTypes#directSupertypes(java.lang.reflect.Type)} method.</p>
+   *
+   * <p>The {@link Collection} returned must not contain {@code this}
+   * and must have no {@code null} or duplicate elements.</p>
+   *
+   * <p>The ordering within the returned {@link Collection} is left
+   * deliberately undefined, and may differ between calls.</p>
+   *
+   * <p>The size of the {@link Collection} returned must not change
+   * between calls.</p>
+   *
+   * <p>Undefined behavior will result if these requirements are not
+   * met by all implementations.</p>
+   *
+   * @return an {@linkplain
+   * Collections#unmodifiableCollection(Collection) unmodifiable and
+   * immutable <code>Collection</code>} of the <em>direct
+   * supertypes</em> of this {@link Type}; never {@code null}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic, though the ordering of elements within
+   * returned {@link Collection}s is undefined
+   */
   public abstract Collection<? extends Type<T>> directSupertypes();
 
+  /**
+   * If this {@link Type} represents a parameterized type or a generic
+   * array type, returns a {@link Type} representing its raw type or
+   * generic component type, or, if this {@link Type} does not represent a
+   * parameterized type or a generic array type, returns {@code this}.
+   *
+   * <p>Undefined behavior will result if these requirements are not
+   * met by all implementations.</p>
+   *
+   * @return a suitable {@link Type}; never {@code null}; often {@code
+   * this}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract Type<T> type();
 
   public abstract boolean hasTypeParameters();
@@ -72,19 +235,37 @@ public abstract class Type<T> {
 
   public abstract Type<T> componentType();
 
-  public abstract boolean upperBounded();
+  @OverridingEncouraged
+  public boolean upperBounded() {
+    return !this.upperBounds().isEmpty();
+  }
 
-  public abstract boolean lowerBounded();
+  @OverridingEncouraged
+  public boolean lowerBounded() {
+    return !this.lowerBounds().isEmpty();
+  }
 
   public abstract List<? extends Type<T>> lowerBounds();
 
   public abstract List<? extends Type<T>> upperBounds();
 
-  public boolean typeVariable() {
+  public final boolean isClass() {
+    return this.named() && !this.upperBounded();
+  }
+  
+  public final boolean genericArrayType() {
+    return this.componentType() != null && this.type() != this;
+  }
+  
+  public final boolean parameterizedType() {
+    return this.hasTypeArguments();
+  }
+  
+  public final boolean typeVariable() {
     return this.named() && !this.lowerBounded() && this.upperBounded();
   }
 
-  public boolean wildcard() {
+  public final boolean wildcard() {
     return !this.named() && (this.lowerBounded() || this.upperBounded());
   }
 
@@ -141,7 +322,7 @@ public abstract class Type<T> {
     }
     
     public <X, Y> boolean assignable(final Type<X> receiverType, final Type<Y> payloadType) {
-      if (receiverType == payloadType || receiverType.equals(payloadType)) {
+      if (receiverType == payloadType || receiverType.represents(payloadType)) {
         return true;
       } else if (receiverType.hasTypeArguments()) {
         return parameterizedTypeIsAssignableFromType(receiverType, payloadType);
