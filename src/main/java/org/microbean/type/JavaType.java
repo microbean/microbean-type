@@ -34,7 +34,7 @@ import org.microbean.development.annotation.Convenience;
 import org.microbean.development.annotation.Experimental;
 
 @Experimental
-public class NewJavaType extends NewType<Type> {
+public class JavaType extends org.microbean.type.Type<Type> {
 
   public static final Map<Type, Class<?>> wrapperTypes =
     Map.of(boolean.class, Boolean.class,
@@ -47,11 +47,11 @@ public class NewJavaType extends NewType<Type> {
            short.class, Short.class,
            void.class, Void.class);
 
-  public NewJavaType(final Token<?> type) {
+  public JavaType(final Token<?> type) {
     this(type.type());
   }
   
-  public NewJavaType(final Type type) {
+  public JavaType(final Type type) {
     super(type);
   }
 
@@ -72,7 +72,7 @@ public class NewJavaType extends NewType<Type> {
   }
 
   @Override
-  public boolean represents(final NewType<?> type) {
+  public boolean represents(final org.microbean.type.Type<?> type) {
     if (super.represents(type)) {
       return true;
     }
@@ -86,7 +86,7 @@ public class NewJavaType extends NewType<Type> {
   }
   
   @Override
-  public NewJavaType box() {
+  public JavaType box() {
     final Type type = this.object();
     if (type == void.class) {
       return of(Void.class);
@@ -98,10 +98,10 @@ public class NewJavaType extends NewType<Type> {
   }
 
   @Override
-  public Collection<NewJavaType> directSupertypes() {
+  public Collection<JavaType> directSupertypes() {
     final Collection<Type> directSupertypes = JavaTypes.directSupertypes(this.object());
     if (!directSupertypes.isEmpty()) {
-      final Collection<NewJavaType> c = new ArrayList<>(directSupertypes.size());
+      final Collection<JavaType> c = new ArrayList<>(directSupertypes.size());
       for (final Type type : directSupertypes) {
         c.add(of(type));
       }
@@ -111,7 +111,7 @@ public class NewJavaType extends NewType<Type> {
   }
 
   @Override
-  public NewJavaType type() {
+  public JavaType type() {
     final Type type = this.object();
     final Type newType = type(type);
     return newType == type ? this : of(newType);
@@ -128,11 +128,11 @@ public class NewJavaType extends NewType<Type> {
   }
 
   @Override
-  public List<NewJavaType> typeArguments() {
+  public List<JavaType> typeArguments() {
     final Type type = this.object();
     if (type instanceof ParameterizedType p) {
       final Type[] typeArguments = p.getActualTypeArguments();
-      final List<NewJavaType> typeArgumentsList = new ArrayList<>(typeArguments.length);
+      final List<JavaType> typeArgumentsList = new ArrayList<>(typeArguments.length);
       for (final Type typeArgument : typeArguments) {
         typeArgumentsList.add(of(typeArgument));
       }
@@ -141,12 +141,12 @@ public class NewJavaType extends NewType<Type> {
     return List.of();
   }
 
-  public List<NewJavaType> typeParameters() {
+  public List<JavaType> typeParameters() {
     final Type type = this.object();
     if (type instanceof Class<?> c) {
       final Type[] typeParameters = c.getTypeParameters();
       if (typeParameters.length > 0) {
-        final List<NewJavaType> typeParametersList = new ArrayList<>(typeParameters.length);
+        final List<JavaType> typeParametersList = new ArrayList<>(typeParameters.length);
         for (final Type typeParameter : typeParameters) {
           typeParametersList.add(of(typeParameter));
         }
@@ -157,7 +157,7 @@ public class NewJavaType extends NewType<Type> {
   }
   
   @Override
-  public NewJavaType componentType() {
+  public JavaType componentType() {
     final Type newType;
     final Type type = this.object();
     if (type instanceof Class<?> c) {
@@ -186,12 +186,12 @@ public class NewJavaType extends NewType<Type> {
   }
 
   @Override
-  public List<NewJavaType> lowerBounds() {
+  public List<JavaType> lowerBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
       final Type[] lowerBounds = w.getLowerBounds();
       if (lowerBounds.length > 0) {
-        final List<NewJavaType> lowerBoundsList = new ArrayList<>(lowerBounds.length);
+        final List<JavaType> lowerBoundsList = new ArrayList<>(lowerBounds.length);
         for (final Type lowerBound : lowerBounds) {
           lowerBoundsList.add(of(lowerBound));
         }
@@ -202,7 +202,7 @@ public class NewJavaType extends NewType<Type> {
   }
 
   @Override
-  public List<NewJavaType> upperBounds() {
+  public List<JavaType> upperBounds() {
     final Type type = this.object();
     final Type[] upperBounds;
     if (type instanceof TypeVariable<?> t) {
@@ -213,7 +213,7 @@ public class NewJavaType extends NewType<Type> {
       upperBounds = null;
     }
     if (upperBounds != null && upperBounds.length > 0) {
-      final List<NewJavaType> upperBoundsList = new ArrayList<>(upperBounds.length);
+      final List<JavaType> upperBoundsList = new ArrayList<>(upperBounds.length);
       for (final Type upperBound : upperBounds) {
         upperBoundsList.add(of(upperBound));
       }
@@ -232,18 +232,18 @@ public class NewJavaType extends NewType<Type> {
     if (other == this) {
       return true;
     } else if (other != null && this.getClass() == other.getClass()) {
-      return JavaTypes.equals(this.object(), ((NewJavaType)other).object());
+      return JavaTypes.equals(this.object(), ((JavaType)other).object());
     } else {
       return false;
     }
   }  
 
-  public static final NewJavaType of(final Token<?> type) {
+  public static final JavaType of(final Token<?> type) {
     return of(type.type());
   }
 
-  public static final NewJavaType of(final Type type) {
-    return new NewJavaType(type);
+  public static final JavaType of(final Type type) {
+    return new JavaType(type);
   }
 
   private static final Type type(final Type type) {
@@ -256,7 +256,7 @@ public class NewJavaType extends NewType<Type> {
     }
   }
 
-    /**
+  /**
    * A holder of a {@link Type} that embodies <a
    * href="http://gafter.blogspot.com/2006/12/super-type-tokens.html"
    * target="_parent">Gafter's gadget</a>.

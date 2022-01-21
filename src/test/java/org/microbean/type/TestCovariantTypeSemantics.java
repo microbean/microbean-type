@@ -40,8 +40,8 @@ import org.junit.jupiter.api.Test;
 
 import org.microbean.development.annotation.Experimental;
 
-import org.microbean.type.NewJavaType.Token;
-import org.microbean.type.NewType.CovariantSemantics;
+import org.microbean.type.JavaType.Token;
+import org.microbean.type.Type.CovariantSemantics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -62,39 +62,39 @@ final class TestCovariantTypeSemantics {
 
   @Test
   final <T, U extends TypeSet> void testLegalBeanTypeScenario2() {
-    final NewJavaType receiverType = NewJavaType.of(new Token<Function<? super Contextual<?>, ? extends TypeSet>>() {});
-    final NewJavaType payloadType = NewJavaType.of(new Token<Function<Contextual<T>, U>>() {});
+    final JavaType receiverType = JavaType.of(new Token<Function<? super Contextual<?>, ? extends TypeSet>>() {});
+    final JavaType payloadType = JavaType.of(new Token<Function<Contextual<T>, U>>() {});
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
 
   @Test
   final void testParameterizedReceiverTypeRawPayloadType() {
-    final NewJavaType receiverType = NewJavaType.of(new Token<Predicate<Contextual<?>>>() {});
-    final NewJavaType payloadType = NewJavaType.of(Predicate.class);
+    final JavaType receiverType = JavaType.of(new Token<Predicate<Contextual<?>>>() {});
+    final JavaType payloadType = JavaType.of(Predicate.class);
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
 
   @Test
   final void testRawReceiverTypeParameterizedPayloadType() {
-    final NewJavaType receiverType = NewJavaType.of(Predicate.class);
-    final NewJavaType payloadType = NewJavaType.of(new Token<Predicate<Contextual<?>>>() {});
+    final JavaType receiverType = JavaType.of(Predicate.class);
+    final JavaType payloadType = JavaType.of(new Token<Predicate<Contextual<?>>>() {});
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
   @Test
   final void testLowerBoundedWildcardCase() {
-    final NewJavaType receiverType = NewJavaType.of(new Token<Predicate<? super Contextual<?>>>() {});
-    final NewJavaType payloadType = NewJavaType.of(new Token<Predicate<Contextual<?>>>() {});
+    final JavaType receiverType = JavaType.of(new Token<Predicate<? super Contextual<?>>>() {});
+    final JavaType payloadType = JavaType.of(new Token<Predicate<Contextual<?>>>() {});
     assertTrue(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
 
   @Test
   final void testResolvedWildcardCase() {
-    final NewJavaType receiverType = NewJavaType.of(new Token<Predicate<Object>>() {});
-    final NewJavaType payloadType = NewJavaType.of(new Token<Predicate<Contextual<Object>>>() {});
+    final JavaType receiverType = JavaType.of(new Token<Predicate<Object>>() {});
+    final JavaType payloadType = JavaType.of(new Token<Predicate<Contextual<Object>>>() {});
     assertFalse(this.covariantTypeSemantics.assignable(receiverType, payloadType));
   }
 
