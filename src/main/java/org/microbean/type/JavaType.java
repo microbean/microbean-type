@@ -33,6 +33,16 @@ import java.util.Objects;
 import org.microbean.development.annotation.Convenience;
 import org.microbean.development.annotation.Experimental;
 
+/**
+ * A {@link org.microbean.type.Type} that models a {@link
+ * java.lang.reflect.Type java.lang.reflect.Type} for use primarily by
+ * a {@link org.microbean.type.Type.Semantics} instance.
+ *
+ * @author <a href="https://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
+ *
+ * @see org.microbean.type.Type.Semantics
+ */
 @Experimental
 public class JavaType extends org.microbean.type.Type<Type> {
 
@@ -42,6 +52,10 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
 
 
+  /**
+   * An immutable {@link Map} of Java wrapper {@linkplain Class
+   * classes} indexed by their primitive equivalents.
+   */
   public static final Map<Type, Class<?>> wrapperTypes =
     Map.of(boolean.class, Boolean.class,
            byte.class, Byte.class,
@@ -70,7 +84,18 @@ public class JavaType extends org.microbean.type.Type<Type> {
   public JavaType(final Token<?> type) {
     this(type.type(), false);
   }
-  
+
+  /**
+   * Creates a new {@link JavaType}.
+   *
+   * @param type a {@link Token} representing the Java {@link Type}
+   * being modeled; must not be {@code null}
+   *
+   * @param box whether boxing of primitive types will be in effect;
+   * even if {@code true} boxing only happens to primitive types
+   *
+   * @exception NullPointerException if {@code type} is {@code null}
+   */
   public JavaType(final Token<?> type, final boolean box) {
     this(type.type(), box);
   }
@@ -78,7 +103,17 @@ public class JavaType extends org.microbean.type.Type<Type> {
   public JavaType(final Type type) {
     this(type, false);
   }
-  
+
+  /**
+   * Creates a new {@link JavaType}.
+   *
+   * @param type the Java {@link Type} being modeled; must not be {@code null}
+   *
+   * @param box whether boxing of primitive types will be in effect;
+   * even if {@code true} boxing only happens to primitive types
+   *
+   * @exception NullPointerException if {@code type} is {@code null}
+   */
   public JavaType(final Type type, final boolean box) {
     super(type);
     this.box = box;
@@ -89,13 +124,52 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * Instance methods.
    */
 
-
+  /**
+   * Returns {@code true} if and only if this {@link JavaType}
+   * represents a Java type that has a name.
+   *
+   * <p>In the Java reflective type system, only {@link Class} and
+   * {@link TypeVariable} instances have names.</p>
+   *
+   * @return {@code true} if and only if this {@link JavaType} represents
+   * a Java type that has a name
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @see #name()
+   *
+   * @see Class#getName()
+   *
+   * @see TypeVariable#getName()
+   */
   @Override
   public boolean named() {
     final Type type = this.object();
     return type instanceof Class || type instanceof TypeVariable;
   }
 
+  /**
+   * Returns the name of this {@link JavaType} if it has one
+   * <strong>or {@code null} if it does not</strong>.
+   *
+   * <p>Only classes and type variables in the Java reflective type
+   * system have names.</p>
+   *
+   * @return the name of this {@link JavaType}, or {@code null}
+   *
+   * @nullability This method and its overrides may, and often will,
+   * return {@code null}.
+   *
+   * @idempotency This method is, and its overrides must be, idempotent
+   * and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   */
   @Override
   public String name() {
     final Type type = this.object();
@@ -107,6 +181,39 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return null;
   }
 
+  /**
+   * Returns {@code true} if this {@link JavaType} represents the same
+   * type as that represented by the supplied {@link
+   * org.microbean.type.Type}.
+   *
+   * <p>Type representation is not the same thing as equality.
+   * Specifically, a {@link org.microbean.type.Type} may represent
+   * another {@link org.microbean.type.Type} exactly, but may not be
+   * {@linkplain org.microbean.type.Type#equals(Object) equal to}
+   * it.</p>
+   *
+   * <p>Equality is <em>subordinate</em> to type representation.  That
+   * is, in determining whether a given {@link
+   * org.microbean.type.Type} represents another {@link
+   * org.microbean.type.Type}, their {@link
+   * org.microbean.type.Type#equals(Object) equals(Object)} methods
+   * may be called, but a {@link org.microbean.type.Type}'s {@link
+   * org.microbean.type.Type#equals(Object) equals(Object)} method
+   * must not call {@link
+   * org.microbean.type.Type#represents(org.microbean.type.Type)}.</p>
+   *
+   * @param type the {@link org.microbean.type.Type} to test; may be
+   * {@code null} in which case {@code false} will be returned
+   *
+   * @return {@code true} if this {@link Type} represents the same
+   * type as that represented by the supplied {@link Type}
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   */
   @Override
   public boolean represents(final org.microbean.type.Type<?> type) {
     if (super.represents(type)) {
@@ -116,11 +223,44 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return false;
   }
 
+  /**
+   * Returns {@code true} if and only if the return value of {@link
+   * #object()} is identical to {@link Object Object.class}.
+   *
+   * @return {@code true} if and only if the return value of {@link
+   * #object()} is identical to {@link Object Object.class}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override
   public final boolean top() {
     return this.object() == Object.class;
   }
 
+  /**
+   * If this {@link JavaType} represents a primitive type, and if and
+   * only if boxing was enabled in the {@linkplain #JavaType(Type,
+   * boolean) constructor}, returns a {@link JavaType} representing
+   * the corresponding "wrapper type", or this {@link JavaType} itself
+   * in all other cases.
+   *
+   * @return a {@link JavaType} representing the corresponding "wrapper
+   * type" where appropriate, or {@code this}
+   *
+   * @nullability This method does not, and its overrides must not,
+   * return {@code null}.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @see org.microbean.type.Type#box()
+   */
   @Override
   public JavaType box() {
     if (this.box) {
@@ -128,7 +268,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
       if (type == void.class) {
         return of(Void.class, true);
       } else if (type == int.class) {
-        // This is such a common case we avoid the map lookup
+        // This is such a ridiculously common case we avoid the map lookup
         return of(Integer.class, true);
       } else if (type instanceof Class<?> c && c.isPrimitive()) {
         return of(wrapperTypes.get(c), true);
@@ -137,6 +277,32 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return this;
   }
 
+  /**
+   * Returns an {@linkplain
+   * Collections#unmodifiableCollection(Collection) unmodifiable and
+   * immutable <code>Collection</code>} of the <em>direct
+   * supertypes</em> of this {@link JavaType}, or an {@linkplain
+   * Collection#isEmpty() empty <code>Collection</code>} if there are
+   * no direct supertypes.
+   *
+   * <p>This implementation uses the {@link
+   * JavaTypes#directSupertypes(Type)} method.</p>
+   *
+   * @return an {@linkplain
+   * Collections#unmodifiableCollection(Collection) unmodifiable and
+   * immutable <code>Collection</code>} of the <em>direct
+   * supertypes</em> of this {@link JavaType}; never {@code null}
+   *
+   * @nullability This method does not, and its overrides must not,
+   * return {@code null}.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic, though the ordering of elements
+   * within returned {@link Collection}s is undefined
+   */
   @Override
   public Collection<JavaType> directSupertypes() {
     final Collection<Type> directSupertypes = JavaTypes.directSupertypes(this.object());
@@ -150,6 +316,27 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return List.of();
   }
 
+  /**
+   * If this {@link JavaType} represents a {@link ParameterizedType}
+   * or a {@link GenericArrayType} returns a {@link JavaType}
+   * representing its {@linkplain ParameterizedType#getRawType() raw
+   * type} or {@linkplain GenericArrayType#getGenericComponentType()
+   * generic component type}, or, if this {@link JavaType} does not
+   * represent a {@link ParameterizedType} or a {@link
+   * GenericArrayType}, returns {@code this}.
+   *
+   * @return a suitable {@link JavaType}; never {@code null}; often {@code
+   * this}
+   *
+   * @nullability This method does not, and its overrides must not,
+   * return {@code null}.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   */
   @Override
   public JavaType type() {
     final Type type = this.object();
@@ -200,6 +387,32 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return List.of();
   }
 
+  /**
+   * Returns the {@linkplain Class#getComponentType() component type}
+   * of this {@link JavaType}, if there is one, <strong>or {@code
+   * null} if there is not</strong>.
+   *
+   * <p>This method returns a non-{@code null} result only when this
+   * {@link JavaType} represents a {@link Type} that is either
+   * {@linkplain Class#isArray() an array} or a {@link
+   * GenericArrayType}.</p>
+   *
+   * @return the {@linkplain Class#getComponentType() component type}
+   * of this {@link JavaType}, if there is one, or {@code null} if
+   * there is not
+   *
+   * @nullability This method and its overrides may return null.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @see Class#getComponentType()
+   *
+   * @see GenericArrayType#getGenericComponentType()
+   */
   @Override
   public JavaType componentType() {
     final Type newType;

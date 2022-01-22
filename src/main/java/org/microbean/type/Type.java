@@ -26,7 +26,9 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.microbean.development.annotation.Convenience;
+import org.microbean.development.annotation.EntryPoint;
 import org.microbean.development.annotation.Experimental;
+import org.microbean.development.annotation.OverridingDiscouraged;
 import org.microbean.development.annotation.OverridingEncouraged;
 
 /**
@@ -34,8 +36,12 @@ import org.microbean.development.annotation.OverridingEncouraged;
  * testing assignability.
  *
  * <p>Concisely: {@link Type}s represent {@link java.lang.reflect.Type
- * java.lang.reflect.Type}s without any dependence on {@link
+ * java.lang.reflect.Type}s (or other frameworks' similar
+ * representations) without any dependence on {@link
  * java.lang.reflect.Type java.lang.reflect.Type}.</p>
+ *
+ * <p>This class is used primarily by the {@link Semantics} class and
+ * its subclasses.</p>
  *
  * @param <T> the type of the thing representing a Java type that is
  * being adapted; often a {@link java.lang.reflect.Type} or some other
@@ -49,7 +55,19 @@ import org.microbean.development.annotation.OverridingEncouraged;
 @Experimental
 public abstract class Type<T> {
 
+
+  /*
+   * Instance fields.
+   */
+
+
   private final T type;
+
+
+  /*
+   * Constructors.
+   */
+
 
   /**
    * Creates a new {@link Type}.
@@ -63,6 +81,12 @@ public abstract class Type<T> {
     this.type = Objects.requireNonNull(type, "type");
   }
 
+
+  /*
+   * Instance fields.
+   */
+
+
   /**
    * Returns {@code true} if and only if this {@link Type} represents
    * a Java type that has a name.
@@ -72,6 +96,12 @@ public abstract class Type<T> {
    *
    * @return {@code true} if and only if this {@link Type} represents
    * a Java type that has a name
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
    *
    * @see #name()
    *
@@ -125,6 +155,12 @@ public abstract class Type<T> {
    *
    * @return {@code true} if this {@link Type} represents the same
    * type as that represented by the supplied {@link Type}
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
    */
   @OverridingEncouraged
   public boolean represents(final Type<?> type) {
@@ -388,7 +424,9 @@ public abstract class Type<T> {
    * #assignable(Type, Type) assignability rules}.
    *
    * <p>By default, no {@link Type} {@linkplain #assignable(Type,
-   * Type) is assignable} to any other {@link Type} except itself.</p>
+   * Type) is assignable} to any other {@link Type} except itself.
+   * Subclasses will obviously want to override this behavior in some,
+   * if not all, cases.</p>
    *
    * @author <a href="https://about.me/lairdnelson"
    * target="_parent">Laird Nelson</a>
@@ -421,14 +459,93 @@ public abstract class Type<T> {
     /*
      * Instance methods.
      */
-    
 
+
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadType} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverType}, according to the assignability rules modeled by
+     * this {@link Semantics} instance, and using no autoboxing.
+     *
+     * <p>This is a convenience method that {@linkplain
+     * JavaType#of(java.lang.reflect.Type, boolean) creates
+     * <code>JavaType</code>s} to represent the supplied {@link
+     * java.lang.reflect.Type}s before calling the (canonical) {@link
+     * #assignable(Type, Type)} method.</p>
+     *
+     * @param receiverType the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadType} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverType}, according to the assignability rules modeled by
+     * this {@link Semantics} instance, and using no autoboxing;
+     * {@code false} otherwise
+     *
+     * @exception NullPointerException if either {@code receiverType}
+     * or {@code payloadType} is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     *
+     * @see JavaType#of(java.lang.reflect.Type, boolean)
+     */
     @Convenience
     public boolean assignable(final java.lang.reflect.Type receiverType,
                               final java.lang.reflect.Type payloadType) {
       return this.assignable(receiverType, payloadType, false);
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadType} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverType}, according to the assignability rules modeled by
+     * this {@link Semantics} instance, and using the specified
+     * autoboxing semantics.
+     *
+     * <p>This is a convenience method that {@linkplain
+     * JavaType#of(java.lang.reflect.Type, boolean) creates
+     * <code>JavaType</code>s} to represent the supplied {@link
+     * java.lang.reflect.Type}s before calling the (canonical) {@link
+     * #assignable(Type, Type)} method.</p>
+     *
+     * @param receiverType the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadType} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverType}, according to the assignability rules modeled by
+     * this {@link Semantics} instance, and using the specified
+     * autoboxing semantics; {@code false} otherwise
+     *
+     * @exception NullPointerException if either {@code receiverType}
+     * or {@code payloadType} is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     *
+     * @see JavaType#of(java.lang.reflect.Type, boolean)
+     */
     @Convenience
     public boolean assignable(final java.lang.reflect.Type receiverType,
                               final java.lang.reflect.Type payloadType,
@@ -471,6 +588,8 @@ public abstract class Type<T> {
      * @threadsafety This method is, and its overrides must be, safe
      * for concurrent use by multiple threads.
      */
+    @EntryPoint
+    @OverridingDiscouraged
     public <X, Y> boolean assignable(final Type<X> receiverType, final Type<Y> payloadType) {
       if (receiverType == Objects.requireNonNull(payloadType, "payloadType") || receiverType.represents(payloadType)) {
         return true;
@@ -539,22 +658,227 @@ public abstract class Type<T> {
       }
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadClass} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverClass}, according to the assignability rules modeled by
+     * this {@link Semantics} instance, and if and only if {@code
+     * payloadClass} models a {@linkplain Class Java class} and not
+     * any other type, and if and only if {@code receiverClass} models
+     * a {@linkplain Class Java class} and not any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadClass};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverClass the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadClass the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean classIsAssignableFromClass(final Type<X> receiverClass, final Type<Y> payloadClass) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadClass} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverClass}, according to the assignability rules modeled by
+     * this {@link Semantics} instance, and if and only if {@code
+     * payloadParameterizedType} models a Java {@linkplain
+     * java.lang.reflect.ParameterizedType parameterized type} and not
+     * any other type, and if and only if {@code receiverClass} models
+     * a {@linkplain Class Java class} and not any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverClass the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadParameterizedType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean classIsAssignableFromParameterizedType(final Type<X> receiverClass, final Type<Y> payloadParameterizedType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadGenericArrayType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverClass}, according to the assignability
+     * rules modeled by this {@link Semantics} instance, and if and
+     * only if {@code payloadGenericArrayType} models a Java
+     * {@linkplain java.lang.reflect.GenericArrayType generic array
+     * type} and not any other type, and if and only if {@code
+     * receiverClass} models a {@linkplain Class Java class} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadGenericArrayType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverClass the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadGenericArrayType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean classIsAssignableFromGenericArrayType(final Type<X> receiverClass, final Type<Y> payloadGenericArrayType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadTypeVariable} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverClass}, according to the assignability
+     * rules modeled by this {@link Semantics} instance, and if and
+     * only if {@code payloadTypeVariable} models a Java {@linkplain
+     * java.lang.reflect.TypeVariable type variable} and not any other
+     * type, and if and only if {@code receiverClass} models a
+     * {@linkplain Class Java class} and not any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadTypeVariable};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverClass the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadTypeVariable the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean classIsAssignableFromTypeVariable(final Type<X> receiverClass, final Type<Y> payloadTypeVariable) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadWildcardType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverClass}, according to the assignability
+     * rules modeled by this {@link Semantics} instance, and if and
+     * only if {@code payloadWildcardType} models a Java {@linkplain
+     * java.lang.reflect.WildcardType wildcard type} and not any other
+     * type, and if and only if {@code receiverClass} models a
+     * {@linkplain Class Java class} and not any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadWildcardType};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverClass the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadWildcardType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @param lowerBounded whether {@code payloadWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean classIsAssignableFromWildcardType(final Type<X> receiverClass, final Type<Y> payloadWildcardType, final boolean lowerBounded) {
       return false;
     }
@@ -581,22 +905,240 @@ public abstract class Type<T> {
       }
     }
 
-    protected <X, Y> boolean parameterizedTypeIsAssignableFromClass(final Type<X> receiverParameterizedType, final Type<Y> payloadClass) {
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadClass} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverParameterizedType}, according to the assignability
+     * rules modeled by this {@link Semantics} instance, and if and
+     * only if {@code payloadClass} models a Java {@linkplain Class
+     * class} and not any other type, and if and only if {@code
+     * receiverParameterizedType} models a {@linkplain
+     * java.lang.reflect.ParameterizedType parameterized type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverParameterizedType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadClass the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
+    protected <X, Y> boolean parameterizedTypeIsAssignableFromClass(final Type<X> receiverParameterizedType,
+                                                                    final Type<Y> payloadClass) {
       return false;
     }
 
-    protected <X, Y> boolean parameterizedTypeIsAssignableFromParameterizedType(final Type<X> receiverParameterizedType, final Type<Y> payloadParameterizedType) {
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadParameterizedType}
+     * is assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverParameterizedType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadParameterizedType} models a
+     * Java {@linkplain java.lang.reflect.ParameterizedType
+     * parameterized type} and not any other type, and if and only if
+     * {@code receiverParameterizedType} models a {@linkplain
+     * java.lang.reflect.ParameterizedType parameterized type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverParameterizedType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadParameterizedType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
+    protected <X, Y> boolean parameterizedTypeIsAssignableFromParameterizedType(final Type<X> receiverParameterizedType,
+                                                                                final Type<Y> payloadParameterizedType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadGenericArrayType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverParameterizedType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadGenericArrayType} models a
+     * Java {@linkplain java.lang.reflect.GenericArrayType generic
+     * array type} and not any other type, and if and only if {@code
+     * receiverParameterizedType} models a {@linkplain
+     * java.lang.reflect.ParameterizedType parameterized type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadGenericArrayType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverParameterizedType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadGenericArrayType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean parameterizedTypeIsAssignableFromGenericArrayType(final Type<X> receiverParameterizedType, final Type<Y> payloadGenericArrayType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadTypeVariable} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverParameterizedType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadTypeVariable} models a Java
+     * {@linkplain java.lang.reflect.TypeVariable type variable} and
+     * not any other type, and if and only if {@code
+     * receiverParameterizedType} models a {@linkplain
+     * java.lang.reflect.ParameterizedType parameterized type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadTypeVariable}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverParameterizedType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadTypeVariable the payload type as described above;
+     * must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean parameterizedTypeIsAssignableFromTypeVariable(final Type<X> receiverParameterizedType, final Type<Y> payloadTypeVariable) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadWildcardType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverParameterizedType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadWildcardType} models a Java
+     * {@linkplain java.lang.reflect.WildcardType wildcard type} and
+     * not any other type, and if and only if {@code
+     * receiverParameterizedType} models a {@linkplain
+     * java.lang.reflect.ParameterizedType parameterized type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadWildcardType};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverParameterizedType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadWildcardType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @param lowerBounded whether {@code payloadWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean parameterizedTypeIsAssignableFromWildcardType(final Type<X> receiverParameterizedType,
                                                                            final Type<Y> payloadWildcardType,
                                                                            final boolean lowerBounded) {
@@ -624,22 +1166,237 @@ public abstract class Type<T> {
       }
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadClass} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverGenericArrayType}, according to the assignability rules
+     * modeled by this {@link Semantics} instance, and if and only if
+     * {@code payloadClass} models a Java {@linkplain Class class} and
+     * not any other type, and if and only if {@code
+     * receiverGenericArrayType} models a {@linkplain
+     * java.lang.reflect.GenericArrayType generic array type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadClass};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverGenericArrayType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadClass the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean genericArrayTypeIsAssignableFromClass(final Type<X> receiverGenericArrayType, final Type<Y> payloadClass) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadParameterizedType}
+     * is assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverGenericArrayType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadParameterizedType} models a
+     * Java {@linkplain java.lang.reflect.ParameterizedType
+     * parameterized type} and not any other type, and if and only if
+     * {@code receiverGenericArrayType} models a {@linkplain
+     * java.lang.reflect.GenericArrayType generic array type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverGenericArrayType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadParameterizedType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean genericArrayTypeIsAssignableFromParameterizedType(final Type<X> receiverGenericArrayType, final Type<Y> payloadParameterizedType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadGenericArrayType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverGenericArrayType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadGenericArrayType} models a
+     * Java {@linkplain java.lang.reflect.GenericArrayType generic
+     * array type} and not any other type, and if and only if {@code
+     * receiverGenericArrayType} models a {@linkplain
+     * java.lang.reflect.GenericArrayType generic array type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadGenericArrayType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverGenericArrayType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadGenericArrayType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean genericArrayTypeIsAssignableFromGenericArrayType(final Type<X> receiverGenericArrayType, final Type<Y> payloadGenericArrayType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadTypeVariable} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverGenericArrayType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadTypeVariable} models a Java
+     * {@linkplain java.lang.reflect.TypeVariable type variable} and
+     * not any other type, and if and only if {@code
+     * receiverGenericArrayType} models a {@linkplain
+     * java.lang.reflect.GenericArrayType generic array type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadTypeVariable}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverGenericArrayType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadTypeVariable the payload type as described above;
+     * must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean genericArrayTypeIsAssignableFromTypeVariable(final Type<X> receiverGenericArrayType, final Type<Y> payloadTypeVariable) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadWildcardType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverGenericArrayType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadWildcardType} models a Java
+     * {@linkplain java.lang.reflect.WildcardType wildcard type} and
+     * not any other type, and if and only if {@code
+     * receiverGenericArrayType} models a {@linkplain
+     * java.lang.reflect.GenericArrayType generic array type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverGenericArrayType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadWildcardType};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverGenericArrayType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadWildcardType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @param lowerBounded whether {@code payloadWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean genericArrayTypeIsAssignableFromWildcardType(final Type<X> receiverGenericArrayType,
                                                                           final Type<Y> payloadWildcardType,
                                                                           final boolean lowerBounded) {
@@ -667,22 +1424,238 @@ public abstract class Type<T> {
       }
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadClass} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverTypeVariable}, according to the assignability rules
+     * modeled by this {@link Semantics} instance, and if and only if
+     * {@code payloadClass} models a Java {@linkplain Class class} and
+     * not any other type, and if and only if {@code
+     * receiverTypeVariable} models a {@linkplain
+     * java.lang.reflect.TypeVariable type variable} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverTypeVariable the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadClass the payload type as described above;
+     * must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean typeVariableIsAssignableFromClass(final Type<X> receiverTypeVariable, final Type<Y> payloadClass) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadParameterizedType}
+     * is assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverTypeVariable}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadParameterizedType} models a
+     * Java {@linkplain java.lang.reflect.ParameterizedType
+     * parameterized type} and not any other type, and if and only if
+     * {@code receiverTypeVariable} models a {@linkplain
+     * java.lang.reflect.TypeVariable type variable} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadParameterizedType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverTypeVariable the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadParameterizedType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean typeVariableIsAssignableFromParameterizedType(final Type<X> receiverTypeVariable, final Type<Y> payloadParameterizedType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadGenericArrayType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverTypeVariable}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadGenericArrayType} models a
+     * Java {@linkplain java.lang.reflect.GenericArrayType generic
+     * array type} and not any other type, and if and only if {@code
+     * receiverTypeVariable} models a {@linkplain
+     * java.lang.reflect.TypeVariable type variable} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadGenericArrayType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverTypeVariable the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadGenericArrayType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean typeVariableIsAssignableFromGenericArrayType(final Type<X> receiverTypeVariable, final Type<Y> payloadGenericArrayType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadTypeVariable} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverTypeVariable}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadTypeVariable} models a Java
+     * {@linkplain java.lang.reflect.TypeVariable type variable} and
+     * not any other type, and if and only if {@code
+     * receiverTypeVariable} models a {@linkplain
+     * java.lang.reflect.TypeVariable type variable} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadTypeVariable}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverTypeVariable the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadTypeVariable the payload type as described above;
+     * must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean typeVariableIsAssignableFromTypeVariable(final Type<X> receiverTypeVariable, final Type<Y> payloadTypeVariable) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadWildcardType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverTypeVariable}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadWildcardType} models a Java
+     * {@linkplain java.lang.reflect.WildcardType wildcard type} and
+     * not any other type, and if and only if {@code
+     * receiverTypeVariable} models a {@linkplain
+     * java.lang.reflect.TypeVariable type variable} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverTypeVariable}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadWildcardType};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverTypeVariable the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadWildcardType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @param lowerBounded whether {@code payloadWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean typeVariableIsAssignableFromWildcardType(final Type<X> receiverTypeVariable,
                                                                       final Type<Y> payloadWildcardType,
                                                                       final boolean lowerBounded) {
@@ -711,30 +1684,260 @@ public abstract class Type<T> {
       }
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadClass} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverWildcardType}, according to the assignability rules
+     * modeled by this {@link Semantics} instance, and if and only if
+     * {@code payloadClass} models a Java {@linkplain Class class} and
+     * not any other type, and if and only if {@code
+     * receiverWildcardType} models a {@linkplain
+     * java.lang.reflect.WildcardType wildcard type} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverWildcardType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverWildcardType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param lowerBounded whether {@code receiverWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @param payloadClass the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean wildcardTypeIsAssignableFromClass(final Type<X> receiverWildcardType,
                                                                final boolean lowerBounded,
                                                                final Type<Y> payloadClass) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadParameterizedType}
+     * is assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverWildcardType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadParameterizedType} models a
+     * Java {@linkplain java.lang.reflect.ParameterizedType
+     * parameterized type} and not any other type, and if and only if
+     * {@code receiverWildcardType} models a {@linkplain
+     * java.lang.reflect.WildcardType wildcard type} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverWildcardType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadParameterizedType}; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverWildcardType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param lowerBounded whether {@code receiverWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @param payloadParameterizedType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean wildcardTypeIsAssignableFromParameterizedType(final Type<X> receiverWildcardType,
                                                                            final boolean lowerBounded,
                                                                            final Type<Y> payloadParameterizedType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadGenericArrayType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverWildcardType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadGenericArrayType} models a
+     * Java {@linkplain java.lang.reflect.GenericArrayType generic
+     * array type} and not any other type, and if and only if {@code
+     * receiverWildcardType} models a {@linkplain
+     * java.lang.reflect.WildcardType wildcard type} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverWildcardType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code
+     * payloadGenericArrayType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param receiverWildcardType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param lowerBounded whether {@code receiverWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @param payloadGenericArrayType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean wildcardTypeIsAssignableFromGenericArrayType(final Type<X> receiverWildcardType,
                                                                           final boolean lowerBounded,
                                                                           final Type<Y> payloadGenericArrayType) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadTypeVariable} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverWildcardType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadTypeVariable} models a Java
+     * {@linkplain java.lang.reflect.TypeVariable type variable} and
+     * not any other type, and if and only if {@code
+     * receiverWildcardType} models a {@linkplain
+     * java.lang.reflect.WildcardType wildcard type} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverWildcardType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadTypeVariable};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverWildcardType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param lowerBounded whether {@code receiverWildcardType} is a
+     * lower-bounded wildcard type
+     *
+     * @param payloadTypeVariable the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean wildcardTypeIsAssignableFromTypeVariable(final Type<X> receiverWildcardType,
                                                                       final boolean lowerBounded,
                                                                       final Type<Y> payloadTypeVariable) {
       return false;
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadWildcardType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverWildcardType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadWildcardType} models a Java
+     * {@linkplain java.lang.reflect.WildcardType wildcard type} and
+     * not any other type, and if and only if {@code
+     * receiverWildcardType} models a {@linkplain
+     * java.lang.reflect.WildcardType wildcard type} and not any other
+     * type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code false} in all cases.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverWildcardType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadWildcardType};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverWildcardType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param receiverWildcardTypeLowerBounded whether {@code
+     * receiverWildcardType} is a lower-bounded wildcard type
+     *
+     * @param payloadWildcardType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadWildcardTypeLowerBounded whether {@code
+     * payloadWildcardType} is a lower-bounded wildcard type
+     *
+     * @return {@code false} in all cases
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
+    @OverridingEncouraged
     protected <X, Y> boolean wildcardTypeIsAssignableFromWildcardType(final Type<X> receiverWildcardType,
                                                                       final boolean receiverWildcardTypeLowerBounded,
                                                                       final Type<Y> payloadWildcardType,
