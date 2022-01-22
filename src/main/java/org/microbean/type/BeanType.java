@@ -47,5 +47,27 @@ public class BeanType extends JavaType {
     }
     return List.of();
   }
+
+  public static final BeanType of(final Token<?> type) {
+    return BeanType.of(type.type());
+  }
+
+  public static final BeanType of(final Token<?> type, final boolean box) {
+    if (!box) {
+      throw new IllegalArgumentException("boxing is required by CDI");
+    }
+    return BeanType.of(type.type());
+  }
+
+  public static final BeanType of(final Type type) {
+    return new BeanType(type, JavaTypes::directSupertypes);
+  }
+  
+  public static JavaType of(final Type type, final boolean box) {
+    if (!box) {
+      throw new IllegalArgumentException("boxing is required by CDI");
+    }
+    return BeanType.of(type);
+  }
   
 }

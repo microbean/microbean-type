@@ -30,8 +30,12 @@ import org.microbean.development.annotation.Experimental;
 import org.microbean.development.annotation.OverridingEncouraged;
 
 /**
- * A value-like object representing a Java type for purposes of
+ * A value-like object representing a (Java-like) type for purposes of
  * testing assignability.
+ *
+ * <p>Concisely: {@link Type}s represent {@link java.lang.reflect.Type
+ * java.lang.reflect.Type}s without any dependence on {@link
+ * java.lang.reflect.Type java.lang.reflect.Type}.</p>
  *
  * @param <T> the type of the thing representing a Java type that is
  * being adapted; often a {@link java.lang.reflect.Type} or some other
@@ -99,10 +103,22 @@ public abstract class Type<T> {
    * concurrent use by multiple threads.
    */
   public abstract String name();
-  
+
   /**
    * Returns {@code true} if this {@link Type} represents the same
    * type as that represented by the supplied {@link Type}.
+   *
+   * <p>Type representation is not the same thing as equality.
+   * Specifically, a {@link Type} may represent another {@link Type}
+   * exactly, but may not be {@linkplain Type#equals(Object) equal to}
+   * it.</p>
+   *
+   * <p>Equality is <em>subordinate</em> to type representation.  That
+   * is, in determining whether a given {@link Type} represents
+   * another {@link Type}, their {@link Type#equals(Object)
+   * equals(Object)} methods may be called, but a {@link Type}'s
+   * {@link Type#equals(Object) equals(Object)} method must not call
+   * {@link #represents(Type)}.</p>
    *
    * @param type the {@link Type} to test; may be {@code null} in
    * which case {@code false} will be returned
@@ -143,11 +159,14 @@ public abstract class Type<T> {
 
   /**
    * Returns {@code true} if and only if this {@link Type} represents
-   * the uppermost reference type in the type system, e.g. {@link
-   * Object Object.class}.
+   * the uppermost reference type in the type system.
    *
-   * <p>Undefined behavior will result if these requirements are not
-   * met by all implementations.</p>
+   * <p>In all practical cases, if an implementation of this method
+   * returns {@code true}, it means this {@link Type} represents
+   * {@link Object Object.class}.</p>
+   *
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
    *
    * @return {@code true} if and only if this {@link Type} represents
    * the uppermost reference type in the type system, e.g. {@link
@@ -160,7 +179,28 @@ public abstract class Type<T> {
    * and deterministic.
    */
   public abstract boolean top();
-  
+
+  /**
+   * If this {@link Type} represents a primitive type, and if and only
+   * if boxing is enabled in the type system being represented,
+   * returns a {@link Type} representing the corresponding "wrapper
+   * type", or this {@link Type} itself in all other cases.
+   *
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
+   *
+   * @return a {@link Type} representing the corresponding "wrapper
+   * type" where appropriate, or {@code this}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract Type<T> box();
 
   /**
@@ -171,7 +211,13 @@ public abstract class Type<T> {
    * Collection#isEmpty() empty <code>Collection</code>} if there are
    * no direct supertypes.
    *
-   * <p>The direct supertypes of a reflective Java type may be
+   * <p>The direct supertypes of a type are defined to be those which
+   * are described by the <a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.10.2"
+   * target="_parent">Java Language Specification, section 4.10.2</a>,
+   * minus any types featuring wildcards.</p>
+   *
+   * <p>These direct supertypes of a reflective Java type may be
    * acquired if needed via the {@link
    * JavaTypes#directSupertypes(java.lang.reflect.Type)} method.</p>
    *
@@ -184,8 +230,8 @@ public abstract class Type<T> {
    * <p>The size of the {@link Collection} returned must not change
    * between calls.</p>
    *
-   * <p>Undefined behavior will result if these requirements are not
-   * met by all implementations.</p>
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
    *
    * @return an {@linkplain
    * Collections#unmodifiableCollection(Collection) unmodifiable and
@@ -207,11 +253,12 @@ public abstract class Type<T> {
   /**
    * If this {@link Type} represents a parameterized type or a generic
    * array type, returns a {@link Type} representing its raw type or
-   * generic component type, or, if this {@link Type} does not represent a
-   * parameterized type or a generic array type, returns {@code this}.
+   * generic component type, or, if this {@link Type} does not
+   * represent a parameterized type or a generic array type, returns
+   * {@code this}.
    *
-   * <p>Undefined behavior will result if these requirements are not
-   * met by all implementations.</p>
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
    *
    * @return a suitable {@link Type}; never {@code null}; often {@code
    * this}
@@ -227,12 +274,40 @@ public abstract class Type<T> {
    */
   public abstract Type<T> type();
 
-  public abstract boolean hasTypeParameters();
+  @OverridingEncouraged
+  public boolean hasTypeParameters() {
+    return !this.typeParameters().isEmpty();
+  }
 
-  public abstract boolean hasTypeArguments();
+  @OverridingEncouraged
+  public boolean hasTypeArguments() {
+    return !this.typeArguments().isEmpty();
+  }
+
+  public abstract List<? extends Type<T>> typeParameters();
 
   public abstract List<? extends Type<T>> typeArguments();
 
+  /**
+   * Returns the <em>component type</em> of this {@link Type}, if
+   * there is one, <strong>or {@code null} if there is not</strong>.
+   *
+   * <p>This method returns a non-{@code null} result only when this
+   * {@link Type} represents a type that is either an array or a
+   * generic array type.</p>
+   *
+   * @return the <em>component type</em> of this {@link Type}, if
+   * there is one, or {@code null} if there is not
+   *
+   * @nullability Implementations of this method may return {@code
+   * null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract Type<T> componentType();
 
   @OverridingEncouraged
@@ -252,21 +327,21 @@ public abstract class Type<T> {
   public final boolean isClass() {
     return this.named() && !this.upperBounded();
   }
-  
+
   public final boolean genericArrayType() {
     return this.componentType() != null && this.type() != this;
   }
-  
+
   public final boolean parameterizedType() {
     return this.hasTypeArguments();
   }
-  
+
   public final boolean typeVariable() {
-    return this.named() && !this.lowerBounded() && this.upperBounded();
+    return this.named() && this.upperBounded();
   }
 
   public final boolean wildcard() {
-    return !this.named() && (this.lowerBounded() || this.upperBounded());
+    return !this.named() && (this.upperBounded() || this.lowerBounded());
   }
 
   public final Collection<? extends Type<T>> supertypes() {
@@ -283,7 +358,7 @@ public abstract class Type<T> {
     }
     return false;
   }
-  
+
   @SuppressWarnings("unchecked")
   private final <X> Collection<? extends Type<X>> supertypes(final Type<X> type, Predicate<? super Type<?>> unseen) {
     if (unseen == null || unseen.test(type)) {
@@ -308,21 +383,96 @@ public abstract class Type<T> {
     }
   }
 
+  /**
+   * An abstract embodiment of {@link Type} {@linkplain
+   * #assignable(Type, Type) assignability rules}.
+   *
+   * <p>By default, no {@link Type} {@linkplain #assignable(Type,
+   * Type) is assignable} to any other {@link Type} except itself.</p>
+   *
+   * @author <a href="https://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
+   *
+   * @see VariantSemantics
+   *
+   * @see InvariantSemantics
+   *
+   * @see CovariantSemantics
+   *
+   * @see CdiSemantics
+   */
   @Experimental
   public static abstract class Semantics {
 
+
+    /*
+     * Constructors.
+     */
+
+
+    /**
+     * Creates a new {@link Semantics}.
+     */
     protected Semantics() {
       super();
     }
 
-    @Convenience
-    public final boolean assignable(final java.lang.reflect.Type receiverType,
-                                    final java.lang.reflect.Type payloadType) {
-      return this.assignable(JavaType.of(receiverType), JavaType.of(payloadType));
-    }
+
+    /*
+     * Instance methods.
+     */
     
+
+    @Convenience
+    public boolean assignable(final java.lang.reflect.Type receiverType,
+                              final java.lang.reflect.Type payloadType) {
+      return this.assignable(receiverType, payloadType, false);
+    }
+
+    @Convenience
+    public boolean assignable(final java.lang.reflect.Type receiverType,
+                              final java.lang.reflect.Type payloadType,
+                              final boolean box) {
+      return this.assignable(JavaType.of(receiverType, box), JavaType.of(payloadType, box));
+    }
+
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadType} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverType}, according to the assignability rules modeled by
+     * this {@link Semantics} instance.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadType};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverType the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadType the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadType} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverType}, according to the assignability rules modeled by
+     * this {@link Semantics} instance; {@code false} otherwise
+     *
+     * @exception NullPointerException if either {@code receiverType}
+     * or {@code payloadType} is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     */
     public <X, Y> boolean assignable(final Type<X> receiverType, final Type<Y> payloadType) {
-      if (receiverType == payloadType || receiverType.represents(payloadType)) {
+      if (receiverType == Objects.requireNonNull(payloadType, "payloadType") || receiverType.represents(payloadType)) {
         return true;
       } else if (receiverType.hasTypeArguments()) {
         return parameterizedTypeIsAssignableFromType(receiverType, payloadType);
@@ -591,15 +741,36 @@ public abstract class Type<T> {
                                                                       final boolean payloadWildcardTypeLowerBounded) {
       return false;
     }
-    
+
   }
 
+  /**
+   * An abstract partial {@link Semantics} that permits subtyping.
+   *
+   * @author <a href="https://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
+   */
   @Experimental
   public static abstract class VariantSemantics extends Semantics {
 
+
+    /*
+     * Constructors.
+     */
+
+
+    /**
+     * Creates a new {@link VariantSemantics}.
+     */
     protected VariantSemantics() {
       super();
     }
+
+
+    /*
+     * Instance methods.
+     */
+
 
     @Override
     protected <X, Y> boolean classIsAssignableFromClass(final Type<X> receiverClass, final Type<Y> payloadClass) {
@@ -612,7 +783,7 @@ public abstract class Type<T> {
       return this.assignable(receiverGenericArrayType.componentType(), payloadGenericArrayType.componentType());
     }
 
-    protected final <X> List<? extends Type<X>> condense(final List<? extends Type<X>> bounds) {
+    final <X> List<? extends Type<X>> condense(final List<? extends Type<X>> bounds) {
       if (!bounds.isEmpty()) {
         final Type<X> firstBound = bounds.get(0);
         if (firstBound.named() && firstBound.upperBounded()) {
@@ -622,16 +793,39 @@ public abstract class Type<T> {
       }
       return bounds;
     }
-    
+
   }
 
+
+  /**
+   * A {@link VariantSemantics} implementation that implements Java
+   * type assignability semantics, which are covariant.
+   *
+   * @author <a href="https://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
+   */
   @Experimental
   public static class CovariantSemantics extends VariantSemantics {
 
+
+    /*
+     * Constructors.
+     */
+
+
+    /**
+     * Creates a new {@link CovariantSemantics}.
+     */
     public CovariantSemantics() {
       super();
     }
-    
+
+
+    /*
+     * Instance methods.
+     */
+
+
     @Override
     protected <X, Y> boolean classIsAssignableFromParameterizedType(final Type<X> receiverClass, final Type<Y> payloadParameterizedType) {
       return this.assignable(receiverClass, payloadParameterizedType.type());
@@ -784,19 +978,47 @@ public abstract class Type<T> {
       }
       return false;
     }
-    
-    
+
+
   }
 
+  /**
+   * A {@link VariantSemantics} implementation that does not permit
+   * subtyping, but that compares wildcard types covariantly.
+   *
+   * @author <a href="https://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
+   */
   @Experimental
   public static class InvariantSemantics extends VariantSemantics {
 
+
+    /*
+     * Instance fields.
+     */
+
+
     private final CovariantSemantics wildcardSemantics;
-    
-    public InvariantSemantics(final CovariantSemantics wildcardSemantics) {
+
+
+    /*
+     * Constructors.
+     */
+
+
+    /**
+     * Creates a new {@link InvariantSemantics}.
+     */
+    public InvariantSemantics() {
       super();
-      this.wildcardSemantics = Objects.requireNonNull(wildcardSemantics, "wildcardSemantics");
+      this.wildcardSemantics = new CovariantSemantics();
     }
+
+
+    /*
+     * Instance methods.
+     */
+
 
     @Override // VariantSemantics
     public <X, Y> boolean assignable(final Type<X> receiverType, final Type<Y> payloadType) {
@@ -805,24 +1027,92 @@ public abstract class Type<T> {
       }
       return receiverType.represents(payloadType);
     }
-    
+
   }
 
+  /**
+   * A {@link VariantSemantics} implementation that implements the
+   * rules of <a
+   * href="https://jakarta.ee/specifications/cdi/3.0/jakarta-cdi-spec-3.0.html#typesafe_resolution"
+   * target="_parent"><em>typesafe resolution</em></a>.
+   *
+   * @author <a href="https://about.me/lairdnelson"
+   * target="_parent">Laird Nelson</a>
+   */
   @Experimental
   public static class CdiSemantics extends VariantSemantics {
 
+
+    /*
+     * Instance fields.
+     */
+
+
     private final CdiTypeArgumentSemantics typeArgumentSemantics;
-    
+
+
+    /*
+     * Constructors.
+     */
+
+
+    /**
+     * Creates a new {@link CdiSemantics}.
+     */
     public CdiSemantics() {
       super();
       this.typeArgumentSemantics = new CdiTypeArgumentSemantics();
     }
 
+
+    /*
+     * Instance methods.
+     */
+
+
+    /**
+     * Returns {@code true} if and only if the supplied {@link Type}
+     * represents an <em>actual type</em>, which the <a
+     * href="https://jakarta.ee/specifications/cdi/3.0/jakarta-cdi-spec-3.0.html#assignable_parameters"
+     * target="_parent">CDI specification</a> implies, but does not
+     * explicitly state, is either a class, a parameterized type or a
+     * generic array type.
+     *
+     * <p>Actual types, though not defined, are <a
+     * href="https://jakarta.ee/specifications/cdi/3.0/jakarta-cdi-spec-3.0.html#typesafe_resolution"
+     * target="_parent">critically important to CDI's concept of
+     * <em>typesafe resolution</em></a>.</p>
+     *
+     * <p>The concept of an actual type is not mentioned in the <a
+     * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.1"
+     * target="_parent">Java Language Specification</a>.
+     *
+     * @param type the {@link Type} in question; must not be {@code
+     * null}
+     *
+     * @return {@code true} if and only if the supplied {@link Type}
+     * returns {@code false} from invocations of both its {@link
+     * #upperBounded()} and {@link #lowerBounded()} methods; {@code
+     * false} otherwise
+     *
+     * @exception NullPointerException if {@code type} is {@code null}
+     *
+     * @idempotency This method is idempotent and deterministic.
+     *
+     * @threadsafety This method is safe for concurrent use by
+     * multiple threads.
+     */
     public final boolean actualType(final Type<?> type) {
-      // If it has type arguments, it's a parameterized type, so is legal.
-      // If it has a component type, it's either a class or generic array type, so is legal.
-      // If it has upper bounds, then it's either a type variable or a wildcard so is not legal.
-      return type.hasTypeArguments() || type.componentType() != null || !type.upperBounded();
+      return !type.upperBounded() && !type.lowerBounded();
+    }
+
+    @Convenience
+    @Override
+    public final boolean assignable(final java.lang.reflect.Type receiverType,
+                                    final java.lang.reflect.Type payloadType,
+                                    final boolean ignoredBox) {
+      // Boxing is always required in CDI.
+      return this.assignable(BeanType.of(receiverType), BeanType.of(payloadType));
     }
 
     @Override
@@ -903,6 +1193,12 @@ public abstract class Type<T> {
       return false;
     }
 
+
+    /*
+     * Inner and nested classes.
+     */
+
+
     @Experimental
     private static class CdiTypeArgumentSemantics extends VariantSemantics {
 
@@ -912,25 +1208,25 @@ public abstract class Type<T> {
         super();
         this.covariantSemantics = new CovariantSemantics();
       }
-    
+
       @Override
       protected final <X, Y> boolean classIsAssignableFromTypeVariable(final Type<X> receiverClass,
                                                                        final Type<Y> payloadTypeVariable) {
         return this.actualTypeIsAssignableFromTypeVariable(receiverClass, payloadTypeVariable);
       }
-    
+
       @Override
       protected final <X, Y> boolean parameterizedTypeIsAssignableFromTypeVariable(final Type<X> receiverParameterizedType,
                                                                                    final Type<Y> payloadTypeVariable) {
         return this.actualTypeIsAssignableFromTypeVariable(receiverParameterizedType, payloadTypeVariable);
       }
-    
+
       @Override
       protected final <X, Y> boolean genericArrayTypeIsAssignableFromTypeVariable(final Type<X> receiverGenericArrayType,
                                                                                   final Type<Y> payloadTypeVariable) {
         return this.actualTypeIsAssignableFromTypeVariable(receiverGenericArrayType, payloadTypeVariable);
       }
-    
+
       private final <X, Y> boolean actualTypeIsAssignableFromTypeVariable(final Type<X> receiverActualType,
                                                                           final Type<Y> payloadTypeVariable) {
         // Section 5.2.4 of the CDI specification is mealy-mouthed but
@@ -1119,5 +1415,5 @@ public abstract class Type<T> {
       }
 
     }
-  }  
+  }
 }

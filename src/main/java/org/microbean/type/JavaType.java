@@ -55,16 +55,33 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
 
   /*
+   * Instance fields.
+   */
+
+
+  private final boolean box;
+
+
+  /*
    * Constructors.
    */
 
 
   public JavaType(final Token<?> type) {
-    this(type.type());
+    this(type.type(), false);
+  }
+  
+  public JavaType(final Token<?> type, final boolean box) {
+    this(type.type(), box);
   }
 
   public JavaType(final Type type) {
+    this(type, false);
+  }
+  
+  public JavaType(final Type type, final boolean box) {
     super(type);
+    this.box = box;
   }
 
 
@@ -106,14 +123,18 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
   @Override
   public JavaType box() {
-    final Type type = this.object();
-    if (type == void.class) {
-      return of(Void.class);
-    } else if (type instanceof Class<?> c && c.isPrimitive()) {
-      return of(wrapperTypes.get(c));
-    } else {
-      return this;
+    if (this.box) {
+      final Type type = this.object();
+      if (type == void.class) {
+        return of(Void.class, true);
+      } else if (type == int.class) {
+        // This is such a common case we avoid the map lookup
+        return of(Integer.class, true);
+      } else if (type instanceof Class<?> c && c.isPrimitive()) {
+        return of(wrapperTypes.get(c), true);
+      }
     }
+    return this;
   }
 
   @Override
@@ -122,7 +143,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     if (!directSupertypes.isEmpty()) {
       final Collection<JavaType> c = new ArrayList<>(directSupertypes.size());
       for (final Type type : directSupertypes) {
-        c.add(of(type));
+        c.add(of(type, this.box));
       }
       return Collections.unmodifiableCollection(c);
     }
@@ -132,8 +153,13 @@ public class JavaType extends org.microbean.type.Type<Type> {
   @Override
   public JavaType type() {
     final Type type = this.object();
-    final Type newType = type(type);
-    return newType == type ? this : of(newType);
+    if (type instanceof ParameterizedType p) {
+      return of(p.getRawType(), this.box);
+    } else if (type instanceof GenericArrayType g) {
+      return of(g.getGenericComponentType(), this.box);
+    } else {
+      return this;
+    }
   }
 
   @Override
@@ -148,26 +174,25 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
   @Override
   public List<JavaType> typeArguments() {
-    final Type type = this.object();
-    if (type instanceof ParameterizedType p) {
+    if (this.object() instanceof ParameterizedType p) {
       final Type[] typeArguments = p.getActualTypeArguments();
       final List<JavaType> typeArgumentsList = new ArrayList<>(typeArguments.length);
       for (final Type typeArgument : typeArguments) {
-        typeArgumentsList.add(of(typeArgument));
+        typeArgumentsList.add(of(typeArgument, this.box));
       }
       return Collections.unmodifiableList(typeArgumentsList);
     }
     return List.of();
   }
 
+  @Override
   public List<JavaType> typeParameters() {
-    final Type type = this.object();
-    if (type instanceof Class<?> c) {
+    if (this.object() instanceof Class<?> c) {
       final Type[] typeParameters = c.getTypeParameters();
       if (typeParameters.length > 0) {
         final List<JavaType> typeParametersList = new ArrayList<>(typeParameters.length);
         for (final Type typeParameter : typeParameters) {
-          typeParametersList.add(of(typeParameter));
+          typeParametersList.add(of(typeParameter, this.box));
         }
         return Collections.unmodifiableList(typeParametersList);
       }
@@ -189,7 +214,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     if (newType == null) {
       return null;
     }
-    return of(newType);
+    return of(newType, this.box);
   }
 
   @Override
@@ -212,7 +237,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
       if (lowerBounds.length > 0) {
         final List<JavaType> lowerBoundsList = new ArrayList<>(lowerBounds.length);
         for (final Type lowerBound : lowerBounds) {
-          lowerBoundsList.add(of(lowerBound));
+          lowerBoundsList.add(of(lowerBound, this.box));
         }
         return Collections.unmodifiableList(lowerBoundsList);
       }
@@ -234,7 +259,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     if (upperBounds != null && upperBounds.length > 0) {
       final List<JavaType> upperBoundsList = new ArrayList<>(upperBounds.length);
       for (final Type upperBound : upperBounds) {
-        upperBoundsList.add(of(upperBound));
+        upperBoundsList.add(of(upperBound, this.box));
       }
       return Collections.unmodifiableList(upperBoundsList);
     }
@@ -263,22 +288,20 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
 
 
-  public static final JavaType of(final Token<?> type) {
-    return of(type.type());
+  public static JavaType of(final Token<?> type) {
+    return of(type, false);
   }
 
-  public static final JavaType of(final Type type) {
-    return new JavaType(type);
+  public static JavaType of(final Token<?> type, final boolean box) {
+    return of(type.type(), box);
   }
 
-  private static final Type type(final Type type) {
-    if (type instanceof ParameterizedType p) {
-      return type(p.getRawType());
-    } else if (type instanceof GenericArrayType g) {
-      return type(g.getGenericComponentType());
-    } else {
-      return type;
-    }
+  public static JavaType of(final Type type) {
+    return of(type, false);
+  }
+
+  public static JavaType of(final Type type, final boolean box) {
+    return new JavaType(type, box);
   }
 
 
@@ -355,16 +378,18 @@ public class JavaType extends org.microbean.type.Type<Type> {
     }
 
     /**
-     * Returns the {@linkplain #erase(Type) type erasure} of this {@link
-     * Token}'s {@linkplain #type() modeled <code>Type</code>}, or
-     * {@code null} if erasing the {@link Type} would result in a
-     * non-{@link Class} erasure (in which case the erasure is simply
-     * the {@link Type} itself), or if an erasure cannot be determined.
+     * Returns the {@linkplain JavaTypes#erase(Type) type erasure} of
+     * this {@link Token}'s {@linkplain #type() modeled
+     * <code>Type</code>}, or {@code null} if erasing the {@link Type}
+     * would result in a non-{@link Class} erasure (in which case the
+     * erasure is simply the {@link Type} itself), or if an erasure
+     * cannot be determined.
      *
-     * @return the {@linkplain #erase(Type) type erasure} of this {@link
-     * Token}'s {@linkplain #type() modeled <code>Type</code>}, or
-     * {@code null} if erasing the {@link Type} would result in a
-     * non-{@link Class} erasure, or if an erasure cannot be determined
+     * @return the {@linkplain JavaTypes#erase(Type) type erasure} of
+     * this {@link Token}'s {@linkplain #type() modeled
+     * <code>Type</code>}, or {@code null} if erasing the {@link Type}
+     * would result in a non-{@link Class} erasure, or if an erasure
+     * cannot be determined
      *
      * @nullability This method never returns {@code null}.
      *
