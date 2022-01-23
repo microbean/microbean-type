@@ -59,7 +59,8 @@ public final class DefaultParameterizedType implements ParameterizedType {
    * DefaultParameterizedType}; may be (and usually is) {@code null}
    *
    * @param rawType the raw type; must not be {@code null}; is most
-   * commonly a {@link Class} as in all JDKs through at least 17
+   * commonly a {@link Class} as in all JDKs through at least 17 and
+   * as mandated currently by the Java Language Specification
    *
    * @param actualTypeArguments the actual {@linkplain
    * #getActualTypeArguments() actual type arguments} of this {@link
@@ -162,13 +163,37 @@ public final class DefaultParameterizedType implements ParameterizedType {
    */
 
 
-  public static final DefaultParameterizedType valueOf(final ParameterizedType type) {
-    if (type == null) {
-      return null;
-    } else if (type instanceof DefaultParameterizedType p) {
+  /**
+   * If the supplied {@link ParameterizedType} is a {@link
+   * DefaultParameterizedType}, returns it; otherwise creates a new
+   * {@link DefaultParameterizedType} with the supplied {@link
+   * ParameterizedType}'s {@linkplain ParameterizedType#getOwnerType()
+   * owner type}, {@linkplain ParameterizedType#getRawType() raw type}
+   * and {@linkplain ParameterizedType#getActualTypeArguments() type
+   * arguments} and returns it.
+   *
+   * @param parameterizedType the {@link ParameterizedType} to
+   * effectively copy (or return); must not be {@code null}
+   *
+   * @return a non-{@code null} {@link DefaultParameterizedType}
+   *
+   * @exception NullPointerException if {@code parameterizedType} is
+   * {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link DefaultParameterizedType} with
+   * each invocation).
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final DefaultParameterizedType of(final ParameterizedType parameterizedType) {
+    if (parameterizedType instanceof DefaultParameterizedType p) {
       return p;
     } else {
-      return new DefaultParameterizedType(type);
+      return new DefaultParameterizedType(parameterizedType);
     }
   }
 

@@ -29,18 +29,6 @@
     <dependencies>
 
 
-      <!-- Imports. -->
-
-
-      <dependency>
-        <groupId>org.jboss.weld</groupId>
-        <artifactId>weld-core-bom</artifactId>
-        <version>4.0.2.Final</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-
       <!-- Normal dependencies. -->
 
 
@@ -58,6 +46,17 @@
   <dependencies>
 
 
+    <!-- Compile-scoped dependencies. -->
+
+
+    <dependency>
+        <groupId>org.microbean</groupId>
+        <artifactId>microbean-development-annotations</artifactId>
+        <type>jar</type>
+        <scope>compile</scope>
+    </dependency>
+
+
     <!-- Test-scoped dependencies. -->
 
 
@@ -73,24 +72,6 @@
       <artifactId>junit-jupiter-engine</artifactId>
       <type>jar</type>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.weld</groupId>
-      <artifactId>weld-core-impl</artifactId>
-      <type>jar</type>
-      <scope>test</scope>
-    </dependency>
-
-
-    <!-- Compile-scoped dependencies. -->
-
-
-    <dependency>
-        <groupId>org.microbean</groupId>
-        <artifactId>microbean-development-annotations</artifactId>
-        <type>jar</type>
-        <scope>compile</scope>
     </dependency>
 
 
@@ -127,7 +108,7 @@
             <!-- See https://github.com/apache/maven-surefire/blob/eb48f1b59ca5ccf6954ef33ecab03dbaf93214cd/surefire-providers/surefire-junit-platform/src/main/java/org/apache/maven/surefire/junitplatform/JUnitPlatformProvider.java#L242-L262 -->
             <properties>
               <configurationParameters>
-                junit.jupiter.execution.parallel.enabled=false
+                junit.jupiter.execution.parallel.enabled=true
                 junit.jupiter.execution.parallel.mode.default=concurrent
               </configurationParameters>
             </properties>

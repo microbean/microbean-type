@@ -123,11 +123,12 @@ final class TestCovariantTypeSemantics {
 
 
   @Test
-  final void testRawTypeAssignableFromRawType() {
+  final void testNonGenericClassAssignableFromNonGenericClass() {
     assertTrue(this.covariantTypeSemantics.assignable(Number.class, Integer.class));
     assertTrue(this.covariantTypeSemantics.assignable(Number.class, Number.class));
     assertTrue(this.covariantTypeSemantics.assignable(int.class, int.class));
-    assertTrue(this.covariantTypeSemantics.assignable(Object.class, int.class));
+    assertTrue(this.covariantTypeSemantics.assignable(Object.class, int.class, true));
+    assertFalse(this.covariantTypeSemantics.assignable(Object.class, int.class, false));
     assertFalse(this.covariantTypeSemantics.assignable(Integer.class, Number.class));
   }
 
@@ -192,7 +193,7 @@ final class TestCovariantTypeSemantics {
   }
 
   @Test
-  final <A, B extends Number, C extends Runnable & CharSequence> void testRawTypeAssignableFromTypeVariable() {
+  final <A, B extends Number, C extends Runnable & CharSequence> void testNonGenericClassAssignableFromTypeVariable() {
     final Type a = new Token<A>() {}.type();
     final Type b = new Token<B>() {}.type();
     final Type c = new Token<C>() {}.type();
@@ -392,13 +393,20 @@ final class TestCovariantTypeSemantics {
   final <T, S extends Number> void testTypeVariableAssignableFromRawType() {
     final Type t = new Token<T>() {}.type();
     final Type s = new Token<S>() {}.type();
-    assertFalse(this.covariantTypeSemantics.assignable(t, Object.class));
     assertFalse(this.covariantTypeSemantics.assignable(t, List.class));
+  }
+
+  @Test
+  final <T, S extends Number> void testTypeVariableAssignableFromNonGenericType() {
+    final Type t = new Token<T>() {}.type();
+    final Type s = new Token<S>() {}.type();
+    assertFalse(this.covariantTypeSemantics.assignable(t, Object.class));
     assertFalse(this.covariantTypeSemantics.assignable(s, Object.class));
     assertFalse(this.covariantTypeSemantics.assignable(s, Number.class));
     assertFalse(this.covariantTypeSemantics.assignable(s, Long.class));
   }
 
+  
   @Test
   final <T, S extends List<Number>> void testTypeVariableAssignableFromParameterizedType() {
     final Type t = new Token<T>() {}.type();
@@ -488,7 +496,7 @@ final class TestCovariantTypeSemantics {
   }
 
   @Test
-  final void testWildcardAssignableFromRawType() {
+  final void testWildcardAssignableFromNonGenericClass() {
     assertTrue(this.covariantTypeSemantics.assignable(UnboundedWildcardType.INSTANCE, Number.class));
     assertTrue(this.covariantTypeSemantics.assignable(new UpperBoundedWildcardType(Number.class), Number.class));
     assertFalse(this.covariantTypeSemantics.assignable(new UpperBoundedWildcardType(Integer.class), Number.class));
@@ -498,7 +506,7 @@ final class TestCovariantTypeSemantics {
   }
 
   @Test
-  final <A, B extends Number, C extends B, D extends Number & Serializable> void testWildcardWithTypeVariableAssignableFromRawType() {
+  final <A, B extends Number, C extends B, D extends Number & Serializable> void testWildcardWithTypeVariableAssignableFromNonGenericClass() {
     final Type a = new Token<A>() {}.type();
     final Type b = new Token<B>() {}.type();
     final Type c = new Token<C>() {}.type();
