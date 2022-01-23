@@ -5,7 +5,7 @@
 The microBean™ Type project provides classes and interfaces assisting
 with Java <a
 href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/reflect/Type.html"><code>Type</code></a>
-instances.
+instances, as well as other frameworks' representations of such instances.
 
 # Status
 
@@ -20,7 +20,7 @@ project version and without notice.**
 
 # Requirements
 
-microBean™ Type requires a Java runtime of version 11 or higher.
+microBean™ Type requires a Java runtime of version 17 or higher.
 
 # Installation
 
@@ -33,7 +33,7 @@ as a Maven dependency:
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
   <!-- Always check https://search.maven.org/artifact/org.microbean/microbean-type for up-to-date available versions. -->
-  <version>0.0.14</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
