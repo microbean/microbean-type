@@ -260,8 +260,9 @@ public abstract class Type<T> {
    * <p>The {@link Collection} returned must not contain {@code this}
    * and must have no {@code null} or duplicate elements.</p>
    *
-   * <p>The ordering within the returned {@link Collection} is left
-   * deliberately undefined, and may differ between calls.</p>
+   * <p>The ordering within the returned {@link Collection} is not
+   * specified, <strong>but must be deterministic between
+   * invocations</strong>.</p>
    *
    * <p>The size of the {@link Collection} returned must not change
    * between calls.</p>
@@ -281,8 +282,7 @@ public abstract class Type<T> {
    * concurrent use by multiple threads.
    *
    * @idempotency Implementations of this method must be idempotent
-   * and deterministic, though the ordering of elements within
-   * returned {@link Collection}s is undefined
+   * and deterministic.
    */
   public abstract Collection<? extends Type<T>> directSupertypes();
 
@@ -310,27 +310,108 @@ public abstract class Type<T> {
    */
   public abstract Type<T> type();
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} represents
+   * a generic class by virtue of having type parameters.
+   *
+   * <p>This implementation calls the {@link #typeParameters()} method
+   * and returns {@code true} if the resulting {@link List}
+   * {@linkplain List#isEmpty() is not empty}.  Subclasses are
+   * encouraged to provide a faster implementation.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} represents
+   * a generic class by virtue of having type parameters
+   *
+   * @see #typeParameters()
+   */
   @OverridingEncouraged
   public boolean hasTypeParameters() {
     return !this.typeParameters().isEmpty();
   }
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} represents
+   * a parameterized type by virtue of having type arguments.
+   *
+   * <p>This implementation calls the {@link #typeArguments()} method
+   * and returns {@code true} if the resulting {@link List}
+   * {@linkplain List#isEmpty() is not empty}.  Subclasses are
+   * encouraged to provide a faster implementation.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} represents
+   * a parameterized type by virtue of having type arguments
+   *
+   * @see #typeArguments()
+   */
   @OverridingEncouraged
   public boolean hasTypeArguments() {
     return !this.typeArguments().isEmpty();
   }
 
+  /**
+   * Returns an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s type
+   * parameters.
+   *
+   * <p>The returned {@link List} will be {@linkplain List#isEmpty()
+   * non-empty} if and only if this {@link Type} models a generic
+   * class.</p>
+   *
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
+   *
+   * @return an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s type
+   * parameters; never {@code null}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract List<? extends Type<T>> typeParameters();
 
+  /**
+   * Returns an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s type
+   * arguments.
+   *
+   * <p>The returned {@link List} will be {@linkplain List#isEmpty()
+   * non-empty} if and only if this {@link Type} models a
+   * parameterized type.</p>
+   *
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
+   *
+   * @return an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s type
+   * parameters; never {@code null}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract List<? extends Type<T>> typeArguments();
 
   /**
    * Returns the <em>component type</em> of this {@link Type}, if
    * there is one, <strong>or {@code null} if there is not</strong>.
    *
-   * <p>This method returns a non-{@code null} result only when this
-   * {@link Type} represents a type that is either an array or a
-   * generic array type.</p>
+   * <p>Implementations of this method must return a non-{@code null}
+   * result only when this {@link Type} represents a type that is
+   * either an array or a generic array type.</p>
+   *
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
    *
    * @return the <em>component type</em> of this {@link Type}, if
    * there is one, or {@code null} if there is not
@@ -346,53 +427,265 @@ public abstract class Type<T> {
    */
   public abstract Type<T> componentType();
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} represents
+   * either a type variable or a wildcard type.
+   *
+   * <p>This implementation calls the {@link #upperBounds()} method
+   * and returns {@code true} if the resulting {@link List}
+   * {@linkplain List#isEmpty() is not empty}.  Subclasses are
+   * encouraged to provide a faster implementation.</p>
+   *
+   * <p>Undefined behavior will result if an override does not
+   * meet these requirements.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} represents
+   * either a type variable or a wildcard type
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @see #upperBounds()
+   */
   @OverridingEncouraged
   public boolean upperBounded() {
     return !this.upperBounds().isEmpty();
   }
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} represents
+   * a wildcard type with lower bounds.
+   *
+   * <p>This implementation calls the {@link #lowerBounds()} method
+   * and returns {@code true} if the resulting {@link List}
+   * {@linkplain List#isEmpty() is not empty}.  Subclasses are
+   * encouraged to provide a faster implementation.</p>
+   *
+   * <p>Undefined behavior will result if an override does not
+   * meet these requirements.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} represents
+   * a wildcard type with lower bounds
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @see #lowerBounds()
+   */
   @OverridingEncouraged
   public boolean lowerBounded() {
     return !this.lowerBounds().isEmpty();
   }
 
+  /**
+   * Returns an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s lower
+   * bounds.
+   *
+   * <p>The returned {@link List} will be {@linkplain List#isEmpty()
+   * non-empty} if and only if this {@link Type} models a
+   * lower-bounded wildcard type.</p>
+   *
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
+   *
+   * @return an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s lower
+   * bounds; never {@code null}; often {@linkplain List#isEmpty()
+   * empty}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract List<? extends Type<T>> lowerBounds();
 
+  /**
+   * Returns an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s upper
+   * bounds.
+   *
+   * <p>The returned {@link List} will be {@linkplain List#isEmpty()
+   * non-empty} if and only if this {@link Type} models either a type
+   * variable, an unbounded wildcard type, or an upper-bounded
+   * wildcard type.
+   *
+   * <p>Undefined behavior will result if an implementation does not
+   * meet these requirements.</p>
+   *
+   * @return an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} of this {@link Type}'s upper
+   * bounds; never {@code null}; often {@linkplain List#isEmpty()
+   * empty}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
   public abstract List<? extends Type<T>> upperBounds();
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} models a
+   * class.
+   *
+   * <p>This method returns {@code true} if and only if {@link
+   * #named()} returns {@code true} and {@link #upperBounded()}
+   * returns {@code false}.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} models a
+   * class
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #named()
+   *
+   * @see #upperBounded()
+   */
   public final boolean isClass() {
     return this.named() && !this.upperBounded();
   }
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} models a
+   * generic array type.
+   *
+   * <p>This method returns {@code true} if and only if {@link
+   * #componentType()} returns a non-{@code value} and {@link #type()}
+   * returns a {@link Type} that is not {@code this}.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} models a
+   * generic array type
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #componentType()
+   *
+   * @see #type()
+   */
   public final boolean genericArrayType() {
     return this.componentType() != null && this.type() != this;
   }
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} models a
+   * parameterized type.
+   *
+   * <p>This method returns {@code true} if and only if {@link
+   * #hasTypeArguments()} returns {@code true}.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} models a
+   * parameterized type
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #hasTypeArguments()
+   */
   public final boolean parameterizedType() {
     return this.hasTypeArguments();
   }
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} models a
+   * type variable.
+   *
+   * <p>This method returns {@code true} if and only if {@link
+   * #named()} returns {@code true} and {@link #upperBounded()}
+   * returns {@code true}.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} models a
+   * type variable
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #named()
+   *
+   * @see #upperBounded()
+   */
   public final boolean typeVariable() {
     return this.named() && this.upperBounded();
   }
 
+  /**
+   * Returns {@code true} if and only if this {@link Type} models a
+   * wildcard type.
+   *
+   * <p>This method returns {@code true} if and only if {@link
+   * #named()} returns {@code true} and one of {@link #upperBounded()}
+   * or {@link #lowerBounded()} returns {@code true}.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} models a
+   * wildcard type
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #named()
+   *
+   * @see #upperBounded()
+   *
+   * @see #lowerBounded()
+   */
   public final boolean wildcard() {
     return !this.named() && (this.upperBounded() || this.lowerBounded());
   }
 
+  /**
+   * Returns all the supertypes of this {@link Type} (which includes
+   * this {@link Type}).
+   *
+   * <p>This method reflexively and transitively applies the direct
+   * supertype relation (represented by the {@link
+   * #directSupertypes()} method) to this {@link Type} and returns an
+   * {@linkplain Collections#unmodifiableCollection(Collection)
+   * unmodifiable <code>Collection</code>} containing the result.</p>
+   *
+   * @return an {@linkplain
+   * Collections#unmodifiableCollection(Collection) unmodifiable
+   * <code>Collection</code>} containing all the supertypes of this
+   * {@link Type} (which includes this {@link Type}); never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #directSupertypes()
+   */
   public final Collection<? extends Type<T>> supertypes() {
     return this.supertypes(this, null);
-  }
-
-  public final <X> boolean supertype(final Type<X> sub) {
-    final Type<T> me = this.box();
-    // Does this represent a supertype of sub?  Remember that the supertype relation is reflexive.
-    for (final Type<?> supertype : this.supertypes(sub.box(), null)) {
-      if (supertype.represents(me)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   @SuppressWarnings("unchecked")
@@ -417,6 +710,36 @@ public abstract class Type<T> {
     } else {
       return List.of();
     }
+  }
+
+  /**
+   * Returns {@code true} if and only if this {@link Type} is a
+   * supertype of the supplied {@link Type}.
+   *
+   * <p>This method uses a combination of the {@link #supertypes()}
+   * method and the {@link #represents(Type)} method in its
+   * implementation.</p>
+   *
+   * @param sub the purported subtype; must not be {@code null}
+   *
+   * @return {@code true} if and only if this {@link Type} is a
+   * supertype of the supplied {@link Type}
+   *
+   * @exception NullPointerException if {@code sub} is {@code null}
+   *
+   * @see #supertypes()
+   *
+   * @see #represents(Type)
+   */
+  public final <X> boolean supertype(final Type<X> sub) {
+    final Type<T> me = this.box();
+    // Does this represent a supertype of sub?  Remember that the supertype relation is reflexive.
+    for (final Type<?> supertype : this.supertypes(sub.box(), null)) {
+      if (supertype.represents(me)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -1975,11 +2298,101 @@ public abstract class Type<T> {
      */
 
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadClass} is assignable
+     * to a reference bearing the type modeled by the supplied {@code
+     * receiverClass}, according to the assignability rules modeled by
+     * this {@link Semantics} instance, and if and only if {@code
+     * payloadClass} models a {@linkplain Class Java class} and not
+     * any other type, and if and only if {@code receiverClass} models
+     * a {@linkplain Class Java class} and not any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code true} if and only if
+     * {@link Type#supertype(Type)
+     * receiverClass.supertype(payloadClass)} returns {@code true}.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverClass}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadClass};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverClass the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadClass the payload type as described above; must
+     * not be {@code null}
+     *
+     * @return {@code true} if and only if {@link Type#supertype(Type)
+     * receiverClass.supertype(payloadClass)} returns {@code true}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
     @Override
     protected <X, Y> boolean classIsAssignableFromClass(final Type<X> receiverClass, final Type<Y> payloadClass) {
       return receiverClass.supertype(payloadClass);
     }
 
+    /**
+     * Returns {@code true} if and only if a reference bearing the
+     * type modeled by the supplied {@code payloadGenericArrayType} is
+     * assignable to a reference bearing the type modeled by the
+     * supplied {@code receiverGenericArrayType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance,
+     * and if and only if {@code payloadGenericArrayType} models a
+     * {@linkplain java.lang.reflect.GenericArrayType generic array
+     * type} and not any other type, and if and only if {@code
+     * receiverGenericArrayType} models a {@linkplain
+     * java.lang.reflect.GenericArrayType generic array type} and not
+     * any other type.
+     *
+     * <p>This method is called by the {@link #assignable(Type, Type)}
+     * method.</p>
+     *
+     * <p>This implementation returns {@code true} if and only if the
+     * {@linkplain Type#componentType() component type} of the {@code
+     * receiverGenericArrayType} {@linkplain #assignable(Type, Type)
+     * is assignable from} the {@linkplain Type#componentType()
+     * component type} of the {@code payloadGenericArrayType}.</p>
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverGenericArrayType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadClass};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverGenericArrayType the receiver type as described
+     * above; must not be {@code null}
+     *
+     * @param payloadGenericArrayType the payload type as described
+     * above; must not be {@code null}
+     *
+     * @return {@code true} if and only if the {@linkplain
+     * Type#componentType() component type} of the {@code
+     * receiverGenericArrayType} {@linkplain #assignable(Type, Type)
+     * is assignable from} the {@linkplain Type#componentType()
+     * component type} of the {@code payloadGenericArrayType}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #assignable(Type, Type)
+     */
     @Override
     protected final <X, Y> boolean genericArrayTypeIsAssignableFromGenericArrayType(final Type<X> receiverGenericArrayType,
                                                                                     final Type<Y> payloadGenericArrayType) {

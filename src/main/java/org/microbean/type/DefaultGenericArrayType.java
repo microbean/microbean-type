@@ -29,7 +29,7 @@ import java.lang.reflect.Type;
  */
 public final class DefaultGenericArrayType implements GenericArrayType {
 
-  
+
   /*
    * Instance fields.
    */
@@ -50,8 +50,8 @@ public final class DefaultGenericArrayType implements GenericArrayType {
    *
    * @param genericComponentType the generic component type; must not
    * be {@code null}; should almost certainly be a {@link
-   * java.lang.reflect.ParameterizedType} or a {@link
-   * java.lang.reflect.TypeVariable}
+   * GenericArrayType}, a {@link java.lang.reflect.ParameterizedType}
+   * or a {@link java.lang.reflect.TypeVariable}
    *
    * @exception NullPointerException if {@code genericComponentType}
    * is {@code null}
@@ -102,10 +102,39 @@ public final class DefaultGenericArrayType implements GenericArrayType {
     return JavaTypes.toString(this);
   }
 
-  public static final DefaultGenericArrayType valueOf(final GenericArrayType genericArrayType) {
-    if (genericArrayType == null) {
-      return null;
-    } else if (genericArrayType instanceof DefaultGenericArrayType) {
+
+  /*
+   * Static methods.
+   */
+
+
+  /**
+   * If the supplied {@link GenericArrayType} is a {@link
+   * DefaultGenericArrayType}, returns it; otherwise creates a new
+   * {@link DefaultGenericArrayType} with the supplied {@link
+   * GenericArrayType}'s {@linkplain
+   * GenericArrayType#getGenericComponentType() generic component
+   * type} and returns it.
+   *
+   * @param genericArrayType the {@link GenericArrayType} to
+   * effectively copy (or return); must not be {@code null}
+   *
+   * @return a non-{@code null} {@link DefaultGenericArrayType}
+   *
+   * @exception NullPointerException if {@code genericArrayType} is
+   * {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link DefaultGenericArrayType} with
+   * each invocation).
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final DefaultGenericArrayType of(final GenericArrayType genericArrayType) {
+    if (genericArrayType instanceof DefaultGenericArrayType) {
       return (DefaultGenericArrayType)genericArrayType;
     } else {
       return new DefaultGenericArrayType(genericArrayType.getGenericComponentType());

@@ -81,6 +81,16 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
 
 
+  /**
+   * Creates a new {@link JavaType} with no autoboxing.
+   *
+   * @param type a {@link Token} representing the Java {@link Type}
+   * being modeled; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}
+   *
+   * @see #JavaType(Token, boolean)
+   */
   public JavaType(final Token<?> type) {
     this(type.type(), false);
   }
@@ -100,6 +110,16 @@ public class JavaType extends org.microbean.type.Type<Type> {
     this(type.type(), box);
   }
 
+  /**
+   * Creates a new {@link JavaType} with no autoboxing.
+   *
+   * @param type the {@link Type} being modeled; must not be {@code
+   * null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}
+   *
+   * @see #JavaType(Type, boolean)
+   */
   public JavaType(final Type type) {
     this(type, false);
   }
@@ -300,8 +320,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * concurrent use by multiple threads.
    *
    * @idempotency This method is, and its overrides must be,
-   * idempotent and deterministic, though the ordering of elements
-   * within returned {@link Collection}s is undefined
+   * idempotent and deterministic.
    */
   @Override
   public Collection<JavaType> directSupertypes() {
