@@ -27,6 +27,8 @@ import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.StringJoiner;
 
+import org.microbean.development.annotation.Convenience;
+
 class AbstractWildcardType implements WildcardType {
 
 
@@ -88,12 +90,62 @@ class AbstractWildcardType implements WildcardType {
    */
 
 
+  /**
+   * Returns the sole upper bound of this {@link
+   * AbstractWildcardType}.
+   *
+   * <p>Wildcard types as defined in the <a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.5.1"
+   * target="_parent">Java Language Specification</a> may have exactly
+   * one upper bound.  {@link WildcardType} permits {@linkplain
+   * WildcardType#getUpperBounds() permits many}, for no good reason.
+   * This method makes it easier to get the sole upper bound of a
+   * wildcard type.</p>
+   *
+   * @return the sole upper bound of this {@link
+   * AbstractWildcardType}; never {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see WildcardType#getUpperBounds()
+   */
+  @Convenience
   public final Type getUpperBound() {
     return this.upperBounds[0];
   }
 
+  /**
+   * Returns the sole lower bound of this {@link
+   * AbstractWildcardType}, if there is one, or {@code null}.
+   *
+   * <p>Wildcard types as defined in the <a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.5.1"
+   * target="_parent">Java Language Specification</a> may have zero or
+   * one lower bound.  {@link WildcardType} permits {@linkplain
+   * WildcardType#getLowerBounds() permits many}, for no good reason.
+   * This method makes it easier to get the sole lower bound of a
+   * wildcard type.</p>
+   *
+   * @return the sole lower bound of this {@link
+   * AbstractWildcardType}, if there is one, or {@code null}
+   *
+   * @nullability This method may return {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see WildcardType#getLowerBounds()
+   */
+  @Convenience
   public final Type getLowerBound() {
-    return this.lowerBounds.length <=0 ? null : this.lowerBounds[0];
+    return this.lowerBounds.length <= 0 ? null : this.lowerBounds[0];
   }
 
   @Override // WildcardType
@@ -136,14 +188,37 @@ class AbstractWildcardType implements WildcardType {
    * Static methods.
    */
 
-  
-  public static final AbstractWildcardType valueOf(final WildcardType type) {
-    if (type == null) {
-      return null;
-    } else if (type instanceof AbstractWildcardType) {
-      return (AbstractWildcardType)type;
+
+  /**
+   * If the supplied {@link WildcardType} is an {@link
+   * AbstractWildcardType}, returns it; otherwise creates a new {@link
+   * AbstractWildcardType} with the supplied {@link WildcardType}'s
+   * {@linkplain WildcardType#getUpperBounds() upper bounds} and
+   * {@linkplain WildcardType#getLowerBounds() lower bounds} and
+   * returns it.
+   *
+   * @param wildcardType the {@link WildcardType} to effectively copy
+   * (or return); must not be {@code null}
+   *
+   * @return a non-{@code null} {@link AbstractWildcardType}
+   *
+   * @exception NullPointerException if {@code wildcardType} is {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link AbstractWildcardType} with each
+   * invocation).
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final AbstractWildcardType of(final WildcardType wildcardType) {
+    if (wildcardType instanceof AbstractWildcardType) {
+      return (AbstractWildcardType)wildcardType;
     } else {
-      return new AbstractWildcardType(type);
+      return new AbstractWildcardType(wildcardType);
     }
   }
 

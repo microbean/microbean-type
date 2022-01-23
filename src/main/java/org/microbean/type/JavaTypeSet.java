@@ -111,43 +111,155 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
 
 
+  /**
+   * Returns a new {@link JavaTypeSet} containing only the {@link
+   * Type}s that are not {@linkplain Class#isInterface() interface
+   * types} from this {@link JavaTypeSet}.
+   *
+   * @return a new {@link JavaTypeSet} containing only the {@link
+   * Type}s that are not {@linkplain Class#isInterface() interface
+   * types} from this {@link JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public final JavaTypeSet nonInterfaceTypes() {
     return new JavaTypeSet(this.set.stream()
                               .filter(JavaTypeSet::nonInterfaceType)
                               .toList());
   }
 
+  /**
+   * Returns a new {@link JavaTypeSet} containing only the {@linkplain
+   * Class#isInterface() interface types} from this {@link
+   * JavaTypeSet}.
+   *
+   * @return a new {@link JavaTypeSet} containing only the {@linkplain
+   * Class#isInterface() interface types} from this {@link
+   * JavaTypeSet}.
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public final JavaTypeSet interfaceTypes() {
     return new JavaTypeSet(this.set.stream()
-                              .filter(JavaTypeSet::interfaceType)
-                              .toList());
+                           .filter(JavaTypeSet::interfaceType)
+                           .toList());
   }
 
+  /**
+   * Throws an {@link UnsupportedOperationException} when invoked.
+   *
+   * @param type ignored
+   *
+   * @return false in all cases
+   *
+   * @exception UnsupportedOperationException when invoked
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Set<Type>
   public final boolean add(final Type type) {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Throws an {@link UnsupportedOperationException} when invoked.
+   *
+   * @param c ignored
+   *
+   * @return false in all cases
+   *
+   * @exception UnsupportedOperationException when invoked
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Set<Type>
   public final boolean addAll(final Collection<? extends Type> c) {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Throws an {@link UnsupportedOperationException} when invoked.
+   *
+   * @exception UnsupportedOperationException when invoked
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Set<Type>
   public final void clear() {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Throws an {@link UnsupportedOperationException} when invoked.
+   *
+   * @param o ignored
+   *
+   * @return false in all cases
+   *
+   * @exception UnsupportedOperationException when invoked
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Set<Type>
   public final boolean remove(final Object o) {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Throws an {@link UnsupportedOperationException} when invoked.
+   *
+   * @param c ignored
+   *
+   * @return false in all cases
+   *
+   * @exception UnsupportedOperationException when invoked
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Set<Type>
   public final boolean removeAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Throws an {@link UnsupportedOperationException} when invoked.
+   *
+   * @param c ignored
+   *
+   * @return false in all cases
+   *
+   * @exception UnsupportedOperationException when invoked
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Set<Type>
   public final boolean retainAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
@@ -333,34 +445,200 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
 
 
+  /**
+   * Returns a {@link JavaTypeSet} whose sole element models the
+   * supplied {@link Type}.
+   *
+   * @param t the {@link Type} in question; must not be {@code
+   * null}
+   *
+   * @return a {@link JavaTypeSet} whose sole element models the
+   * supplied {@link Type}; never {@code null}
+   *
+   * @exception NullPointerException if {@code t} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(JavaType)
+   *
+   * @see JavaType#of(Type)
+   */
   @Convenience
   public static final JavaTypeSet of(final Type t) {
     return of(JavaType.of(t));
   }
 
+  /**
+   * Returns a {@link JavaTypeSet} whose elements are modeled by the
+   * supplied {@link Type}s.
+   *
+   * @param t0 one of the {@link Type}s in question; must not be
+   * {@code null}
+   *
+   * @param t1 one of the {@link Type}s in question; must not be
+   * {@code null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are modeled by the
+   * supplied {@link Type}s; never {@code null}
+   *
+   * @exception NullPointerException if any argument is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Collection)
+   *
+   * @see JavaType#of(Type)
+   */
   @Convenience
   public static final JavaTypeSet of(final Type t0, final Type t1) {
     return of(List.of(JavaType.of(t0), JavaType.of(t1)));
   }
 
+  /**
+   * Returns a {@link JavaTypeSet} whose sole element is the supplied
+   * {@link JavaType}.
+   *
+   * @param t the {@link JavaType} in question; must not be {@code
+   * null}
+   *
+   * @return a {@link JavaTypeSet} whose sole element is the supplied
+   * {@link JavaType}; never {@code null}
+   *
+   * @exception NullPointerException if {@code t} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public static final JavaTypeSet of(final JavaType t) {
     return new JavaTypeSet(t);
   }
 
+  /**
+   * Returns a {@link JavaTypeSet} whose elements are the supplied
+   * {@link JavaType}s.
+   *
+   * @param t0 one of the {@link JavaType}s in question; must not be
+   * {@code null}
+   *
+   * @param t1 one of the {@link JavaType}s in question; must not be
+   * {@code null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are modeled by the
+   * supplied {@link JavaType}s; never {@code null}
+   *
+   * @exception NullPointerException if any argument is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Collection)
+   */
   @Convenience
   public static final JavaTypeSet of(final JavaType t0, final JavaType t1) {
     return of(List.of(t0, t1));
   }
 
+  /**
+   * Returns a {@link JavaTypeSet} whose elements are drawn from the
+   * supplied {@link Collection}, in its {@linkplain
+   * Collection#iterator() iteration order}.
+   *
+   * @param types the {@link Collection} in question; must not be
+   * {@code null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are drawn from the
+   * supplied {@link Collection}, in its {@linkplain
+   * Collection#iterator() iteration order}; never {@code null}
+   *
+   * @exception NullPointerException if {@code types} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public static final JavaTypeSet of(final Collection<?> types) {
     return new JavaTypeSet(types);
   }
 
+  /**
+   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes of the supplied
+   * <code>Type</code>} (which include the supplied {@link Type}
+   * itself).
+   *
+   * @param t the {@link Type} in question; must not be {@code null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes of the supplied
+   * <code>Type</code>} (which include the supplied {@link Type}
+   * itself)
+   *
+   * @exception NullPointerException if {@code t} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Collection)
+   *
+   * @see JavaTypes#supertypes(Type)
+   */
   @Convenience
   public static final JavaTypeSet ofSupertypes(final Type t) {
     return of(JavaTypes.supertypes(t));
   }
 
+  /**
+   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
+   * modeled by the supplied {@link JavaType} (which include the
+   * modeled {@link Type} itself).
+   *
+   * @param jt the {@link JavaType} in question; must not be {@code
+   * null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
+   * modeled by the supplied {@link JavaType} (which include the
+   * modeled {@link Type} itself); never {@code null}
+   *
+   * @exception NullPointerException if {@code jt} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #ofSupertypes(Type)
+   *
+   * @see JavaTypes#supertypes(Type)
+   */
   @Convenience
   public static final JavaTypeSet ofSupertypes(final JavaType jt) {
     return ofSupertypes(jt.type());

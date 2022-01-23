@@ -40,10 +40,29 @@ import java.util.StringJoiner;
 
 import java.util.function.Predicate;
 
+/**
+ * A utility class providing useful operations related to Java {@link
+ * Type}s.
+ *
+ * @author <a href="https://about.me/lairdnelson"
+ * target="_parent">Laird Nelson</a>
+ */
 public final class JavaTypes {
 
   private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
 
+  /**
+   * Returns a {@link Type} array with a length of {@code 0}.
+   *
+   * @return a {@link Type} array with a length of {@code 0}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   public static final Type[] emptyTypeArray() {
     return EMPTY_TYPE_ARRAY;
   }
@@ -348,6 +367,44 @@ public final class JavaTypes {
     }
   }
 
+  /**
+   * Returns {@code true} if and only if {@code sup} is a supertype of
+   * {@code sub}.
+   *
+   * <p>This method obeys the <a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.10"
+   * target="_parent">subtyping rules from the Java Language
+   * Specification</a> with the following exceptions:</p>
+   *
+   * <ul>
+   *
+   * <li><a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.5.1"
+   * target="_parent">Containing types</a> are discarded when
+   * calculating the supertypes of a parameterized type.</li>
+   *
+   * <li>{@linkplain Class#isPrimitive() Primitive types} have no
+   * supertypes.</li>
+   *
+   * </ul>
+   *
+   * @param sup the purported supertype; must not be {@code null}
+   *
+   * @param sub the purported subtype; must not be {@code null}
+   *
+   * @return {@code true} if and only if {@code sup} is a supertype of
+   * {@code sub}
+   *
+   * @exception NullPointerException if either argument is {@code
+   * null}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #supertypes(Type)
+   */
   public static final boolean supertype(final Type sup, final Type sub) {
     // Is sup a supertype of sub?
     if (sup == null) {

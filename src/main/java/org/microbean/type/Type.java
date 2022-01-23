@@ -851,6 +851,8 @@ public abstract class Type<T> {
      * @param payloadType the payload type as described above; must
      * not be {@code null}
      *
+     * @param box whether autoboxing is enabled
+     *
      * @return {@code true} if and only if a reference bearing the
      * type modeled by the supplied {@code payloadType} is assignable
      * to a reference bearing the type modeled by the supplied {@code
