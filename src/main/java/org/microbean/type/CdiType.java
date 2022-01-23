@@ -33,7 +33,7 @@ import java.util.function.Function;
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  */
-public class BeanType extends JavaType {
+public class CdiType extends JavaType {
 
 
   /*
@@ -50,7 +50,7 @@ public class BeanType extends JavaType {
 
 
   /**
-   * Creates a new {@link BeanType}.
+   * Creates a new {@link CdiType}.
    *
    * @param type the {@link Type} being modeled; must not be {@code
    * null}; must be a <a
@@ -64,7 +64,7 @@ public class BeanType extends JavaType {
    *
    * @exception NullPointerException if any argument is {@code null}
    */
-  public BeanType(final Type type, final Function<Type, Collection<Type>> directSupertypesFunction) {
+  public CdiType(final Type type, final Function<Type, Collection<Type>> directSupertypesFunction) {
     super(type);
     this.directSupertypesFunction = Objects.requireNonNull(directSupertypesFunction, "directSupertypesFunction");
   }
@@ -79,8 +79,8 @@ public class BeanType extends JavaType {
    * Returns an {@linkplain
    * Collections#unmodifiableCollection(Collection) unmodifiable and
    * immutable <code>Collection</code>} of the <em>direct
-   * supertypes</em> of this {@link BeanType} as provided by the
-   * {@linkplain #BeanType(Type, Function)
+   * supertypes</em> of this {@link CdiType} as provided by the
+   * {@linkplain #CdiType(Type, Function)
    * <code>directSupertypesFunction</code> supplied at construction
    * time}.
    *
@@ -119,22 +119,22 @@ public class BeanType extends JavaType {
 
 
   /**
-   * Creates a new {@link BeanType}.
+   * Creates a new {@link CdiType}.
    *
    * @param type a {@link Token} representing the type to model; must
    * not be {@code null}
    *
-   * @return a new {@link BeanType}; never {@code null}
+   * @return a new {@link CdiType}; never {@code null}
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link BeanType} with each invocation).
-   * However, any {@link BeanType} returned from this method is
+   * that it returns a new {@link CdiType} with each invocation).
+   * However, any {@link CdiType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * BeanType} returned from this method, provided the inputs to all
+   * CdiType} returned from this method, provided the inputs to all
    * invocations are equal.
    *
    * @threadsafety This method is safe for concurrent use by multiple
@@ -142,12 +142,12 @@ public class BeanType extends JavaType {
    *
    * @see #of(Type)
    */
-  public static final BeanType of(final Token<?> type) {
-    return BeanType.of(type.type());
+  public static final CdiType of(final Token<?> type) {
+    return CdiType.of(type.type());
   }
 
   /**
-   * Creates a new {@link BeanType}.
+   * Creates a new {@link CdiType}.
    *
    * @param type a {@link Token} representing the type to model; must
    * not be {@code null}
@@ -156,7 +156,7 @@ public class BeanType extends JavaType {
    * true} because CDI requires autoboxing</strong>; see {@link
    * JavaType#of(Token, boolean)} which this method shadows
    *
-   * @return a new {@link BeanType}; never {@code null}
+   * @return a new {@link CdiType}; never {@code null}
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
@@ -166,10 +166,10 @@ public class BeanType extends JavaType {
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link BeanType} with each invocation).
-   * However, any {@link BeanType} returned from this method is
+   * that it returns a new {@link CdiType} with each invocation).
+   * However, any {@link CdiType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * BeanType} returned from this method, provided the inputs to all
+   * CdiType} returned from this method, provided the inputs to all
    * invocations are equal.
    *
    * @threadsafety This method is safe for concurrent use by multiple
@@ -177,41 +177,41 @@ public class BeanType extends JavaType {
    *
    * @see #of(Type)
    */
-  public static final BeanType of(final Token<?> type, final boolean box) {
+  public static final CdiType of(final Token<?> type, final boolean box) {
     if (!box) {
       throw new IllegalArgumentException("boxing is required by CDI");
     }
-    return BeanType.of(type.type());
+    return CdiType.of(type.type());
   }
 
   /**
-   * Creates a new {@link BeanType}.
+   * Creates a new {@link CdiType}.
    *
    * @param type the {@link Type} that will be modeled; must not be
    * {@code null}
    *
-   * @return a new {@link BeanType}; never {@code null}
+   * @return a new {@link CdiType}; never {@code null}
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link BeanType} with each invocation).
-   * However, any {@link BeanType} returned from this method is
+   * that it returns a new {@link CdiType} with each invocation).
+   * However, any {@link CdiType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * BeanType} returned from this method, provided the inputs to all
+   * CdiType} returned from this method, provided the inputs to all
    * invocations are equal.
    *
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    */
-  public static final BeanType of(final Type type) {
-    return new BeanType(type, JavaTypes::directSupertypes);
+  public static final CdiType of(final Type type) {
+    return new CdiType(type, JavaTypes::directSupertypes);
   }
 
   /**
-   * Creates a new {@link BeanType}.
+   * Creates a new {@link CdiType}.
    *
    * @param type the {@link Type} that will be modeled; must not be
    * {@code null}
@@ -220,7 +220,7 @@ public class BeanType extends JavaType {
    * true} because CDI requires autoboxing</strong>; see {@link
    * JavaType#of(Type, boolean)} which this method shadows
    *
-   * @return a new {@link BeanType}; never {@code null}
+   * @return a new {@link CdiType}; never {@code null}
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
@@ -230,10 +230,10 @@ public class BeanType extends JavaType {
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link BeanType} with each invocation).
-   * However, any {@link BeanType} returned from this method is
+   * that it returns a new {@link CdiType} with each invocation).
+   * However, any {@link CdiType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * BeanType} returned from this method, provided the inputs to all
+   * CdiType} returned from this method, provided the inputs to all
    * invocations are equal.
    *
    * @threadsafety This method is safe for concurrent use by multiple
@@ -245,7 +245,7 @@ public class BeanType extends JavaType {
     if (!box) {
       throw new IllegalArgumentException("boxing is required by CDI");
     }
-    return BeanType.of(type);
+    return CdiType.of(type);
   }
 
 }

@@ -2732,7 +2732,7 @@ public abstract class Type<T> {
                                     final java.lang.reflect.Type payloadType,
                                     final boolean ignoredBox) {
       // Boxing is always required in CDI.
-      return this.assignable(BeanType.of(receiverType), BeanType.of(payloadType));
+      return this.assignable(CdiType.of(receiverType), CdiType.of(payloadType));
     }
 
     @Override
