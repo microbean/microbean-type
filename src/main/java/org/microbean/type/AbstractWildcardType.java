@@ -189,37 +189,4 @@ class AbstractWildcardType implements WildcardType {
    */
 
 
-  /**
-   * If the supplied {@link WildcardType} is an {@link
-   * AbstractWildcardType}, returns it; otherwise creates a new {@link
-   * AbstractWildcardType} with the supplied {@link WildcardType}'s
-   * {@linkplain WildcardType#getUpperBounds() upper bounds} and
-   * {@linkplain WildcardType#getLowerBounds() lower bounds} and
-   * returns it.
-   *
-   * @param wildcardType the {@link WildcardType} to effectively copy
-   * (or return); must not be {@code null}
-   *
-   * @return a non-{@code null} {@link AbstractWildcardType}
-   *
-   * @exception NullPointerException if {@code wildcardType} is {@code
-   * null}
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent but not deterministic (in
-   * that it may return a new {@link AbstractWildcardType} with each
-   * invocation).
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  public static final AbstractWildcardType of(final WildcardType wildcardType) {
-    if (wildcardType instanceof AbstractWildcardType) {
-      return (AbstractWildcardType)wildcardType;
-    } else {
-      return new AbstractWildcardType(wildcardType);
-    }
-  }
-
 }

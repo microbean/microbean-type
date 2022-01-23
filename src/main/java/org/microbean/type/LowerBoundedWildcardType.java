@@ -17,6 +17,7 @@
 package org.microbean.type;
 
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 
 /**
  * A {@link java.lang.reflect.WildcardType} implementation that has
@@ -58,6 +59,67 @@ public final class LowerBoundedWildcardType extends AbstractWildcardType {
    */
   public LowerBoundedWildcardType(final Type[] lowerBounds) {
     super(null, lowerBounds);
+  }
+
+  /**
+   * Creates a new {@link LowerBoundedWildcardType}.
+   *
+   * @param wildcardType the {@link WildcardType} whose {@linkplain
+   * WildcardType#getLowerBounds() lower bounds} will be effectively
+   * copied; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code wildcardType} is {@code
+   * null}
+   *
+   * @exception IllegalArgumentException if {@code wildcardType} has
+   * no lower bounds
+   *
+   * @see WildcardType#getLowerBounds()
+   */
+  public LowerBoundedWildcardType(final WildcardType wildcardType) {
+    super(null, wildcardType.getLowerBounds());
+    if (this.getLowerBound() == null) {
+      throw new IllegalArgumentException("wildcardType: " + wildcardType);
+    }
+  }
+
+
+  /*
+   * Static methods.
+   */
+
+
+  /**
+   * If the supplied {@link WildcardType} is a {@link
+   * LowerBoundedWildcardType}, returns it; otherwise creates a new {@link
+   * LowerBoundedWildcardType} with the supplied {@link WildcardType}'s
+   * {@linkplain WildcardType#getUpperBounds() upper bounds} and
+   * {@linkplain WildcardType#getLowerBounds() lower bounds} and
+   * returns it.
+   *
+   * @param wildcardType the {@link WildcardType} to effectively copy
+   * (or return); must not be {@code null}
+   *
+   * @return a non-{@code null} {@link LowerBoundedWildcardType}
+   *
+   * @exception NullPointerException if {@code wildcardType} is {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link LowerBoundedWildcardType} with
+   * each invocation).
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final LowerBoundedWildcardType of(final WildcardType wildcardType) {
+    if (wildcardType instanceof LowerBoundedWildcardType w) {
+      return w;
+    } else {
+      return new LowerBoundedWildcardType(wildcardType);
+    }
   }
 
 }

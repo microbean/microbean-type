@@ -17,18 +17,18 @@
 package org.microbean.type;
 
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 
 /**
- * A {@link java.lang.reflect.WildcardType} implementation that has
- * only {@linkplain java.lang.reflect.WildcardType#getUpperBounds()
- * upper bounds}.
+ * A {@link WildcardType} implementation that has only {@linkplain
+ * WildcardType#getUpperBounds() upper bounds}.
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  *
- * @see java.lang.reflect.WildcardType
+ * @see WildcardType
  *
- * @see java.lang.reflect.WildcardType#getUpperBounds()
+ * @see WildcardType#getUpperBounds()
  */
 public final class UpperBoundedWildcardType extends AbstractWildcardType {
 
@@ -42,9 +42,9 @@ public final class UpperBoundedWildcardType extends AbstractWildcardType {
    * Creates a new {@link UpperBoundedWildcardType}.
    *
    * @param upperBound the sole {@linkplain
-   * java.lang.reflect.WildcardType#getUpperBounds() upper bound}; may
-   * be {@code null} in which case an array consisting solely of
-   * {@link Object Object.class} will be used instead
+   * WildcardType#getUpperBounds() upper bound}; may be {@code null}
+   * in which case an array consisting solely of {@link Object
+   * Object.class} will be used instead
    */
   public UpperBoundedWildcardType(final Type upperBound) {
     super(upperBound == null ? (Type[])null : new Type[] { upperBound }, null);
@@ -54,11 +54,65 @@ public final class UpperBoundedWildcardType extends AbstractWildcardType {
    * Creates a new {@link UpperBoundedWildcardType}.
    *
    * @param upperBounds the {@linkplain
-   * java.lang.reflect.WildcardType#getUpperBounds() upper bounds};
+   * WildcardType#getUpperBounds() upper bounds};
    * may be {@code null}
    */
   public UpperBoundedWildcardType(final Type[] upperBounds) {
     super(upperBounds, null);
   }
+
+  /**
+   * Creates a new {@link UpperBoundedWildcardType}.
+   *
+   * @param wildcardType the {@link WildcardType} whose {@link
+   * WildcardType#getUpperBounds() upper bounds} will be effectively
+   * copied; may be {@code null}
+   * in which case an array consisting solely of {@link Object
+   * Object.class} will be used instead
+   */
+  public UpperBoundedWildcardType(final WildcardType wildcardType) {
+    super(wildcardType == null ? new Type[] { Object.class } : wildcardType.getUpperBounds(), null);
+  }
+
+
+  /*
+   * Static methods.
+   */
+
+
+  /**
+   * If the supplied {@link WildcardType} is a {@link
+   * UpperBoundedWildcardType}, returns it; otherwise creates a new
+   * {@link UpperBoundedWildcardType} with the supplied {@link
+   * WildcardType}'s {@linkplain WildcardType#getUpperBounds() upper
+   * bounds} and returns it.
+   *
+   * @param wildcardType the {@link WildcardType} to effectively copy
+   * (or return); may be {@code null} in which case upper bounds
+   * consisting of an array consisting solely of {@link Object
+   * Object.class} will be used instead
+   *
+   * @return a non-{@code null} {@link UpperBoundedWildcardType}
+   *
+   * @exception NullPointerException if {@code wildcardType} is {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link UpperBoundedWildcardType} with
+   * each invocation).
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final UpperBoundedWildcardType of(final WildcardType wildcardType) {
+    if (wildcardType instanceof UpperBoundedWildcardType w) {
+      return w;
+    } else {
+      return new UpperBoundedWildcardType(wildcardType);
+    }
+  }
+
 
 }
