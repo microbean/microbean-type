@@ -12,6 +12,9 @@ instances, as well as other frameworks' representations of such instances.
 This project is currently experimental, in a pre-alpha state, and
 unsuitable for production use.
 
+The 0.2.0 version line is particularly experimental.  Version 0.0.14
+is the most stable as of this writing.
+
 # Compatibility
 
 **Until further notice, this project's APIs are subject to frequent
