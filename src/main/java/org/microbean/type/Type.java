@@ -457,7 +457,7 @@ public abstract class Type<T> {
 
   /**
    * Returns {@code true} if and only if this {@link Type} represents
-   * a wildcard type with lower bounds.
+   * a wildcard type with a lower bound.
    *
    * <p>This implementation calls the {@link #lowerBounds()} method
    * and returns {@code true} if the resulting {@link List}
@@ -719,6 +719,8 @@ public abstract class Type<T> {
    * <p>This method uses a combination of the {@link #supertypes()}
    * method and the {@link #represents(Type)} method in its
    * implementation.</p>
+   *
+   * @param <X> the type represented by the supplied {@link Type}
    *
    * @param sub the purported subtype; must not be {@code null}
    *
