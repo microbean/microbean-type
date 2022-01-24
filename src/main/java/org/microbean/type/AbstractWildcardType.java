@@ -16,16 +16,10 @@
  */
 package org.microbean.type;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 
 import java.util.Arrays;
-import java.util.StringJoiner;
 
 import org.microbean.development.annotation.Convenience;
 

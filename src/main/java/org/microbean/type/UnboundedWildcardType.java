@@ -16,7 +16,17 @@
  */
 package org.microbean.type;
 
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicConstantDesc;
+
 import java.lang.reflect.WildcardType;
+
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_GET_STATIC_FINAL;
+
+import static org.microbean.type.ConstantDescs.CD_UnboundedWildcardType;
 
 /**
  * A {@link java.lang.reflect.WildcardType} implementation that has no
@@ -31,7 +41,7 @@ import java.lang.reflect.WildcardType;
  *
  * @see java.lang.reflect.WildcardType#getUpperBounds()
  */
-public final class UnboundedWildcardType extends AbstractWildcardType {
+public final class UnboundedWildcardType extends AbstractWildcardType implements Constable {
 
 
   /*
@@ -54,4 +64,15 @@ public final class UnboundedWildcardType extends AbstractWildcardType {
     super(null, null);
   }
 
+
+  /*
+   * Instance methods.
+   */
+  
+
+  @Override
+  public final Optional<? extends ConstantDesc> describeConstable() {
+    return Optional.of(DynamicConstantDesc.of(BSM_GET_STATIC_FINAL, "INSTANCE", CD_UnboundedWildcardType));
+  }
+    
 }

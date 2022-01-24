@@ -16,8 +16,20 @@
  */
 package org.microbean.type;
 
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+
+import static org.microbean.type.ConstantDescs.CD_Type;
+import static org.microbean.type.ConstantDescs.CD_UpperBoundedWildcardType;
 
 /**
  * A {@link WildcardType} implementation that has only {@linkplain
@@ -30,7 +42,7 @@ import java.lang.reflect.WildcardType;
  *
  * @see WildcardType#getUpperBounds()
  */
-public final class UpperBoundedWildcardType extends AbstractWildcardType {
+public final class UpperBoundedWildcardType extends AbstractWildcardType implements Constable {
 
 
   /*
@@ -74,6 +86,23 @@ public final class UpperBoundedWildcardType extends AbstractWildcardType {
     super(wildcardType == null ? new Type[] { Object.class } : wildcardType.getUpperBounds(), null);
   }
 
+  @Override
+  public final Optional<? extends ConstantDesc> describeConstable() {
+    final Type[] upperBounds = this.getUpperBounds();
+    // Upper bounded (extends).
+    final int bsmInvokeArgumentsLength = upperBounds.length + 1;
+    final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+    bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_UpperBoundedWildcardType, CD_Type.arrayType());
+    for (int i = 1; i < bsmInvokeArgumentsLength; i++) {
+      final Optional<? extends ConstantDesc> arg = JavaTypes.describeConstable(upperBounds[i - 1]);
+      if (arg.isEmpty()) {
+        return Optional.empty();
+      }
+      bsmInvokeArguments[i] = arg.orElseThrow();
+    }
+    return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+  }
+  
 
   /*
    * Static methods.

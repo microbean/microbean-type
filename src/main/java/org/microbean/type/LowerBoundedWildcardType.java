@@ -16,8 +16,20 @@
  */
 package org.microbean.type;
 
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+
+import static org.microbean.type.ConstantDescs.CD_LowerBoundedWildcardType;
+import static org.microbean.type.ConstantDescs.CD_Type;
 
 /**
  * A {@link java.lang.reflect.WildcardType} implementation that has
@@ -31,7 +43,7 @@ import java.lang.reflect.WildcardType;
  *
  * @see java.lang.reflect.WildcardType#getLowerBounds()
  */
-public final class LowerBoundedWildcardType extends AbstractWildcardType {
+public final class LowerBoundedWildcardType extends AbstractWildcardType implements Constable {
 
 
   /*
@@ -81,6 +93,22 @@ public final class LowerBoundedWildcardType extends AbstractWildcardType {
     if (this.getLowerBound() == null) {
       throw new IllegalArgumentException("wildcardType: " + wildcardType);
     }
+  }
+
+  @Override
+  public final Optional<? extends ConstantDesc> describeConstable() {
+    final Type[] lowerBounds = this.getLowerBounds();
+    final int bsmInvokeArgumentsLength = lowerBounds.length + 1;
+    final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+    bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_LowerBoundedWildcardType, CD_Type.arrayType());
+    for (int i = 1; i < bsmInvokeArgumentsLength; i++) {
+      final Optional<? extends ConstantDesc> arg = JavaTypes.describeConstable(lowerBounds[i - 1]);
+      if (arg.isEmpty()) {
+        return Optional.empty();
+      }
+      bsmInvokeArguments[i] = arg.orElseThrow();
+    }
+    return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
   }
 
 

@@ -17,7 +17,6 @@
 package org.microbean.type;
 
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.microbean.development.annotation.Convenience;
 import org.microbean.development.annotation.Experimental;
 
 /**

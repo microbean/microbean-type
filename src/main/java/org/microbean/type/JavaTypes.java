@@ -18,6 +18,13 @@ package org.microbean.type;
 
 import java.io.Serializable;
 
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DirectMethodHandleDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.GenericArrayType;
@@ -35,10 +42,28 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 
 import java.util.function.Predicate;
+
+import static java.lang.constant.ConstantDescs.BSM_GET_STATIC_FINAL;
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+import static java.lang.constant.ConstantDescs.CD_Class;
+import static java.lang.constant.ConstantDescs.CD_String;
+import static java.lang.constant.ConstantDescs.NULL;
+
+import static org.microbean.type.ConstantDescs.CD_Constructor;
+import static org.microbean.type.ConstantDescs.CD_DefaultGenericArrayType;
+import static org.microbean.type.ConstantDescs.CD_DefaultParameterizedType;
+import static org.microbean.type.ConstantDescs.CD_GenericDeclaration;
+import static org.microbean.type.ConstantDescs.CD_LowerBoundedWildcardType;
+import static org.microbean.type.ConstantDescs.CD_Method;
+import static org.microbean.type.ConstantDescs.CD_Type;
+import static org.microbean.type.ConstantDescs.CD_TypeVariable;
+import static org.microbean.type.ConstantDescs.CD_UnboundedWildcardType;
+import static org.microbean.type.ConstantDescs.CD_UpperBoundedWildcardType;
 
 /**
  * A utility class providing useful operations related to Java {@link
@@ -51,6 +76,10 @@ public final class JavaTypes {
 
   private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
 
+  private JavaTypes() {
+    super();
+  }
+  
   /**
    * Returns a {@link Type} array with a length of {@code 0}.
    *
@@ -929,6 +958,418 @@ public final class JavaTypes {
       }
       return sb.toString();
     }
+  }
+
+  /**
+   * Returns an {@link Optional} representing the supplied {@link
+   * ConstantDesc}.
+   *
+   * @param constantDesc the {@link ConstantDesc} to represent; may be
+   * {@code null}; if {@code null}, then an {@link Optional}
+   * consisting of {@link java.lang.constant.ConstantDescs#NULL} will
+   * be returned
+   *
+   * @return an {@link Optional} representing the supplied {@link
+   * ConstantDesc}; never {@code null}; never {@linkplain
+   * Optional#isEmpty() empty}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final ConstantDesc constantDesc) {
+    return constantDesc == null ? Optional.of(NULL) : Optional.of(constantDesc);
+  }
+
+  /**
+   * Returns an {@link Optional} representing the supplied {@link
+   * Constable}.
+   *
+   * @param constable the {@link Constable} to represent; may be
+   * {@code null}; if {@code null}, then an {@link Optional}
+   * consisting of {@link java.lang.constant.ConstantDescs#NULL} will
+   * be returned
+   *
+   * @return an {@link Optional} representing the supplied {@link
+   * Constable}; never {@code null}; possibly {@linkplain
+   * Optional#isEmpty() empty}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final Constable constable) {
+    return constable == null ? Optional.of(NULL) : constable.describeConstable();
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link Type}, or
+   * an {@linkplain Optional#isEmpty() empty <code>Optional</code>} if
+   * there is no such descriptor.
+   *
+   * @param type the {@link Type} in question; must be either {@code
+   * null}, a {@link ConstantDesc} itself, a {@link Constable}, a
+   * {@link ParameterizedType}, a {@link GenericArrayType}, a {@link
+   * TypeVariable} or a {@link WildcardType}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  public static final Optional<? extends ConstantDesc> describeConstable(final Type type) {
+    if (type == null) {
+      return Optional.of(NULL);
+    } else if (type instanceof ConstantDesc constantDesc) {
+      return describeConstable(constantDesc);
+    } else if (type instanceof Constable constable) {
+      return describeConstable(constable);
+    } else if (type instanceof ParameterizedType p) {
+      return describeConstable(p);
+    } else if (type instanceof GenericArrayType g) {
+      return describeConstable(g);
+    } else if (type instanceof TypeVariable<?> tv) {
+      return describeConstable(tv);
+    } else if (type instanceof WildcardType w) {
+      return describeConstable(w);
+    } else {
+      throw new IllegalArgumentException("Unexpected or unhandled type: " + type);
+    }
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link
+   * ParameterizedType}, or an {@linkplain Optional#isEmpty() empty
+   * <code>Optional</code>} if there is no such descriptor.
+   *
+   * @param ptype the {@link ParameterizedType} in question; may be
+   * {@code null}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final ParameterizedType ptype) {
+    if (ptype == null) {
+      return Optional.of(NULL);
+    } else if (ptype instanceof ConstantDesc constantDesc) {
+      return describeConstable(constantDesc);
+    } else if (ptype instanceof Constable constable) {
+      return describeConstable(constable);
+    } else {
+      final Optional<? extends ConstantDesc> ownerType = describeConstable(ptype.getOwnerType());
+      if (ownerType.isPresent()) {
+        final Optional<? extends ConstantDesc> rawType = describeConstable(ptype.getRawType());
+        if (rawType.isPresent()) {
+          final Type[] actualTypeArguments = ptype.getActualTypeArguments();
+          final int bsmInvokeArgumentsLength = actualTypeArguments.length + 3;
+          final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+          bsmInvokeArguments[0] =
+            MethodHandleDesc.ofConstructor(CD_DefaultParameterizedType,
+                                           CD_Type,
+                                           CD_Type,
+                                           CD_Type.arrayType());
+          bsmInvokeArguments[1] = ownerType.orElseThrow();
+          bsmInvokeArguments[2] = rawType.orElseThrow();
+          for (int i = 3; i < bsmInvokeArgumentsLength; i++) {
+            final Optional<? extends ConstantDesc> arg = describeConstable(actualTypeArguments[i - 3]);
+            if (arg.isEmpty()) {
+              return Optional.empty();
+            }
+            bsmInvokeArguments[i] = arg.orElseThrow();
+          }
+          return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+        }
+      }
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link
+   * GenericArrayType}, or an {@linkplain Optional#isEmpty() empty
+   * <code>Optional</code>} if there is no such descriptor.
+   *
+   * @param g the {@link GenericArrayType} in question; may be
+   * {@code null}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final GenericArrayType g) {
+    if (g == null) {
+      return Optional.of(NULL);
+    } else if (g instanceof ConstantDesc constantDesc) {
+      return describeConstable(constantDesc);
+    } else if (g instanceof Constable c) {
+      return describeConstable(c);
+    } else {
+      final Optional<? extends ConstantDesc> genericComponentType = describeConstable(g.getGenericComponentType());
+      if (genericComponentType.isPresent()) {
+        return
+          Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
+                                             MethodHandleDesc.ofConstructor(CD_DefaultGenericArrayType,
+                                                                            CD_Type),
+                                             genericComponentType.orElseThrow()));
+      }
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link
+   * TypeVariable}, or an {@linkplain Optional#isEmpty() empty
+   * <code>Optional</code>} if there is no such descriptor.
+   *
+   * @param tv the {@link TypeVariable} in question; may be {@code
+   * null}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final TypeVariable<?> tv) {
+    if (tv == null) {
+      return Optional.of(NULL);
+    } else if (tv instanceof ConstantDesc constantDesc) {
+      return describeConstable(constantDesc);
+    } else if (tv instanceof Constable constable) {
+      return describeConstable(constable);
+    } else {
+      final Optional<? extends ConstantDesc> gd = describeConstable(tv.getGenericDeclaration());
+      if (gd.isPresent()) {
+        return
+          Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
+                                             MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
+                                                                       Bootstraps.CD_Bootstraps,
+                                                                       "getTypeVariable",
+                                                                       MethodTypeDesc.of(CD_TypeVariable,
+                                                                                         CD_GenericDeclaration,
+                                                                                         CD_String)),
+                                             gd.orElseThrow(),
+                                             tv.getName()));
+      }
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link
+   * WildcardType}, or an {@linkplain Optional#isEmpty() empty
+   * <code>Optional</code>} if there is no such descriptor.
+   *
+   * @param w the {@link WildcardType} in question; may be {@code
+   * null}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final WildcardType w) {
+    if (w == null) {
+      return Optional.of(NULL);
+    } else if (w instanceof ConstantDesc constantDesc) {
+      return describeConstable(constantDesc);
+    } else if (w instanceof Constable c) {
+      return describeConstable(c);
+    } else {
+      final Type[] lowerBounds = w.getLowerBounds();
+      if (lowerBounds.length <= 0) {
+        final Type[] upperBounds = w.getUpperBounds();
+        if (upperBounds.length <= 0 || (upperBounds.length == 1 && upperBounds[0] == Object.class)) {
+          // Unbounded.
+          return Optional.of(DynamicConstantDesc.of(BSM_GET_STATIC_FINAL, "INSTANCE", CD_UnboundedWildcardType));
+        } else {
+          // Upper bounded (extends).
+          final int bsmInvokeArgumentsLength = upperBounds.length + 1;
+          final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+          bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_UpperBoundedWildcardType, CD_Type.arrayType());
+          for (int i = 1; i < bsmInvokeArgumentsLength; i++) {
+            final Optional<? extends ConstantDesc> arg = describeConstable(upperBounds[i - 1]);
+            if (arg.isEmpty()) {
+              return Optional.empty();
+            }
+            bsmInvokeArguments[i] = arg.orElseThrow();
+          }
+          return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+        }
+      } else {
+        // Lower bounded.
+        final int bsmInvokeArgumentsLength = lowerBounds.length + 1;
+        final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+        bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_LowerBoundedWildcardType, CD_Type.arrayType());
+        for (int i = 1; i < bsmInvokeArgumentsLength; i++) {
+          final Optional<? extends ConstantDesc> arg = describeConstable(lowerBounds[i - 1]);
+          if (arg.isEmpty()) {
+            return Optional.empty();
+          }
+          bsmInvokeArguments[i] = arg.orElseThrow();
+        }
+        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+      }
+    }
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link
+   * GenericDeclaration}, or an {@linkplain Optional#isEmpty() empty
+   * <code>Optional</code>} if there is no such descriptor.
+   *
+   * @param gd the {@link GenericDeclaration} in question; must be
+   * either {@code null}, a {@link Class}, a {@link Constructor} or a
+   * {@link Method}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  static final Optional<? extends ConstantDesc> describeConstable(final GenericDeclaration gd) {
+    if (gd instanceof ConstantDesc constantDesc) {
+      return describeConstable(constantDesc);
+    } else if (gd instanceof Constable constable) {
+      // Includes Class<?>
+      return describeConstable(constable);
+    } else if (gd instanceof Constructor<?> c) {
+      return describeConstable(c);
+    } else if (gd instanceof Method m) {
+      return describeConstable(m);
+    } else {
+      throw new IllegalArgumentException("Unexpected or unhandled GenericDeclaration: " + gd);
+    }
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link
+   * Constructor}, or an {@linkplain Optional#isEmpty() empty
+   * <code>Optional</code>} if there is no such descriptor.
+   *
+   * @param constructor the {@link Constructor} in question; may be
+   * {@code null}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final Constructor<?> constructor) {
+    final Class<?>[] parameterTypes = constructor.getParameterTypes();
+    final int bsmInvokeArgumentsLength = parameterTypes.length + 1;
+    final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+    bsmInvokeArguments[0] =
+      MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
+                                constructor.getDeclaringClass().describeConstable().orElseThrow(),
+                                "getDeclaredConstructor",
+                                MethodTypeDesc.of(CD_Constructor,
+                                                  CD_Class.arrayType()));
+    for (int i = 1; i < bsmInvokeArgumentsLength; i++) {
+      bsmInvokeArguments[i] = parameterTypes[i - 1].describeConstable().orElseThrow();
+    }
+    return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+  }
+
+  /**
+   * Returns an {@link Optional} containing the nominal descriptor in
+   * the form of a {@link ConstantDesc} for the supplied {@link Method},
+   * or an {@linkplain Optional#isEmpty() empty <code>Optional</code>}
+   * if there is no such descriptor.
+   *
+   * @param method the {@link Method} in question; may be {@code null}
+   *
+   * @return an {@link Optional} as described above; never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see Constable
+   */
+  private static final Optional<? extends ConstantDesc> describeConstable(final Method method) {
+    final Class<?>[] parameterTypes = method.getParameterTypes();
+    final int bsmInvokeArgumentsLength = parameterTypes.length + 2;
+    final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+    bsmInvokeArguments[0] =
+      MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
+                                method.getDeclaringClass().describeConstable().orElseThrow(),
+                                "getDeclaredMethod",
+                                MethodTypeDesc.of(CD_Method,
+                                                  CD_Class.arrayType()));
+    bsmInvokeArguments[1] = method.getName();
+    for (int i = 2; i < bsmInvokeArgumentsLength; i++) {
+      bsmInvokeArguments[i] = parameterTypes[i - 2].describeConstable().orElseThrow();
+    }
+    return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
   }
 
 }

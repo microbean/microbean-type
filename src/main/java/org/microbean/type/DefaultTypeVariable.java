@@ -16,25 +16,29 @@
  */
 package org.microbean.type;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
 import java.lang.annotation.Annotation;
 
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DirectMethodHandleDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
+
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Executable;
 import java.lang.reflect.GenericDeclaration;
-import java.lang.reflect.Method;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.Type;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.Optional;
 
 import java.util.function.Predicate;
+
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+import static java.lang.constant.ConstantDescs.CD_String;
+
+import static org.microbean.type.ConstantDescs.CD_GenericDeclaration;
+import static org.microbean.type.ConstantDescs.CD_TypeVariable;
 
 /**
  * A {@link TypeVariable} implementation.
@@ -45,7 +49,7 @@ import java.util.function.Predicate;
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
  */
-public final class DefaultTypeVariable<T extends GenericDeclaration> implements TypeVariable<T> {
+public final class DefaultTypeVariable<T extends GenericDeclaration> implements Constable, TypeVariable<T> {
 
 
   /*
@@ -139,7 +143,8 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> implements 
 
 
   /**
-   * Returns the {@link TypeVariable} this {@link DefaultTypeVariable} wraps.
+   * Returns the {@link TypeVariable} this {@link DefaultTypeVariable}
+   * wraps.
    *
    * @return the {@link TypeVariable} this {@link DefaultTypeVariable}
    * wraps; never {@code null}
@@ -211,6 +216,24 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> implements 
   }
 
   @Override
+  public final Optional<? extends ConstantDesc> describeConstable() {
+    final Optional<? extends ConstantDesc> gd = JavaTypes.describeConstable(this.getGenericDeclaration());
+    if (gd.isPresent()) {
+      return
+        Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
+                                           MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
+                                                                     Bootstraps.CD_Bootstraps,
+                                                                     "getTypeVariable",
+                                                                     MethodTypeDesc.of(CD_TypeVariable,
+                                                                                       CD_GenericDeclaration,
+                                                                                       CD_String)),
+                                           gd.orElseThrow(),
+                                           this.getName()));
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public final int hashCode() {
     return this.hashCode;
   }
@@ -267,7 +290,7 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> implements 
    *
    * @idempotency This method is idempotent and deterministic.
    */
-  public static final <T extends GenericDeclaration> DefaultTypeVariable<T> valueOf(final TypeVariable<T> type) {
+  public static final <T extends GenericDeclaration> DefaultTypeVariable<T> of(final TypeVariable<T> type) {
     if (type == null) {
       return null;
     } else if (type instanceof DefaultTypeVariable<T> tv) {
