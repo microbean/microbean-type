@@ -16,11 +16,23 @@
  */
 package org.microbean.type;
 
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+
+import static org.microbean.type.ConstantDescs.CD_DefaultParameterizedType;
+import static org.microbean.type.ConstantDescs.CD_Type;
 
 /**
  * A {@link ParameterizedType} implementation.
@@ -30,7 +42,7 @@ import java.util.Objects;
  *
  * @see ParameterizedType
  */
-public final class DefaultParameterizedType implements ParameterizedType {
+public final class DefaultParameterizedType implements Constable, ParameterizedType {
 
 
   /*
@@ -52,6 +64,163 @@ public final class DefaultParameterizedType implements ParameterizedType {
    */
 
 
+  /**
+   * Creates a new {@link DefaultParameterizedType}.
+   *
+   * @param ownerType the {@link Type} that owns this {@link
+   * DefaultParameterizedType}; may be (and usually is) {@code null}
+   *
+   * @param rawType the raw type; must not be {@code null}; is most
+   * commonly a {@link Class} as in all JDKs through at least 17 and
+   * as mandated currently by the Java Language Specification
+   *
+   * @param actualTypeArgument the actual {@linkplain
+   * #getActualTypeArguments() actual type argument} of this {@link
+   * DefaultParameterizedType}; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code rawType} or {@code
+   * actualTypeArgument} is {@code null}
+   *
+   * @exception IllegalArgumentException if {@code rawType} is an
+   * {@linkplain Class#isInstance(Object) instance of} {@link Class}
+   * and the length of the array returned by its {@link
+   * Class#getTypeParameters()} method is not {@code 1}
+   */
+  public DefaultParameterizedType(final Type ownerType, final Type rawType, final Type actualTypeArgument) {
+    super();
+    this.ownerType = ownerType;
+    this.rawType = Objects.requireNonNull(rawType, "rawType");
+    if (rawType instanceof Class<?> cls && cls.getTypeParameters().length != 1) {
+      throw new IllegalArgumentException("rawType: " + JavaTypes.toString(rawType) +
+                                         "; actualTypeArguments: " + JavaTypes.toString(actualTypeArgument));
+    }
+    this.actualTypeArguments = new Type[] { Objects.requireNonNull(actualTypeArgument, "actualTypeArgument") };
+    this.hashCode = this.computeHashCode();
+  }
+
+  /**
+   * Creates a new {@link DefaultParameterizedType}.
+   *
+   * @param ownerType the {@link Type} that owns this {@link
+   * DefaultParameterizedType}; may be (and usually is) {@code null}
+   *
+   * @param rawType the raw type; must not be {@code null}; is most
+   * commonly a {@link Class} as in all JDKs through at least 17 and
+   * as mandated currently by the Java Language Specification
+   *
+   * @param actualTypeArgument0 the first actual {@linkplain
+   * #getActualTypeArguments() actual type argument} of this {@link
+   * DefaultParameterizedType}; must not be {@code null}
+   *
+   * @param actualTypeArgument1 the second actual {@linkplain
+   * #getActualTypeArguments() actual type argument} of this {@link
+   * DefaultParameterizedType}; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code rawType} or any type
+   * argument is {@code null}
+   *
+   * @exception IllegalArgumentException if {@code rawType} is an
+   * {@linkplain Class#isInstance(Object) instance of} {@link Class}
+   * and the length of the array returned by its {@link
+   * Class#getTypeParameters()} method is not {@code 2}
+   */
+  public DefaultParameterizedType(final Type ownerType,
+                                  final Type rawType,
+                                  final Type actualTypeArgument0,
+                                  final Type actualTypeArgument1) {
+    super();
+    this.ownerType = ownerType;
+    this.rawType = Objects.requireNonNull(rawType, "rawType");
+    if (rawType instanceof Class<?> cls && cls.getTypeParameters().length != 2) {
+      throw new IllegalArgumentException("rawType: " + JavaTypes.toString(rawType) +
+                                         "; actualTypeArguments: " + List.of(actualTypeArgument0, actualTypeArgument1));
+    }
+    this.actualTypeArguments = new Type[] {
+      Objects.requireNonNull(actualTypeArgument0, "actualTypeArgument0"),
+      Objects.requireNonNull(actualTypeArgument1, "actualTypeArgument1")
+    };
+    this.hashCode = this.computeHashCode();
+  }
+
+  /**
+   * Creates a new {@link DefaultParameterizedType}.
+   *
+   * @param ownerType the {@link Type} that owns this {@link
+   * DefaultParameterizedType}; may be (and usually is) {@code null}
+   *
+   * @param rawType the raw type; must not be {@code null}; is most
+   * commonly a {@link Class} as in all JDKs through at least 17 and
+   * as mandated currently by the Java Language Specification
+   *
+   * @param actualTypeArguments the actual {@linkplain
+   * #getActualTypeArguments() actual type arguments} of this {@link
+   * DefaultParameterizedType}; may be {@code null} in which case a
+   * zero-length array will be used instead; will be cloned if
+   * non-{@code null} and if its length is greater than {@code 0}
+   *
+   * @exception NullPointerException if {@code rawType} is {@code
+   * null}
+   *
+   * @exception IllegalArgumentException if {@code rawType} is an
+   * {@linkplain Class#isInstance(Object) instance of} {@link Class}
+   * and the length of the array returned by its {@link
+   * Class#getTypeParameters()} method is not the same as the length
+   * of the {@link actualTypeArguments} array (or {@code 0} if the
+   * {@code actualTypeArguments} array is {@code null})
+   */
+
+  /**
+   * Creates a new {@link DefaultParameterizedType}.
+   *
+   * @param ownerType the {@link Type} that owns this {@link
+   * DefaultParameterizedType}; may be (and usually is) {@code null}
+   *
+   * @param rawType the raw type; must not be {@code null}; is most
+   * commonly a {@link Class} as in all JDKs through at least 17 and
+   * as mandated currently by the Java Language Specification
+   *
+   * @param actualTypeArgument0 the first actual {@linkplain
+   * #getActualTypeArguments() actual type argument} of this {@link
+   * DefaultParameterizedType}; must not be {@code null}
+   *
+   * @param actualTypeArgument1 the second actual {@linkplain
+   * #getActualTypeArguments() actual type argument} of this {@link
+   * DefaultParameterizedType}; must not be {@code null}
+   *
+   * @param actualTypeArgument2 the third actual {@linkplain
+   * #getActualTypeArguments() actual type argument} of this {@link
+   * DefaultParameterizedType}; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code rawType} or any type
+   * argument is {@code null}
+   *
+   * @exception IllegalArgumentException if {@code rawType} is an
+   * {@linkplain Class#isInstance(Object) instance of} {@link Class}
+   * and the length of the array returned by its {@link
+   * Class#getTypeParameters()} method is not {@code 3}
+   */
+  public DefaultParameterizedType(final Type ownerType,
+                                  final Type rawType,
+                                  final Type actualTypeArgument0,
+                                  final Type actualTypeArgument1,
+                                  final Type actualTypeArgument2) {
+    
+    super();
+    this.ownerType = ownerType;
+    this.rawType = Objects.requireNonNull(rawType, "rawType");
+    if (rawType instanceof Class<?> cls && cls.getTypeParameters().length != 3) {
+      throw new IllegalArgumentException("rawType: " + JavaTypes.toString(rawType) +
+                                         "; actualTypeArguments: " +
+                                         List.of(actualTypeArgument0, actualTypeArgument1, actualTypeArgument2));
+    }
+    this.actualTypeArguments = new Type[] {
+      Objects.requireNonNull(actualTypeArgument0, "actualTypeArgument0"),
+      Objects.requireNonNull(actualTypeArgument1, "actualTypeArgument1"),
+      Objects.requireNonNull(actualTypeArgument2, "actualTypeArgument2")
+    };
+    this.hashCode = this.computeHashCode();
+  }
+  
   /**
    * Creates a new {@link DefaultParameterizedType}.
    *
@@ -132,6 +301,35 @@ public final class DefaultParameterizedType implements ParameterizedType {
     return this.actualTypeArguments.clone();
   }
 
+  @Override
+  public final Optional<? extends ConstantDesc> describeConstable() {
+    final Optional<? extends ConstantDesc> ownerType = JavaTypes.describeConstable(this.getOwnerType());
+    if (ownerType.isPresent()) {
+      final Optional<? extends ConstantDesc> rawType = JavaTypes.describeConstable(this.getRawType());
+      if (rawType.isPresent()) {
+        final Type[] actualTypeArguments = this.getActualTypeArguments();
+        final int bsmInvokeArgumentsLength = actualTypeArguments.length + 3;
+        final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
+        bsmInvokeArguments[0] =
+          MethodHandleDesc.ofConstructor(CD_DefaultParameterizedType,
+                                         CD_Type,
+                                         CD_Type,
+                                         CD_Type.arrayType());
+        bsmInvokeArguments[1] = ownerType.orElseThrow();
+        bsmInvokeArguments[2] = rawType.orElseThrow();
+        for (int i = 3; i < bsmInvokeArgumentsLength; i++) {
+          final Optional<? extends ConstantDesc> arg = JavaTypes.describeConstable(actualTypeArguments[i - 3]);
+          if (arg.isEmpty()) {
+            return Optional.empty();
+          }
+          bsmInvokeArguments[i] = arg.orElseThrow();
+        }
+        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+      }
+    }
+    return Optional.empty();
+  }
+  
   @Override
   public final int hashCode() {
     return this.hashCode;

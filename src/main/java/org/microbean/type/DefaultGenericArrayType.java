@@ -16,8 +16,20 @@
  */
 package org.microbean.type;
 
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
+
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+
+import static org.microbean.type.ConstantDescs.CD_DefaultGenericArrayType;
+import static org.microbean.type.ConstantDescs.CD_Type;
 
 /**
  * A {@link GenericArrayType} implementation.
@@ -27,7 +39,7 @@ import java.lang.reflect.Type;
  *
  * @see GenericArrayType
  */
-public final class DefaultGenericArrayType implements GenericArrayType {
+public final class DefaultGenericArrayType implements Constable, GenericArrayType {
 
 
   /*
@@ -75,6 +87,19 @@ public final class DefaultGenericArrayType implements GenericArrayType {
   @Override
   public final Type getGenericComponentType() {
     return this.genericComponentType;
+  }
+
+  @Override
+  public final Optional<? extends ConstantDesc> describeConstable() {
+    final Optional<? extends ConstantDesc> genericComponentType = JavaTypes.describeConstable(this.getGenericComponentType());
+    if (genericComponentType.isPresent()) {
+      return
+        Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
+                                           MethodHandleDesc.ofConstructor(CD_DefaultGenericArrayType,
+                                                                          CD_Type),
+                                           genericComponentType.orElseThrow()));
+    }
+    return Optional.empty();
   }
 
   @Override
