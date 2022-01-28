@@ -69,7 +69,9 @@ public final class UpperBoundedWildcardType extends AbstractWildcardType impleme
    * WildcardType#getUpperBounds() upper bounds};
    * may be {@code null}
    */
-  public UpperBoundedWildcardType(final Type[] upperBounds) {
+  // It is critical that upperBounds remain a varargs parameter, not
+  // an array type. See JavaTypes::describeConstable(WildcardType).
+  public UpperBoundedWildcardType(final Type... upperBounds) {
     super(upperBounds, null);
   }
 
@@ -86,7 +88,13 @@ public final class UpperBoundedWildcardType extends AbstractWildcardType impleme
     super(wildcardType == null ? new Type[] { Object.class } : wildcardType.getUpperBounds(), null);
   }
 
-  @Override
+
+  /*
+   * Instance methods.
+   */
+
+
+  @Override // Constable
   public final Optional<? extends ConstantDesc> describeConstable() {
     final Type[] upperBounds = this.getUpperBounds();
     // Upper bounded (extends).
@@ -102,7 +110,7 @@ public final class UpperBoundedWildcardType extends AbstractWildcardType impleme
     }
     return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
   }
-  
+
 
   /*
    * Static methods.

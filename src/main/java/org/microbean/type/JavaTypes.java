@@ -18,12 +18,15 @@ package org.microbean.type;
 
 import java.io.Serializable;
 
+import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.constant.MethodHandleDesc;
 import java.lang.constant.MethodTypeDesc;
+
+import java.lang.invoke.MethodHandles;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
@@ -51,19 +54,29 @@ import java.util.function.Predicate;
 import static java.lang.constant.ConstantDescs.BSM_GET_STATIC_FINAL;
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
 import static java.lang.constant.ConstantDescs.CD_Class;
+import static java.lang.constant.ConstantDescs.CD_MethodHandle;
+import static java.lang.constant.ConstantDescs.CD_MethodHandles;
 import static java.lang.constant.ConstantDescs.CD_String;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 import static java.lang.constant.ConstantDescs.NULL;
+
+import static java.lang.constant.DirectMethodHandleDesc.Kind.STATIC;
 
 import static org.microbean.type.ConstantDescs.CD_Constructor;
 import static org.microbean.type.ConstantDescs.CD_DefaultGenericArrayType;
 import static org.microbean.type.ConstantDescs.CD_DefaultParameterizedType;
+import static org.microbean.type.ConstantDescs.CD_GenericArrayType;
 import static org.microbean.type.ConstantDescs.CD_GenericDeclaration;
 import static org.microbean.type.ConstantDescs.CD_LowerBoundedWildcardType;
+import static org.microbean.type.ConstantDescs.CD_ParameterizedType;
+import static org.microbean.type.ConstantDescs.CD_Member;
 import static org.microbean.type.ConstantDescs.CD_Method;
 import static org.microbean.type.ConstantDescs.CD_Type;
 import static org.microbean.type.ConstantDescs.CD_TypeVariable;
 import static org.microbean.type.ConstantDescs.CD_UnboundedWildcardType;
 import static org.microbean.type.ConstantDescs.CD_UpperBoundedWildcardType;
+import static org.microbean.type.ConstantDescs.CD_WildcardType;
+import static org.microbean.type.ConstantDescs.DMHD_REFLECT_AS;
 
 /**
  * A utility class providing useful operations related to Java {@link
@@ -79,7 +92,7 @@ public final class JavaTypes {
   private JavaTypes() {
     super();
   }
-  
+
   /**
    * Returns a {@link Type} array with a length of {@code 0}.
    *
@@ -1037,7 +1050,7 @@ public final class JavaTypes {
     } else if (type instanceof ConstantDesc constantDesc) {
       return describeConstable(constantDesc);
     } else if (type instanceof Constable constable) {
-      return describeConstable(constable);
+      return describeConstable(constable); // includes Class<?>
     } else if (type instanceof ParameterizedType p) {
       return describeConstable(p);
     } else if (type instanceof GenericArrayType g) {
@@ -1047,7 +1060,7 @@ public final class JavaTypes {
     } else if (type instanceof WildcardType w) {
       return describeConstable(w);
     } else {
-      throw new IllegalArgumentException("Unexpected or unhandled type: " + type);
+      return Optional.empty();
     }
   }
 
@@ -1101,7 +1114,10 @@ public final class JavaTypes {
             }
             bsmInvokeArguments[i] = arg.orElseThrow();
           }
-          return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+          return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                         DEFAULT_NAME,
+                                                         CD_DefaultParameterizedType,
+                                                         bsmInvokeArguments));
         }
       }
       return Optional.empty();
@@ -1140,10 +1156,12 @@ public final class JavaTypes {
       final Optional<? extends ConstantDesc> genericComponentType = describeConstable(g.getGenericComponentType());
       if (genericComponentType.isPresent()) {
         return
-          Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
-                                             MethodHandleDesc.ofConstructor(CD_DefaultGenericArrayType,
-                                                                            CD_Type),
-                                             genericComponentType.orElseThrow()));
+          Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                  DEFAULT_NAME,
+                                                  CD_DefaultGenericArrayType,
+                                                  MethodHandleDesc.ofConstructor(CD_DefaultGenericArrayType,
+                                                                                 CD_Type),
+                                                  genericComponentType.orElseThrow()));
       }
       return Optional.empty();
     }
@@ -1180,16 +1198,19 @@ public final class JavaTypes {
     } else {
       final Optional<? extends ConstantDesc> gd = describeConstable(tv.getGenericDeclaration());
       if (gd.isPresent()) {
+        final String name = tv.getName();
         return
-          Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
-                                             MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
-                                                                       Bootstraps.CD_Bootstraps,
-                                                                       "getTypeVariable",
-                                                                       MethodTypeDesc.of(CD_TypeVariable,
-                                                                                         CD_GenericDeclaration,
-                                                                                         CD_String)),
-                                             gd.orElseThrow(),
-                                             tv.getName()));
+          Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                  name,
+                                                  CD_TypeVariable,
+                                                  MethodHandleDesc.ofMethod(STATIC,
+                                                                            Bootstraps.CD_Bootstraps,
+                                                                            "getTypeVariable",
+                                                                            MethodTypeDesc.of(CD_TypeVariable,
+                                                                                              CD_GenericDeclaration,
+                                                                                              CD_String)),
+                                                  gd.orElseThrow(),
+                                                  name));
       }
       return Optional.empty();
     }
@@ -1229,7 +1250,10 @@ public final class JavaTypes {
         final Type[] upperBounds = w.getUpperBounds();
         if (upperBounds.length <= 0 || (upperBounds.length == 1 && upperBounds[0] == Object.class)) {
           // Unbounded.
-          return Optional.of(DynamicConstantDesc.of(BSM_GET_STATIC_FINAL, "INSTANCE", CD_UnboundedWildcardType));
+          return Optional.of(DynamicConstantDesc.ofNamed(BSM_GET_STATIC_FINAL,
+                                                         "INSTANCE",
+                                                         CD_WildcardType,
+                                                         CD_UnboundedWildcardType));
         } else {
           // Upper bounded (extends).
           final int bsmInvokeArgumentsLength = upperBounds.length + 1;
@@ -1242,7 +1266,10 @@ public final class JavaTypes {
             }
             bsmInvokeArguments[i] = arg.orElseThrow();
           }
-          return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+          return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                         DEFAULT_NAME,
+                                                         CD_UpperBoundedWildcardType,
+                                                         bsmInvokeArguments));
         }
       } else {
         // Lower bounded.
@@ -1256,7 +1283,10 @@ public final class JavaTypes {
           }
           bsmInvokeArguments[i] = arg.orElseThrow();
         }
-        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+        return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                       DEFAULT_NAME,
+                                                       CD_LowerBoundedWildcardType,
+                                                       bsmInvokeArguments));
       }
     }
   }
@@ -1294,7 +1324,7 @@ public final class JavaTypes {
     } else if (gd instanceof Method m) {
       return describeConstable(m);
     } else {
-      throw new IllegalArgumentException("Unexpected or unhandled GenericDeclaration: " + gd);
+      return Optional.empty();
     }
   }
 
@@ -1320,19 +1350,22 @@ public final class JavaTypes {
    * @see Constable
    */
   private static final Optional<? extends ConstantDesc> describeConstable(final Constructor<?> constructor) {
-    final Class<?>[] parameterTypes = constructor.getParameterTypes();
-    final int bsmInvokeArgumentsLength = parameterTypes.length + 1;
-    final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
-    bsmInvokeArguments[0] =
-      MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
-                                constructor.getDeclaringClass().describeConstable().orElseThrow(),
-                                "getDeclaredConstructor",
-                                MethodTypeDesc.of(CD_Constructor,
-                                                  CD_Class.arrayType()));
-    for (int i = 1; i < bsmInvokeArgumentsLength; i++) {
-      bsmInvokeArguments[i] = parameterTypes[i - 1].describeConstable().orElseThrow();
+    Optional<? extends ConstantDesc> c = null;
+    try {
+      c = MethodHandles.lookup().unreflectConstructor(constructor).describeConstable();
+    } catch (final IllegalAccessException illegalAccessException) {
+      c = Optional.empty();
     }
-    return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+    if (c != null && c.isPresent()) {
+      return
+        Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                DEFAULT_NAME,
+                                                CD_Constructor,
+                                                DMHD_REFLECT_AS,
+                                                CD_Constructor,
+                                                c.orElseThrow()));
+    }
+    return Optional.empty();
   }
 
   /**
@@ -1355,21 +1388,23 @@ public final class JavaTypes {
    *
    * @see Constable
    */
-  private static final Optional<? extends ConstantDesc> describeConstable(final Method method) {
-    final Class<?>[] parameterTypes = method.getParameterTypes();
-    final int bsmInvokeArgumentsLength = parameterTypes.length + 2;
-    final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];
-    bsmInvokeArguments[0] =
-      MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
-                                method.getDeclaringClass().describeConstable().orElseThrow(),
-                                "getDeclaredMethod",
-                                MethodTypeDesc.of(CD_Method,
-                                                  CD_Class.arrayType()));
-    bsmInvokeArguments[1] = method.getName();
-    for (int i = 2; i < bsmInvokeArgumentsLength; i++) {
-      bsmInvokeArguments[i] = parameterTypes[i - 2].describeConstable().orElseThrow();
+  static final Optional<? extends ConstantDesc> describeConstable(final Method method) {
+    Optional<? extends ConstantDesc> m = null;
+    try {
+      m = MethodHandles.lookup().unreflect(method).describeConstable();
+    } catch (final IllegalAccessException illegalAccessException) {
+      m = Optional.empty();
     }
-    return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+    if (m != null && m.isPresent()) {
+      return
+        Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                DEFAULT_NAME,
+                                                CD_Method,
+                                                DMHD_REFLECT_AS,
+                                                CD_Method,
+                                                m.orElseThrow()));
+    }
+    return Optional.empty();
   }
 
 }

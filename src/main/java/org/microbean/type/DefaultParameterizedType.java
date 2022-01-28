@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 
 import static org.microbean.type.ConstantDescs.CD_DefaultParameterizedType;
 import static org.microbean.type.ConstantDescs.CD_Type;
@@ -286,22 +287,22 @@ public final class DefaultParameterizedType implements Constable, ParameterizedT
    */
 
 
-  @Override
+  @Override // ParameterizedType
   public final Type getOwnerType() {
     return this.ownerType;
   }
 
-  @Override
+  @Override // ParameterizedType
   public final Type getRawType() {
     return this.rawType;
   }
 
-  @Override
+  @Override // ParameterizedType
   public final Type[] getActualTypeArguments() {
     return this.actualTypeArguments.clone();
   }
 
-  @Override
+  @Override // Constable
   public final Optional<? extends ConstantDesc> describeConstable() {
     final Optional<? extends ConstantDesc> ownerType = JavaTypes.describeConstable(this.getOwnerType());
     if (ownerType.isPresent()) {
@@ -324,13 +325,16 @@ public final class DefaultParameterizedType implements Constable, ParameterizedT
           }
           bsmInvokeArguments[i] = arg.orElseThrow();
         }
-        return Optional.of(DynamicConstantDesc.of(BSM_INVOKE, bsmInvokeArguments));
+        return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,
+                                                       DEFAULT_NAME,
+                                                       CD_DefaultParameterizedType,
+                                                       bsmInvokeArguments));
       }
     }
     return Optional.empty();
   }
   
-  @Override
+  @Override // Object
   public final int hashCode() {
     return this.hashCode;
   }
@@ -339,7 +343,7 @@ public final class DefaultParameterizedType implements Constable, ParameterizedT
     return JavaTypes.hashCode(this);
   }
 
-  @Override
+  @Override // Object
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
@@ -350,7 +354,7 @@ public final class DefaultParameterizedType implements Constable, ParameterizedT
     }
   }
 
-  @Override
+  @Override // Object
   public final String toString() {
     return JavaTypes.toString(this);
   }
