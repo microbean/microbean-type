@@ -98,12 +98,12 @@
 <span class="source-line-no">084</span><span id="line-84">   */</span>
 <span class="source-line-no">085</span><span id="line-85"></span>
 <span class="source-line-no">086</span><span id="line-86"></span>
-<span class="source-line-no">087</span><span id="line-87">  @Override</span>
+<span class="source-line-no">087</span><span id="line-87">  @Override // GenericArrayType</span>
 <span class="source-line-no">088</span><span id="line-88">  public final Type getGenericComponentType() {</span>
 <span class="source-line-no">089</span><span id="line-89">    return this.genericComponentType;</span>
 <span class="source-line-no">090</span><span id="line-90">  }</span>
 <span class="source-line-no">091</span><span id="line-91"></span>
-<span class="source-line-no">092</span><span id="line-92">  @Override</span>
+<span class="source-line-no">092</span><span id="line-92">  @Override // Constable</span>
 <span class="source-line-no">093</span><span id="line-93">  public final Optional&lt;? extends ConstantDesc&gt; describeConstable() {</span>
 <span class="source-line-no">094</span><span id="line-94">    final Optional&lt;? extends ConstantDesc&gt; genericComponentType = JavaTypes.describeConstable(this.getGenericComponentType());</span>
 <span class="source-line-no">095</span><span id="line-95">    if (genericComponentType.isPresent()) {</span>
@@ -116,7 +116,7 @@
 <span class="source-line-no">102</span><span id="line-102">    return Optional.empty();</span>
 <span class="source-line-no">103</span><span id="line-103">  }</span>
 <span class="source-line-no">104</span><span id="line-104"></span>
-<span class="source-line-no">105</span><span id="line-105">  @Override</span>
+<span class="source-line-no">105</span><span id="line-105">  @Override // Object</span>
 <span class="source-line-no">106</span><span id="line-106">  public final int hashCode() {</span>
 <span class="source-line-no">107</span><span id="line-107">    return this.hashCode;</span>
 <span class="source-line-no">108</span><span id="line-108">  }</span>
@@ -125,7 +125,7 @@
 <span class="source-line-no">111</span><span id="line-111">    return JavaTypes.hashCode(this);</span>
 <span class="source-line-no">112</span><span id="line-112">  }</span>
 <span class="source-line-no">113</span><span id="line-113"></span>
-<span class="source-line-no">114</span><span id="line-114">  @Override</span>
+<span class="source-line-no">114</span><span id="line-114">  @Override // Object</span>
 <span class="source-line-no">115</span><span id="line-115">  public final boolean equals(final Object other) {</span>
 <span class="source-line-no">116</span><span id="line-116">    if (other == this) {</span>
 <span class="source-line-no">117</span><span id="line-117">      return true;</span>
@@ -136,7 +136,7 @@
 <span class="source-line-no">122</span><span id="line-122">    }</span>
 <span class="source-line-no">123</span><span id="line-123">  }</span>
 <span class="source-line-no">124</span><span id="line-124"></span>
-<span class="source-line-no">125</span><span id="line-125">  @Override</span>
+<span class="source-line-no">125</span><span id="line-125">  @Override // Object</span>
 <span class="source-line-no">126</span><span id="line-126">  public final String toString() {</span>
 <span class="source-line-no">127</span><span id="line-127">    return JavaTypes.toString(this);</span>
 <span class="source-line-no">128</span><span id="line-128">  }</span>
