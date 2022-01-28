@@ -27,6 +27,7 @@ import java.util.Optional;
 import static java.lang.constant.ConstantDescs.BSM_GET_STATIC_FINAL;
 
 import static org.microbean.type.ConstantDescs.CD_UnboundedWildcardType;
+import static org.microbean.type.ConstantDescs.CD_WildcardType;
 
 /**
  * A {@link java.lang.reflect.WildcardType} implementation that has no
@@ -68,11 +69,11 @@ public final class UnboundedWildcardType extends AbstractWildcardType implements
   /*
    * Instance methods.
    */
-  
+
 
   @Override
   public final Optional<? extends ConstantDesc> describeConstable() {
-    return Optional.of(DynamicConstantDesc.of(BSM_GET_STATIC_FINAL, "INSTANCE", CD_UnboundedWildcardType));
+    return Optional.of(DynamicConstantDesc.ofNamed(BSM_GET_STATIC_FINAL, "INSTANCE", CD_WildcardType, CD_UnboundedWildcardType));
   }
-    
+
 }

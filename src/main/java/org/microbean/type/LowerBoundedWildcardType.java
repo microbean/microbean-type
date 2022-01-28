@@ -69,7 +69,9 @@ public final class LowerBoundedWildcardType extends AbstractWildcardType impleme
    * java.lang.reflect.WildcardType#getLowerBounds() lower bounds};
    * may be {@code null}
    */
-  public LowerBoundedWildcardType(final Type[] lowerBounds) {
+  // It is critical that lowerBounds remain a varargs parameter, not
+  // an array type. See JavaTypes::describeConstable(WildcardType).
+  public LowerBoundedWildcardType(final Type... lowerBounds) {
     super(null, lowerBounds);
   }
 
@@ -95,7 +97,13 @@ public final class LowerBoundedWildcardType extends AbstractWildcardType impleme
     }
   }
 
-  @Override
+
+  /*
+   * Instance methods.
+   */
+
+
+  @Override // Constable
   public final Optional<? extends ConstantDesc> describeConstable() {
     final Type[] lowerBounds = this.getLowerBounds();
     final int bsmInvokeArgumentsLength = lowerBounds.length + 1;

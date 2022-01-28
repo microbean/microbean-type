@@ -160,80 +160,67 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> implements 
     return this.delegate;
   }
 
-  @Override
+  @Override // TypeVariable
   public final String getName() {
     return this.delegate.getName();
   }
 
-  @Override
+  @Override // TypeVariable
   public final T getGenericDeclaration() {
     return this.delegate.getGenericDeclaration();
   }
 
-  @Override
+  @Override // TypeVariable
   public final Type[] getBounds() {
     return this.delegate.getBounds();
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final AnnotatedType[] getAnnotatedBounds() {
     return this.delegate.getAnnotatedBounds();
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final <T extends Annotation> T getAnnotation(final Class<T> annotationClass) {
     return this.delegate.getAnnotation(annotationClass);
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final Annotation[] getAnnotations() {
     return this.delegate.getAnnotations();
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final <T extends Annotation> T[] getAnnotationsByType(final Class<T> annotationClass) {
     return this.delegate.getAnnotationsByType(annotationClass);
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final Annotation[] getDeclaredAnnotations() {
     return this.delegate.getDeclaredAnnotations();
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final <T extends Annotation> T[] getDeclaredAnnotationsByType(final Class<T> annotationClass) {
     return this.delegate.getDeclaredAnnotationsByType(annotationClass);
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final <T extends Annotation> T getDeclaredAnnotation(final Class<T> annotationClass) {
     return this.delegate.getDeclaredAnnotation(annotationClass);
   }
 
-  @Override
+  @Override // AnnotatedElement
   public final boolean isAnnotationPresent(final Class<? extends Annotation> annotationClass) {
     return this.delegate.isAnnotationPresent(annotationClass);
   }
 
-  @Override
+  @Override // Constable
   public final Optional<? extends ConstantDesc> describeConstable() {
-    final Optional<? extends ConstantDesc> gd = JavaTypes.describeConstable(this.getGenericDeclaration());
-    if (gd.isPresent()) {
-      return
-        Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
-                                           MethodHandleDesc.ofMethod(DirectMethodHandleDesc.Kind.STATIC,
-                                                                     Bootstraps.CD_Bootstraps,
-                                                                     "getTypeVariable",
-                                                                     MethodTypeDesc.of(CD_TypeVariable,
-                                                                                       CD_GenericDeclaration,
-                                                                                       CD_String)),
-                                           gd.orElseThrow(),
-                                           this.getName()));
-    }
-    return Optional.empty();
+    return JavaTypes.describeConstable(this.getDelegate());
   }
 
-  @Override
+  @Override // Object
   public final int hashCode() {
     return this.hashCode;
   }
@@ -242,7 +229,7 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> implements 
     return JavaTypes.hashCode(this.delegate);
   }
 
-  @Override
+  @Override // Object
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
@@ -253,7 +240,7 @@ public final class DefaultTypeVariable<T extends GenericDeclaration> implements 
     }
   }
 
-  @Override
+  @Override // Object
   public final String toString() {
     return JavaTypes.toString(this);
   }

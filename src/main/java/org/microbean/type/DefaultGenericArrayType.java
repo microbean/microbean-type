@@ -84,12 +84,12 @@ public final class DefaultGenericArrayType implements Constable, GenericArrayTyp
    */
 
 
-  @Override
+  @Override // GenericArrayType
   public final Type getGenericComponentType() {
     return this.genericComponentType;
   }
 
-  @Override
+  @Override // Constable
   public final Optional<? extends ConstantDesc> describeConstable() {
     final Optional<? extends ConstantDesc> genericComponentType = JavaTypes.describeConstable(this.getGenericComponentType());
     if (genericComponentType.isPresent()) {
@@ -102,7 +102,7 @@ public final class DefaultGenericArrayType implements Constable, GenericArrayTyp
     return Optional.empty();
   }
 
-  @Override
+  @Override // Object
   public final int hashCode() {
     return this.hashCode;
   }
@@ -111,7 +111,7 @@ public final class DefaultGenericArrayType implements Constable, GenericArrayTyp
     return JavaTypes.hashCode(this);
   }
 
-  @Override
+  @Override // Object
   public final boolean equals(final Object other) {
     if (other == this) {
       return true;
@@ -122,7 +122,7 @@ public final class DefaultGenericArrayType implements Constable, GenericArrayTyp
     }
   }
 
-  @Override
+  @Override // Object
   public final String toString() {
     return JavaTypes.toString(this);
   }
