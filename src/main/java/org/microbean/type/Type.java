@@ -428,6 +428,25 @@ public abstract class Type<T> implements Owner<T> {
   public abstract List<? extends Type<T>> typeArguments();
 
   /**
+   * Returns {@code false} when invoked since {@link Type}s don't have
+   * parameters (unlike {@link Owner}s representing {@link
+   * java.lang.reflect.Executable executables}).
+   *
+   * @return {@code false} when invoked
+   *
+   * @nullability This method always returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  @Override // Owner<T>
+  public final boolean hasParameters() {
+    return false;
+  }
+
+  /**
    * Returns {@code null} when invoked since {@link Type}s don't have
    * parameters (unlike {@link Owner}s representing {@link
    * java.lang.reflect.Executable executables}).
