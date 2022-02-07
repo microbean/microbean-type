@@ -33,7 +33,7 @@ Maven dependency:
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
   <!-- Always check https://search.maven.org/artifact/org.microbean/microbean-type for up-to-date available versions. -->
-  <version>0.2.2</version>
+  <version>0.2.3</version>
 </dependency>
 ```
 
