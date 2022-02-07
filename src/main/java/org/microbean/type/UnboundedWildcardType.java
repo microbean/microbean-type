@@ -30,8 +30,8 @@ import static org.microbean.type.ConstantDescs.CD_UnboundedWildcardType;
 import static org.microbean.type.ConstantDescs.CD_WildcardType;
 
 /**
- * A {@link java.lang.reflect.WildcardType} implementation that has no
- * bounds, i.e. has only a single {@linkplain
+ * A {@link java.lang.reflect.WildcardType} implementation that has
+ * only a single {@linkplain
  * java.lang.reflect.WildcardType#getUpperBounds() upper bound} of
  * {@link Object Object.class}.
  *

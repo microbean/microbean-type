@@ -1,16 +1,62 @@
-@import url('https://fonts.googleapis.com/css?family=Lobster|Roboto|Fugaz+One');
+@import url('https://fonts.googleapis.com/css2?2?family=Roboto+Mono:ital,wght@0,400;1,400&family=Roboto:ital,wght@0,400;0,700;1,400&family=Lobster&display=swap');
 body {
-    font-family: 'Roboto Sans', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif;
 }
-code, tt {
+button {
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+}
+h1, h2, h3 {
+    font-weight: 700
+}
+input {
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+}
+code, tt, pre {
     font-family: 'Roboto Mono', 'DejaVu Sans Mono', monospace;
 }
 .contentContainer .description dl dd, .contentContainer .details dl dd, .serializedFormContainer dl dd {
-    font-family: 'Roboto Sans', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif;
 }
 div.block {
-    font-family: 'Roboto Sans', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif;
 }
-pre {
+div.table-tabs > button {
+    font-weight: 700
+}
+dl.notes > dt {
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+    font-weight: 700
+}
+dl.notes > dd {
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif;
+}
+strong {
+    font-weight: 700
+}
+.caption {
+    font-weight: 700
+}
+.table-header {
+    font-weight: 700
+}
+.col-first a:link, .col-first a:visited, .col-second a:link, .col-second a:visited, .col-first a:link, .col-first a:visited, .col-second a:link, .col-second a:visited, .col-constructor-name a:link, .col-constructor-name a:visited, .col-summary-item-name a:link, .col-summary-item-name a:visited, .constant-values-container a:link, .constant-values-container a:visited, .all-classes-container a:link, .all-classes-container a:visited, .all-packages-container a:link, .all-packages-container a:visited {
+    font-weight: 700
+}
+.deprecated-label, .descfrm-type-label, .implementation-label, .member-name-label, .member-name-link, .module-label-in-package, .module-label-in-type, .override-specify-label, .package-label-in-type, .package-hierarchy-label, .type-name-label, .type-name-link, .search-tag-link, .preview-label {
+    font-weight: 700
+}
+.module-signature, .package-signature, .type-signature, .member-signature {
     font-family: 'Roboto Mono', 'DejaVu Sans Mono', monospace;
+}
+main a[href*="://"]::after {
+    all: unset;
+}
+.result-highlight {
+    font-weight: 700;
+}
+.ui-widget {
+    font-family: 'Roboto', 'DejaVu Sans', Arial, Helvetica, sans-serif !important;
+}
+.ui-autocomplete-category {
+    font-weight: 700;
 }

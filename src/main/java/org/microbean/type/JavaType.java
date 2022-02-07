@@ -16,7 +16,11 @@
  */
 package org.microbean.type;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.GenericDeclaration;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -164,7 +168,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see TypeVariable#getName()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public boolean named() {
     final Type type = this.object();
     return type instanceof Class || type instanceof TypeVariable;
@@ -188,7 +192,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is, and its overrides must be, safe for
    * concurrent use by multiple threads.
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public String name() {
     final Type type = this.object();
     if (type instanceof Class<?> c) {
@@ -201,8 +205,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
   /**
    * Returns {@code true} if this {@link JavaType} represents the same
-   * type as that represented by the supplied {@link
-   * org.microbean.type.Type}.
+   * type as that represented by the supplied {@link Owner}.
    *
    * <p>Type representation is not the same thing as equality.
    * Specifically, a {@link org.microbean.type.Type} may represent
@@ -218,13 +221,16 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * may be called, but a {@link org.microbean.type.Type}'s {@link
    * org.microbean.type.Type#equals(Object) equals(Object)} method
    * must not call {@link
-   * org.microbean.type.Type#represents(org.microbean.type.Type)}.</p>
+   * org.microbean.type.Type#represents(Owner)}.</p>
    *
-   * @param type the {@link org.microbean.type.Type} to test; may be
-   * {@code null} in which case {@code false} will be returned
+   * @param <X> the type representation type used by the supplied
+   * {@link Owner}
+   *
+   * @param other the {@link Owner} to test; may be {@code null} in
+   * which case {@code false} will be returned
    *
    * @return {@code true} if this {@link Type} represents the same
-   * type as that represented by the supplied {@link Type}
+   * thing as that represented by the supplied {@link Owner}
    *
    * @idempotency This method is, and its overrides must be,
    * idempotent and deterministic.
@@ -232,9 +238,9 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is, and its overrides must be, safe for
    * concurrent use by multiple threads.
    */
-  @Override
-  public boolean represents(final org.microbean.type.Type<?> type) {
-    if (super.represents(type)) {
+  @Override // org.microbean.type.Type<Type>
+  public <X> boolean represents(final Owner<X> other) {
+    if (super.represents(other)) {
       return true;
     }
     // TODO: other stuff; could use the equivalent of JavaTypes.toString() here
@@ -253,7 +259,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public final boolean top() {
     return this.object() == Object.class;
   }
@@ -279,7 +285,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see org.microbean.type.Type#box()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public JavaType box() {
     if (this.box) {
       final Type type = this.object();
@@ -320,7 +326,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @idempotency This method is, and its overrides must be,
    * idempotent and deterministic.
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public Collection<JavaType> directSupertypes() {
     final Collection<Type> directSupertypes = JavaTypes.directSupertypes(this.object());
     if (!directSupertypes.isEmpty()) {
@@ -354,7 +360,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @idempotency This method is, and its overrides must be,
    * idempotent and deterministic.
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public JavaType type() {
     final Type type = this.object();
     if (type instanceof ParameterizedType p) {
@@ -363,6 +369,45 @@ public class JavaType extends org.microbean.type.Type<Type> {
       return of(g.getGenericComponentType(), this.box);
     } else {
       return this;
+    }
+  }
+
+  /**
+   * Returns the owner of this {@link JavaType} as an {@link Object},
+   * suitable only for equality comparisons, or {@code null} if this
+   * {@link JavaType} does not represent either a {@link Class}, a
+   * {@link ParameterizedType} or a {@link TypeVariable}.
+   *
+   * @return the owner of this {@link JavaType}, or {@code null}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
+  @Experimental
+  @Override // org.microbean.type.Type<Type>
+  public Owner<Type> owner() {
+    final Type type = this.object();
+    if (type instanceof Class<?> c) {
+      return of(c.getEnclosingClass());
+    } else if (type instanceof ParameterizedType p) {
+      return of(p.getOwnerType());
+    } else if (type instanceof TypeVariable<?> tv) {
+      final GenericDeclaration gd = tv.getGenericDeclaration();
+      if (gd instanceof Class<?> c) {
+        return of(c, this.box);
+      } else if (gd instanceof Executable e) {
+        return new JavaExecutable(e, this.box);
+      } else {
+        throw new AssertionError("gd: " + gd);
+      }
+    } else {
+      return null;
     }
   }
 
@@ -384,7 +429,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see #typeParameters()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public boolean hasTypeParameters() {
     return this.object() instanceof Class<?> c && c.getTypeParameters().length > 0;
   }
@@ -406,7 +451,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see #typeArguments()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public boolean hasTypeArguments() {
     return this.object() instanceof ParameterizedType;
   }
@@ -434,7 +479,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @idempotency This method is, and its overrides must be,
    * idempotent and deterministic.
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public List<JavaType> typeArguments() {
     if (this.object() instanceof ParameterizedType p) {
       final Type[] typeArguments = p.getActualTypeArguments();
@@ -470,7 +515,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @idempotency This method is, and its overrides must be,
    * idempotent and deterministic.
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public List<JavaType> typeParameters() {
     if (this.object() instanceof Class<?> c) {
       final Type[] typeParameters = c.getTypeParameters();
@@ -511,7 +556,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see GenericArrayType#getGenericComponentType()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public JavaType componentType() {
     final Type newType;
     final Type type = this.object();
@@ -549,7 +594,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see #upperBounds()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public boolean upperBounded() {
     final Type type = this.object();
     return type instanceof WildcardType || type instanceof TypeVariable;
@@ -579,7 +624,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see WildcardType#getLowerBounds()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public boolean lowerBounded() {
     final Type type = this.object();
     return type instanceof WildcardType w && w.getLowerBounds().length > 0;
@@ -614,7 +659,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see WildcardType#getLowerBounds()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public List<JavaType> lowerBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
@@ -660,7 +705,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see WildcardType#getUpperBounds()
    */
-  @Override
+  @Override // org.microbean.type.Type<Type>
   public List<JavaType> upperBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
@@ -832,12 +877,13 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * target="_parent">Gafter's gadget</a>.
    *
    * <p>To use this class, create a new instance of an anonymous
-   * subclass of it, and then call {@link #type() type()} on it:</p>
+   * subclass of it, and then call {@link #type() type()} on it.  For
+   * example:</p>
    *
    * <blockquote><pre>
    * // type will be a {@link ParameterizedType} whose {@link ParameterizedType#getRawType() rawType} is {@link java.util.List List.class} and
    * // whose {@linkplain ParameterizedType#getActualTypeArguments() sole type argument} is {@link String String.class}
-   * Type type = new Token&lt;List&lt;String&gt;&gt;() {}.type();</pre></blockquote>
+   * {@link Type} type = new {@link Token Token}&lt;{@link java.util.List List}&lt;{@link String}&gt;&gt;() {}.{@link #type() type()};</pre></blockquote>
    *
    * @param <T> the modeled type; often parameterized
    *
