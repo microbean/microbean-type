@@ -16,7 +16,11 @@
  */
 package org.microbean.type;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,82 +29,62 @@ import java.util.List;
 
 final class JavaExecutable implements Owner<Type> {
 
-  private final JavaType owner;
+  private final Executable e;
   
-  private final String name;
-
   private final List<? extends JavaType> typeParameters;
 
   private final JavaType returnType;
 
   private final List<? extends JavaType> parameters;
 
-  JavaExecutable(final JavaType owner,
-                 final String name,
-                 final List<? extends JavaType> typeParameters,
-                 final JavaType returnType,
-                 final List<? extends JavaType> parameters,
-                 final boolean box) {
+  JavaExecutable(final Executable e, final boolean box) {
     super();
-    this.owner = owner;
-    this.name = Objects.requireNonNull(name, "name");
-    if (box) {
-      this.returnType = returnType == null ? null : returnType.box();
-      if (typeParameters == null || typeParameters.isEmpty()) {
-        this.typeParameters = List.of();
-        if (parameters == null || parameters.isEmpty()) {
-          this.parameters = List.of();
-        } else {
-          final List<JavaType> list = new ArrayList<>(parameters.size());
-          for (final JavaType parameter : parameters) {
-            list.add(parameter.box());
-          }
-          this.parameters = Collections.unmodifiableList(list);
-        }
-      } else {
-        List<JavaType> list = new ArrayList<>(typeParameters.size());
-        for (final JavaType typeParameter : typeParameters) {
-          list.add(typeParameter.box());
-        }
-        this.typeParameters = Collections.unmodifiableList(list);
-        if (parameters == null || parameters.isEmpty()) {
-          this.parameters = List.of();
-        } else {
-          list = new ArrayList<>(parameters.size());
-          for (final JavaType parameter : parameters) {
-            list.add(parameter.box());
-          }
-          this.parameters = Collections.unmodifiableList(list);
-        }
+    this.e = e;
+
+    final Type[] genericParameterTypes = e.getGenericParameterTypes();
+    if (genericParameterTypes.length > 0) {
+      final List<JavaType> parameters = new ArrayList<>(genericParameterTypes.length);
+      for (final Type genericParameterType : genericParameterTypes) {
+        parameters.add(JavaType.of(genericParameterType, box));
       }
+      this.parameters = Collections.unmodifiableList(parameters);
     } else {
-      this.returnType = returnType == null ? null : returnType;
-      if (typeParameters == null || typeParameters.isEmpty()) {
-        this.typeParameters = List.of();
-        if (parameters == null || parameters.isEmpty()) {
-          this.parameters = List.of();
-        } else {
-          this.parameters = List.copyOf(parameters);
-        }
-      } else {
-        this.typeParameters = List.copyOf(typeParameters);
-        if (parameters == null || parameters.isEmpty()) {
-          this.parameters = List.of();
-        } else {
-          this.parameters = List.copyOf(parameters);
-        }
+      this.parameters = List.of();
+    }
+
+    final TypeVariable<?>[] typeParameters = e.getTypeParameters();
+    if (typeParameters.length > 0) {
+      final List<JavaType> javaTypeParameters = new ArrayList<>(typeParameters.length);
+      for (final TypeVariable<?> typeParameter : typeParameters) {
+        javaTypeParameters.add(JavaType.of(typeParameter, box));
       }
+      this.typeParameters = Collections.unmodifiableList(javaTypeParameters);
+    } else {
+      this.typeParameters = List.of();
+    }
+    
+    if (e instanceof Constructor<?> constructor) {
+      this.returnType = JavaType.of(void.class, box);
+    } else if (e instanceof Method m) {
+      this.returnType = JavaType.of(m.getGenericReturnType(), box);
+    } else {
+      throw new AssertionError("e: " + e);
     }
   }
 
   @Override // Owner<Type>
+  public final Executable object() {
+    return this.e;
+  }
+
+  @Override // Owner<Type>
   public final JavaType owner() {
-    return this.owner;
+    return JavaType.of(this.e.getDeclaringClass());
   }
 
   @Override // Owner<Type>
   public final String name() {
-    return this.name();
+    return this.e.getName();
   }
 
   @Override // Owner<Type>

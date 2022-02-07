@@ -109,6 +109,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see java.lang.reflect.TypeVariable#getName()
    */
+  @Override // Owner<T>
   @OverridingEncouraged
   public boolean named() {
     return Owner.super.named();
@@ -137,7 +138,7 @@ public abstract class Type<T> implements Owner<T> {
 
   /**
    * Returns {@code true} if this {@link Type} represents the same
-   * type as that represented by the supplied {@link Type}.
+   * type as that represented by the supplied {@link Owner}.
    *
    * <p>Type representation is not the same thing as equality.
    * Specifically, a {@link Type} may represent another {@link Type}
@@ -149,13 +150,16 @@ public abstract class Type<T> implements Owner<T> {
    * another {@link Type}, their {@link Type#equals(Object)
    * equals(Object)} methods may be called, but a {@link Type}'s
    * {@link Type#equals(Object) equals(Object)} method must not call
-   * {@link #represents(Type)}.</p>
+   * {@link #represents(Owner)}.</p>
    *
-   * @param type the {@link Type} to test; may be {@code null} in
+   * @param <X> the type representation type used by the supplied
+   * {@link Owner}
+   *
+   * @param other the {@link Owner} to test; may be {@code null} in
    * which case {@code false} will be returned
    *
    * @return {@code true} if this {@link Type} represents the same
-   * type as that represented by the supplied {@link Type}
+   * type as that represented by the supplied {@link Owner}
    *
    * @idempotency This method is, and its overrides must be,
    * idempotent and deterministic.
@@ -163,17 +167,10 @@ public abstract class Type<T> implements Owner<T> {
    * @threadsafety This method is, and its overrides must be, safe for
    * concurrent use by multiple threads.
    */
+  @Override // Owner<T>
   @OverridingEncouraged
-  public boolean represents(final Type<?> type) {
-    if (type == this) {
-      return true;
-    } else if (type == null) {
-      return false;
-    } else if (this.equals(type) || Objects.equals(this.object(), type.object())) {
-      return true;
-    } else {
-      return false;
-    }
+  public <X> boolean represents(final Owner<X> other) {
+    return Owner.super.represents(other);
   }
 
   /**
@@ -190,6 +187,7 @@ public abstract class Type<T> implements Owner<T> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    */
+  @Override // Owner<T>
   public final T object() {
     return this.type;
   }
@@ -317,8 +315,6 @@ public abstract class Type<T> implements Owner<T> {
    * Owner&lt;T&gt;}, suitable only for equality comparisons, or
    * {@code null} if this {@link Type} is not owned.
    *
-   * <p><strong>This method is still evolving.</strong></p>
-   *
    * @return the owner of this {@link Type}, or {@code null}
    *
    * @nullability Implementations of this method must not return
@@ -338,19 +334,27 @@ public abstract class Type<T> implements Owner<T> {
    * Returns {@code true} if and only if this {@link Type} represents
    * a generic class by virtue of having type parameters.
    *
-   * <p>This implementation calls the {@link #typeParameters()} method
-   * and returns {@code true} if the resulting {@link List}
-   * {@linkplain List#isEmpty() is not empty}.  Subclasses are
-   * encouraged to provide a faster implementation.</p>
+   * <p>This implementation calls {@link Owner#hasTypeParameters()}
+   * and returns the result. Subclasses are encouraged to provide a
+   * faster implementation.</p>
    *
    * @return {@code true} if and only if this {@link Type} represents
    * a generic class by virtue of having type parameters
    *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @see Owner#hasTypeParameters()
+   *
    * @see #typeParameters()
    */
+  @Override // Owner<T>
   @OverridingEncouraged
   public boolean hasTypeParameters() {
-    return !this.typeParameters().isEmpty();
+    return Owner.super.hasTypeParameters();
   }
 
   /**
@@ -365,11 +369,18 @@ public abstract class Type<T> implements Owner<T> {
    * @return {@code true} if and only if this {@link Type} represents
    * a parameterized type by virtue of having type arguments
    *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
    * @see #typeArguments()
    */
   @OverridingEncouraged
   public boolean hasTypeArguments() {
-    return !this.typeArguments().isEmpty();
+    final Collection<?> tas = this.typeArguments();
+    return tas != null && !tas.isEmpty();
   }
 
   /**
@@ -780,7 +791,7 @@ public abstract class Type<T> implements Owner<T> {
    * supertype of the supplied {@link Type}.
    *
    * <p>This method uses a combination of the {@link #supertypes()}
-   * method and the {@link #represents(Type)} method in its
+   * method and the {@link #represents(Owner)} method in its
    * implementation.</p>
    *
    * @param <X> the type represented by the supplied {@link Type}
@@ -794,7 +805,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #supertypes()
    *
-   * @see #represents(Type)
+   * @see #represents(Owner)
    */
   public final <X> boolean supertype(final Type<X> sub) {
     final Type<T> me = this.box();
