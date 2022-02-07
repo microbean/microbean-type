@@ -25,15 +25,15 @@ microBean™ Type requires a Java runtime of version 17 or higher.
 # Installation
 
 microBean™ Type is available on [Maven
-Central](https://search.maven.org/).  Simply include microBean™ Type
-as a Maven dependency:
+Central](https://search.maven.org/).  Include microBean™ Type as a
+Maven dependency:
 
 ```xml
 <dependency>
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
   <!-- Always check https://search.maven.org/artifact/org.microbean/microbean-type for up-to-date available versions. -->
-  <version>0.2.1</version>
+  <version>0.2.2</version>
 </dependency>
 ```
 

@@ -16,7 +16,11 @@
  */
 package org.microbean.type;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.GenericDeclaration;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -363,6 +367,82 @@ public class JavaType extends org.microbean.type.Type<Type> {
       return of(g.getGenericComponentType(), this.box);
     } else {
       return this;
+    }
+  }
+
+  /**
+   * Returns the owner of this {@link JavaType} as an {@link Object},
+   * suitable only for equality comparisons, or {@code null} if this
+   * {@link JavaType} does not represent either a {@link Class}, a
+   * {@link ParameterizedType} or a {@link TypeVariable}.
+   *
+   * <p><strong>This method is still evolving.</strong></p>
+   *
+   * @return the owner of this {@link JavaType}, or {@code null}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
+  @Experimental
+  @Override
+  public Owner<Type> owner() {
+    final Type type = this.object();
+    if (type instanceof Class<?> c) {
+      return of(c.getEnclosingClass());
+    } else if (type instanceof ParameterizedType p) {
+      return of(p.getOwnerType());
+    } else if (type instanceof TypeVariable<?> tv) {
+      final GenericDeclaration gd = tv.getGenericDeclaration();
+      if (gd instanceof Class<?> c) {
+        return of(c, this.box);
+      } else if (gd instanceof Executable e) {
+        final Class<?> ownerClass = e.getDeclaringClass();
+        final String name = e.getName();
+        final List<JavaType> javaTypeParameters;
+        final TypeVariable<?>[] typeParameters = e.getTypeParameters();
+        if (typeParameters.length > 0) {
+          javaTypeParameters = new ArrayList<>(typeParameters.length);
+          for (final TypeVariable<?> typeParameter : typeParameters) {
+            javaTypeParameters.add(of(typeParameter));
+          }
+        } else {
+          javaTypeParameters = null;
+        }
+        final List<JavaType> parameters;
+        final Type[] genericParameterTypes = e.getGenericParameterTypes();
+        if (genericParameterTypes.length > 0) {
+          parameters = new ArrayList<>(genericParameterTypes.length);
+          for (final Type genericParameterType : genericParameterTypes) {
+            parameters.add(of(genericParameterType, this.box));
+          }
+        } else {
+          parameters = List.of();
+        }
+        final JavaType returnType;
+        if (e instanceof Constructor<?> constructor) {
+          returnType = of(void.class, this.box);
+        } else if (e instanceof Method m) {
+          returnType = of(m.getGenericReturnType(), this.box);
+        } else {
+          throw new AssertionError("gd: " + gd);
+        }
+        return new JavaExecutable(ownerClass == null ? null : of(ownerClass),
+                                  name,
+                                  javaTypeParameters,
+                                  returnType,
+                                  parameters,
+                                  this.box);
+      } else {
+        throw new AssertionError("gd: " + gd);
+      }
+    } else {
+      return null;
     }
   }
 
@@ -832,12 +912,13 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * target="_parent">Gafter's gadget</a>.
    *
    * <p>To use this class, create a new instance of an anonymous
-   * subclass of it, and then call {@link #type() type()} on it:</p>
+   * subclass of it, and then call {@link #type() type()} on it.  For
+   * example:</p>
    *
    * <blockquote><pre>
    * // type will be a {@link ParameterizedType} whose {@link ParameterizedType#getRawType() rawType} is {@link java.util.List List.class} and
    * // whose {@linkplain ParameterizedType#getActualTypeArguments() sole type argument} is {@link String String.class}
-   * Type type = new Token&lt;List&lt;String&gt;&gt;() {}.type();</pre></blockquote>
+   * {@link Type} type = new {@link Token Token}&lt;{@link java.util.List List}&lt;{@link String}&gt;&gt;() {}.{@link #type() type()};</pre></blockquote>
    *
    * @param <T> the modeled type; often parameterized
    *

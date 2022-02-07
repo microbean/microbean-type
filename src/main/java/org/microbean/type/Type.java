@@ -53,7 +53,7 @@ import org.microbean.development.annotation.OverridingEncouraged;
  * @see Semantics
  */
 @Experimental
-public abstract class Type<T> {
+public abstract class Type<T> implements Owner<T> {
 
 
   /*
@@ -111,7 +111,7 @@ public abstract class Type<T> {
    */
   @OverridingEncouraged
   public boolean named() {
-    return this.name() != null;
+    return Owner.super.named();
   }
 
   /**
@@ -132,6 +132,7 @@ public abstract class Type<T> {
    * @threadsafety Implementations of this method must be safe for
    * concurrent use by multiple threads.
    */
+  @Override // Owner<T>
   public abstract String name();
 
   /**
@@ -308,7 +309,30 @@ public abstract class Type<T> {
    * @idempotency Implementations of this method must be idempotent
    * and deterministic.
    */
+  @Override // Owner<T>
   public abstract Type<T> type();
+
+  /**
+   * Returns the owner of this {@link Type} as an {@link Owner
+   * Owner&lt;T&gt;}, suitable only for equality comparisons, or
+   * {@code null} if this {@link Type} is not owned.
+   *
+   * <p><strong>This method is still evolving.</strong></p>
+   *
+   * @return the owner of this {@link Type}, or {@code null}
+   *
+   * @nullability Implementations of this method must not return
+   * {@code null}.
+   *
+   * @threadsafety Implementations of this method must be safe for
+   * concurrent use by multiple threads.
+   *
+   * @idempotency Implementations of this method must be idempotent
+   * and deterministic.
+   */
+  @Override // Owner<T>
+  @Experimental
+  public abstract Owner<T> owner();
 
   /**
    * Returns {@code true} if and only if this {@link Type} represents
@@ -373,6 +397,7 @@ public abstract class Type<T> {
    * @idempotency Implementations of this method must be idempotent
    * and deterministic.
    */
+  @Override // Owner<T>
   public abstract List<? extends Type<T>> typeParameters();
 
   /**
@@ -401,6 +426,25 @@ public abstract class Type<T> {
    * and deterministic.
    */
   public abstract List<? extends Type<T>> typeArguments();
+
+  /**
+   * Returns {@code null} when invoked since {@link Type}s don't have
+   * parameters (unlike {@link Owner}s representing {@link
+   * java.lang.reflect.Executable executables}).
+   *
+   * @return {@code null} when invoked
+   *
+   * @nullability This method always returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  @Override // Owner<T>
+  public final List<? extends Type<T>> parameters() {
+    return null;
+  }
 
   /**
    * Returns the <em>component type</em> of this {@link Type}, if
@@ -743,6 +787,12 @@ public abstract class Type<T> {
     }
     return false;
   }
+
+
+  /*
+   * Inner and nested classes.
+   */
+
 
   /**
    * An abstract embodiment of {@link Type} {@linkplain
