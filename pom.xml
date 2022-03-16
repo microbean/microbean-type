@@ -14,14 +14,14 @@
   </parent>
 
   <name>microBean™ Type</name>
-  <description>${project.name}</description>
+  <description>microBean™ Type: Utility classes for working with type systems</description>
   <inceptionYear>2020</inceptionYear>
-  <url>https://microbean.github.io/${project.artifactId}</url>
+  <url>https://microbean.github.io/microbean-type</url>
 
   <scm>
-    <connection>scm:git:git@github.com:microbean/${project.artifactId}.git</connection>
-    <developerConnection>scm:git:git@github.com:microbean/${project.artifactId}.git</developerConnection>
-    <url>https://github.com/microbean/${project.artifactId}/</url>
+    <connection>scm:git:git@github.com:microbean/microbean-type.git</connection>
+    <developerConnection>scm:git:git@github.com:microbean/microbean-type.git</developerConnection>
+    <url>https://github.com/microbean/microbean-type/</url>
     <tag>HEAD</tag>
   </scm>
 
@@ -35,7 +35,7 @@
       <dependency>
         <groupId>org.microbean</groupId>
         <artifactId>microbean-development-annotations</artifactId>
-        <version>0.2.11</version>
+        <version>0.2.12</version>
         <type>jar</type>
       </dependency>
 
@@ -104,6 +104,7 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
+            <argLine>--add-opens=org.microbean.type/org.microbean.type=ALL-UNNAMED</argLine>
             <!-- See https://junit.org/junit5/docs/snapshot/user-guide/#running-tests-build-maven-config-params -->
             <!-- See https://github.com/apache/maven-surefire/blob/eb48f1b59ca5ccf6954ef33ecab03dbaf93214cd/surefire-providers/surefire-junit-platform/src/main/java/org/apache/maven/surefire/junitplatform/JUnitPlatformProvider.java#L242-L262 -->
             <properties>
