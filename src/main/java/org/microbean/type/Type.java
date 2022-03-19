@@ -83,7 +83,7 @@ public abstract class Type<T> implements Owner<T> {
 
 
   /*
-   * Instance fields.
+   * Instance methods.
    */
 
 
@@ -2509,6 +2509,19 @@ public abstract class Type<T> implements Owner<T> {
 
 
     /*
+     * Static fields.
+     */
+
+
+    /**
+     * A convenient instance of {@link CovariantSemantics}.
+     *
+     * @nullability This field is never {@code null}.
+     */
+    public static final CovariantSemantics INSTANCE = new CovariantSemantics();
+
+
+    /*
      * Constructors.
      */
 
@@ -2694,11 +2707,16 @@ public abstract class Type<T> implements Owner<T> {
 
 
     /*
-     * Instance fields.
+     * Static fields.
      */
 
 
-    private final CovariantSemantics wildcardSemantics;
+    /**
+     * An instance of {@link InvariantSemantics}.
+     *
+     * @nullability This field is never {@code null}.
+     */
+    public static final InvariantSemantics INSTANCE = new InvariantSemantics();
 
 
     /*
@@ -2711,7 +2729,6 @@ public abstract class Type<T> implements Owner<T> {
      */
     public InvariantSemantics() {
       super();
-      this.wildcardSemantics = new CovariantSemantics();
     }
 
 
@@ -2723,7 +2740,7 @@ public abstract class Type<T> implements Owner<T> {
     @Override // VariantSemantics
     public <X, Y> boolean assignable(final Type<X> receiverType, final Type<Y> payloadType) {
       if (receiverType.wildcard() || payloadType.wildcard()) {
-        return this.wildcardSemantics.assignable(receiverType, payloadType);
+        return CovariantSemantics.INSTANCE.assignable(receiverType, payloadType);
       }
       return receiverType.represents(payloadType);
     }
@@ -2744,11 +2761,16 @@ public abstract class Type<T> implements Owner<T> {
 
 
     /*
-     * Instance fields.
+     * Static fields.
      */
 
 
-    private final CdiTypeArgumentSemantics typeArgumentSemantics;
+    /**
+     * An instance of {@link CdiSemantics}.
+     *
+     * @nullability This field is never {@code null}.
+     */
+    public static final CdiSemantics INSTANCE = new CdiSemantics();
 
 
     /*
@@ -2761,7 +2783,6 @@ public abstract class Type<T> implements Owner<T> {
      */
     public CdiSemantics() {
       super();
-      this.typeArgumentSemantics = new CdiTypeArgumentSemantics();
     }
 
 
@@ -2883,7 +2904,7 @@ public abstract class Type<T> implements Owner<T> {
         final List<? extends Type<Y>> payloadTypeTypeArguments = payloadParameterizedType.typeArguments();
         if (receiverTypeTypeArguments.size() == payloadTypeTypeArguments.size()) {
           for (int i = 0; i < receiverTypeTypeArguments.size(); i++) {
-            if (!typeArgumentSemantics.assignable(receiverTypeTypeArguments.get(i), payloadTypeTypeArguments.get(i))) {
+            if (!CdiTypeArgumentSemantics.INSTANCE.assignable(receiverTypeTypeArguments.get(i), payloadTypeTypeArguments.get(i))) {
               return false;
             }
           }
@@ -2902,11 +2923,10 @@ public abstract class Type<T> implements Owner<T> {
     @Experimental
     private static class CdiTypeArgumentSemantics extends VariantSemantics {
 
-      private final CovariantSemantics covariantSemantics;
+      private static final CdiTypeArgumentSemantics INSTANCE = new CdiTypeArgumentSemantics();
 
       private CdiTypeArgumentSemantics() {
         super();
-        this.covariantSemantics = new CovariantSemantics();
       }
 
       @Override
@@ -2946,7 +2966,7 @@ public abstract class Type<T> implements Owner<T> {
         // all of them.
         for (final Type<Y> bound : this.condense(payloadTypeVariable.upperBounds())) {
           // Note that this is somewhat backwards to what you may expect.
-          if (!this.covariantSemantics.assignable(bound, receiverActualType)) {
+          if (!CovariantSemantics.INSTANCE.assignable(bound, receiverActualType)) {
             return false;
           }
         }
@@ -3054,7 +3074,7 @@ public abstract class Type<T> implements Owner<T> {
           }
           boolean match = false;
           for (final Type<?> bound1 : bounds1) {
-            if (this.covariantSemantics.assignable(bound0, bound1)) {
+            if (CovariantSemantics.INSTANCE.assignable(bound0, bound1)) {
               match = true;
               break;
             }
@@ -3077,7 +3097,7 @@ public abstract class Type<T> implements Owner<T> {
           }
           boolean match = false;
           for (final Type<X> bound0 : bounds0) {
-            if (this.covariantSemantics.assignable(bound0, bound1)) {
+            if (CovariantSemantics.INSTANCE.assignable(bound0, bound1)) {
               match = true;
               break;
             }
@@ -3101,7 +3121,7 @@ public abstract class Type<T> implements Owner<T> {
           for (final Type<X> bound0 : condense0 ? this.condense(bounds0) : bounds0) {
             boolean match = false;
             for (final Type<Y> bound1 : condense1 ? this.condense(bounds1) : bounds1) {
-              if (this.covariantSemantics.assignable(bound0, bound1)) {
+              if (CovariantSemantics.INSTANCE.assignable(bound0, bound1)) {
                 match = true;
                 break;
               }
