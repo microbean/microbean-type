@@ -4,7 +4,7 @@
 
 The microBean™ Type project provides classes and interfaces assisting
 with Java <a
-href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/reflect/Type.html"><code>Type</code></a>
+href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/reflect/Type.html"><code>Type</code></a>
 instances, as well as other frameworks' representations of such instances.
 
 # Status
@@ -33,7 +33,7 @@ Maven dependency:
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
   <!-- Always check https://search.maven.org/artifact/org.microbean/microbean-type for up-to-date available versions. -->
-  <version>0.2.5</version>
+  <version>0.2.6</version>
 </dependency>
 ```
 
