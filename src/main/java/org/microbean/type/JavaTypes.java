@@ -51,6 +51,10 @@ import java.util.StringJoiner;
 
 import java.util.function.Predicate;
 
+import org.microbean.development.annotation.Convenience;
+
+import org.microbean.type.Type.CovariantSemantics;
+
 import static java.lang.constant.ConstantDescs.BSM_GET_STATIC_FINAL;
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
 import static java.lang.constant.ConstantDescs.CD_Class;
@@ -87,10 +91,103 @@ import static org.microbean.type.ConstantDescs.DMHD_REFLECT_AS;
  */
 public final class JavaTypes {
 
+
+  /*
+   * Static fields.
+   */
+
+
   private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
+
+
+  /*
+   * Constructors.
+   */
+
 
   private JavaTypes() {
     super();
+  }
+
+
+  /*
+   * Static methods.
+   */
+
+
+  /**
+   * Returns {@code true} if and only if a reference bearing the
+   * type modeled by the supplied {@code payloadType} is assignable
+   * to a reference bearing the type modeled by the supplied {@code
+   * receiverType}, according to the assignability rules modeled by
+   * the {@link CovariantSemantics} class.
+   *
+   * <p>This method calls {@link CovariantSemantics#assignable(Type,
+   * Type)} with the supplied arguments and returns the result.</p>
+   *
+   * @param receiverType the receiver type as described above; must
+   * not be {@code null}
+   *
+   * @param payloadType the payload type as described above; must
+   * not be {@code null}
+   *
+   * @return {@code true} if and only if a reference bearing the type
+   * modeled by the supplied {@code payloadType} is assignable to a
+   * reference bearing the type modeled by the {@link
+   * CovariantSemantics} class
+   *
+   * @exception NullPointerException if either {@code receiverType}
+   * or {@code payloadType} is {@code null}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see CovariantSemantics#assignable(Type, Type, boolean)
+   */
+  @Convenience
+  public static final boolean assignable(final Type receiverType, final Type payloadType) {
+    return CovariantSemantics.INSTANCE.assignable(receiverType, payloadType);
+  }
+
+  /**
+   * Returns {@code true} if and only if a reference bearing the
+   * type modeled by the supplied {@code payloadType} is assignable
+   * to a reference bearing the type modeled by the supplied {@code
+   * receiverType}, according to the assignability rules modeled by
+   * the {@link CovariantSemantics} class.
+   *
+   * <p>This method calls {@link CovariantSemantics#assignable(Type,
+   * Type, boolean)} with the supplied arguments and returns the
+   * result.</p>
+   *
+   * @param receiverType the receiver type as described above; must
+   * not be {@code null}
+   *
+   * @param payloadType the payload type as described above; must
+   * not be {@code null}
+   *
+   * @param box whether autoboxing is enabled
+   *
+   * @return {@code true} if and only if a reference bearing the type
+   * modeled by the supplied {@code payloadType} is assignable to a
+   * reference bearing the type modeled by the {@link
+   * CovariantSemantics} class
+   *
+   * @exception NullPointerException if either {@code receiverType}
+   * or {@code payloadType} is {@code null}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see CovariantSemantics#assignable(Type, Type, boolean)
+   */
+  @Convenience
+  public static final boolean assignable(final Type receiverType, final Type payloadType, final boolean box) {
+    return CovariantSemantics.INSTANCE.assignable(receiverType, payloadType, box);
   }
 
   /**
