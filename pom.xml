@@ -4,7 +4,7 @@
 
   <groupId>org.microbean</groupId>
   <artifactId>microbean-type</artifactId>
-  <version>0.2.8-SNAPSHOT</version>
+  <version>0.2.8</version>
 
   <parent>
     <groupId>org.microbean</groupId>
@@ -22,7 +22,7 @@
     <connection>scm:git:git@github.com:microbean/microbean-type.git</connection>
     <developerConnection>scm:git:git@github.com:microbean/microbean-type.git</developerConnection>
     <url>https://github.com/microbean/microbean-type/</url>
-    <tag>HEAD</tag>
+    <tag>v0.2.8</tag>
   </scm>
 
   <dependencyManagement>
