@@ -102,7 +102,7 @@ public class CdiType extends JavaType {
   @Override
   public Collection<JavaType> directSupertypes() {
     final Collection<Type> directSupertypes = this.directSupertypesFunction.apply(this.object());
-    if (!directSupertypes.isEmpty()) {
+    if (directSupertypes != null && !directSupertypes.isEmpty()) {
       final Collection<JavaType> c = new ArrayList<>(directSupertypes.size());
       for (final Type type : directSupertypes) {
         c.add(of(type));
@@ -160,8 +160,8 @@ public class CdiType extends JavaType {
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
-   * @exception IllegalArgumentException if {@code box} is {@code false}; CDI
-   * requires autoboxing
+   * @exception IllegalArgumentException if {@code box} is {@code
+   * false}; CDI requires autoboxing
    *
    * @nullability This method never returns {@code null}.
    *
@@ -185,19 +185,19 @@ public class CdiType extends JavaType {
   }
 
   /**
-   * Creates a new {@link CdiType}.
+   * Returns a {@link CdiType} representing the supplied {@code type}.
    *
    * @param type the {@link Type} that will be modeled; must not be
    * {@code null}
    *
-   * @return a new {@link CdiType}; never {@code null}
+   * @return a {@link CdiType}; never {@code null}
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link CdiType} with each invocation).
+   * that it may return a new {@link CdiType} with each invocation).
    * However, any {@link CdiType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
    * CdiType} returned from this method, provided the inputs to all
@@ -211,26 +211,54 @@ public class CdiType extends JavaType {
   }
 
   /**
-   * Creates a new {@link CdiType}.
+   * Returns a {@link CdiType} <strong>with no direct
+   * supertypes</strong> representing the supplied {@code type}.
+   *
+   * @param type the {@link Type} that will be modeled; must not be
+   * {@code null}
+   *
+   * @return a {@link CdiType} <strong>with no direct
+   * supertypes</strong>; never {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}.
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link CdiType} with each invocation).
+   * However, any {@link CdiType} returned from this method is
+   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
+   * CdiType} returned from this method, provided the inputs to all
+   * invocations are equal.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final CdiType ofExact(final Type type) {
+    return new CdiType(type, t -> List.of());
+  }
+
+  /**
+   * Returns a {@link CdiType} representing the supplied {@code type}.
    *
    * @param type the {@link Type} that will be modeled; must not be
    * {@code null}
    *
    * @param box whether autoboxing is enabled; <strong>must be {@code
    * true} because CDI requires autoboxing</strong>; see {@link
-   * JavaType#of(Type, boolean)} which this method shadows
+   * JavaType#of(Type, boolean)} which this method effectively shadows
    *
-   * @return a new {@link CdiType}; never {@code null}
+   * @return a {@link CdiType}; never {@code null}
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
-   * @exception IllegalArgumentException if {@code box} is {@code false}; CDI
-   * requires autoboxing
+   * @exception IllegalArgumentException if {@code box} is {@code
+   * false}; CDI requires autoboxing
    *
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link CdiType} with each invocation).
+   * that it may return a new {@link CdiType} with each invocation).
    * However, any {@link CdiType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
    * CdiType} returned from this method, provided the inputs to all
@@ -241,7 +269,7 @@ public class CdiType extends JavaType {
    *
    * @see #of(Type)
    */
-  public static JavaType of(final Type type, final boolean box) {
+  public static final CdiType of(final Type type, final boolean box) {
     if (!box) {
       throw new IllegalArgumentException("boxing is required by CDI");
     }
