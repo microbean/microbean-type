@@ -961,6 +961,136 @@ public abstract class Type<T> implements Owner<T> {
     }
 
     /**
+     * Returns {@code true} if and only if a reference bearing at
+     * least one of the types modeled by the supplied {@code
+     * payloadTypes} is assignable to a reference bearing the type
+     * modeled by the supplied {@code receiverType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance.
+     *
+     * <p>No autoboxing of types takes place.</p>
+     *
+     * @param receiverType the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadTypes the payload types as described above; must
+     * not be {@code null}
+     *
+     * @return {@code true} if and only if a reference bearing at
+     * least one of the types modeled by the supplied {@code
+     * payloadTypes} is assignable to a reference bearing the type
+     * modeled by the supplied {@code receiverType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance;
+     * {@code false} otherwise
+     *
+     * @exception NullPointerException if either {@code receiverType}
+     * or {@code payloadTypes} is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #anyAssignable(java.lang.reflect.Type, Collection,
+     * boolean)
+     */
+    @Convenience
+    public final boolean anyAssignable(final java.lang.reflect.Type receiverType,
+                                       final Collection<? extends java.lang.reflect.Type> payloadTypes) {
+      return this.anyAssignable(receiverType, payloadTypes, false);
+    }
+
+    /**
+     * Returns {@code true} if and only if a reference bearing at
+     * least one of the types modeled by the supplied {@code
+     * payloadTypes} is assignable to a reference bearing the type
+     * modeled by the supplied {@code receiverType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance.
+     *
+     * @param receiverType the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadTypes the payload types as described above; must
+     * not be {@code null}
+     *
+     * @param box whether autoboxing is enabled
+     *
+     * @return {@code true} if and only if a reference bearing at
+     * least one of the types modeled by the supplied {@code
+     * payloadTypes} is assignable to a reference bearing the type
+     * modeled by the supplied {@code receiverType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance;
+     * {@code false} otherwise
+     *
+     * @exception NullPointerException if either {@code receiverType}
+     * or {@code payloadTypes} is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     */
+    @Convenience
+    public final boolean anyAssignable(final java.lang.reflect.Type receiverType,
+                                       final Collection<? extends java.lang.reflect.Type> payloadTypes,
+                                       final boolean box) {
+      final JavaType receiverJavaType = JavaType.of(receiverType, box);
+      for (final java.lang.reflect.Type payloadType : payloadTypes) {
+        if (this.assignable(receiverJavaType, JavaType.of(payloadType, box))) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Returns {@code true} if and only if a reference bearing at
+     * least one of the types modeled by the supplied {@code
+     * payloadTypes} is assignable to a reference bearing the type
+     * modeled by the supplied {@code receiverType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * receiverType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by the {@code payloadType};
+     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param receiverType the receiver type as described above; must
+     * not be {@code null}
+     *
+     * @param payloadTypes the payload types as described above; must
+     * not be {@code null}
+     *
+     * @return {@code true} if and only if a reference bearing at
+     * least one of the types modeled by the supplied {@code
+     * payloadTypes} is assignable to a reference bearing the type
+     * modeled by the supplied {@code receiverType}, according to the
+     * assignability rules modeled by this {@link Semantics} instance;
+     * {@code false} otherwise
+     *
+     * @exception NullPointerException if either {@code receiverType}
+     * or {@code payloadTypes} is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     */
+    @Convenience
+    public final <X, Y> boolean anyAssignable(final Type<X> receiverType, final Collection<? extends Type<Y>> payloadTypes) {
+      for (final Type<Y> payloadType : payloadTypes) {
+        if (this.assignable(receiverType, payloadType)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
      * Returns {@code true} if and only if a reference bearing the
      * type modeled by the supplied {@code payloadType} is assignable
      * to a reference bearing the type modeled by the supplied {@code
