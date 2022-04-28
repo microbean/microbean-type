@@ -116,7 +116,7 @@
 <span class="source-line-no">102</span><span id="line-102">  @Override</span>
 <span class="source-line-no">103</span><span id="line-103">  public Collection&lt;JavaType&gt; directSupertypes() {</span>
 <span class="source-line-no">104</span><span id="line-104">    final Collection&lt;Type&gt; directSupertypes = this.directSupertypesFunction.apply(this.object());</span>
-<span class="source-line-no">105</span><span id="line-105">    if (!directSupertypes.isEmpty()) {</span>
+<span class="source-line-no">105</span><span id="line-105">    if (directSupertypes != null &amp;&amp; !directSupertypes.isEmpty()) {</span>
 <span class="source-line-no">106</span><span id="line-106">      final Collection&lt;JavaType&gt; c = new ArrayList&lt;&gt;(directSupertypes.size());</span>
 <span class="source-line-no">107</span><span id="line-107">      for (final Type type : directSupertypes) {</span>
 <span class="source-line-no">108</span><span id="line-108">        c.add(of(type));</span>
@@ -174,8 +174,8 @@
 <span class="source-line-no">160</span><span id="line-160">   *</span>
 <span class="source-line-no">161</span><span id="line-161">   * @exception NullPointerException if {@code type} is {@code null}.</span>
 <span class="source-line-no">162</span><span id="line-162">   *</span>
-<span class="source-line-no">163</span><span id="line-163">   * @exception IllegalArgumentException if {@code box} is {@code false}; CDI</span>
-<span class="source-line-no">164</span><span id="line-164">   * requires autoboxing</span>
+<span class="source-line-no">163</span><span id="line-163">   * @exception IllegalArgumentException if {@code box} is {@code</span>
+<span class="source-line-no">164</span><span id="line-164">   * false}; CDI requires autoboxing</span>
 <span class="source-line-no">165</span><span id="line-165">   *</span>
 <span class="source-line-no">166</span><span id="line-166">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">167</span><span id="line-167">   *</span>
@@ -199,19 +199,19 @@
 <span class="source-line-no">185</span><span id="line-185">  }</span>
 <span class="source-line-no">186</span><span id="line-186"></span>
 <span class="source-line-no">187</span><span id="line-187">  /**</span>
-<span class="source-line-no">188</span><span id="line-188">   * Creates a new {@link CdiType}.</span>
+<span class="source-line-no">188</span><span id="line-188">   * Returns a {@link CdiType} representing the supplied {@code type}.</span>
 <span class="source-line-no">189</span><span id="line-189">   *</span>
 <span class="source-line-no">190</span><span id="line-190">   * @param type the {@link Type} that will be modeled; must not be</span>
 <span class="source-line-no">191</span><span id="line-191">   * {@code null}</span>
 <span class="source-line-no">192</span><span id="line-192">   *</span>
-<span class="source-line-no">193</span><span id="line-193">   * @return a new {@link CdiType}; never {@code null}</span>
+<span class="source-line-no">193</span><span id="line-193">   * @return a {@link CdiType}; never {@code null}</span>
 <span class="source-line-no">194</span><span id="line-194">   *</span>
 <span class="source-line-no">195</span><span id="line-195">   * @exception NullPointerException if {@code type} is {@code null}.</span>
 <span class="source-line-no">196</span><span id="line-196">   *</span>
 <span class="source-line-no">197</span><span id="line-197">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">198</span><span id="line-198">   *</span>
 <span class="source-line-no">199</span><span id="line-199">   * @idempotency This method is idempotent but not deterministic (in</span>
-<span class="source-line-no">200</span><span id="line-200">   * that it returns a new {@link CdiType} with each invocation).</span>
+<span class="source-line-no">200</span><span id="line-200">   * that it may return a new {@link CdiType} with each invocation).</span>
 <span class="source-line-no">201</span><span id="line-201">   * However, any {@link CdiType} returned from this method is</span>
 <span class="source-line-no">202</span><span id="line-202">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
 <span class="source-line-no">203</span><span id="line-203">   * CdiType} returned from this method, provided the inputs to all</span>
@@ -225,44 +225,72 @@
 <span class="source-line-no">211</span><span id="line-211">  }</span>
 <span class="source-line-no">212</span><span id="line-212"></span>
 <span class="source-line-no">213</span><span id="line-213">  /**</span>
-<span class="source-line-no">214</span><span id="line-214">   * Creates a new {@link CdiType}.</span>
-<span class="source-line-no">215</span><span id="line-215">   *</span>
-<span class="source-line-no">216</span><span id="line-216">   * @param type the {@link Type} that will be modeled; must not be</span>
-<span class="source-line-no">217</span><span id="line-217">   * {@code null}</span>
-<span class="source-line-no">218</span><span id="line-218">   *</span>
-<span class="source-line-no">219</span><span id="line-219">   * @param box whether autoboxing is enabled; &lt;strong&gt;must be {@code</span>
-<span class="source-line-no">220</span><span id="line-220">   * true} because CDI requires autoboxing&lt;/strong&gt;; see {@link</span>
-<span class="source-line-no">221</span><span id="line-221">   * JavaType#of(Type, boolean)} which this method shadows</span>
+<span class="source-line-no">214</span><span id="line-214">   * Returns a {@link CdiType} &lt;strong&gt;with no direct</span>
+<span class="source-line-no">215</span><span id="line-215">   * supertypes&lt;/strong&gt; representing the supplied {@code type}.</span>
+<span class="source-line-no">216</span><span id="line-216">   *</span>
+<span class="source-line-no">217</span><span id="line-217">   * @param type the {@link Type} that will be modeled; must not be</span>
+<span class="source-line-no">218</span><span id="line-218">   * {@code null}</span>
+<span class="source-line-no">219</span><span id="line-219">   *</span>
+<span class="source-line-no">220</span><span id="line-220">   * @return a {@link CdiType} &lt;strong&gt;with no direct</span>
+<span class="source-line-no">221</span><span id="line-221">   * supertypes&lt;/strong&gt;; never {@code null}</span>
 <span class="source-line-no">222</span><span id="line-222">   *</span>
-<span class="source-line-no">223</span><span id="line-223">   * @return a new {@link CdiType}; never {@code null}</span>
+<span class="source-line-no">223</span><span id="line-223">   * @exception NullPointerException if {@code type} is {@code null}.</span>
 <span class="source-line-no">224</span><span id="line-224">   *</span>
-<span class="source-line-no">225</span><span id="line-225">   * @exception NullPointerException if {@code type} is {@code null}.</span>
+<span class="source-line-no">225</span><span id="line-225">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">226</span><span id="line-226">   *</span>
-<span class="source-line-no">227</span><span id="line-227">   * @exception IllegalArgumentException if {@code box} is {@code false}; CDI</span>
-<span class="source-line-no">228</span><span id="line-228">   * requires autoboxing</span>
-<span class="source-line-no">229</span><span id="line-229">   *</span>
-<span class="source-line-no">230</span><span id="line-230">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">231</span><span id="line-231">   *</span>
-<span class="source-line-no">232</span><span id="line-232">   * @idempotency This method is idempotent but not deterministic (in</span>
-<span class="source-line-no">233</span><span id="line-233">   * that it returns a new {@link CdiType} with each invocation).</span>
-<span class="source-line-no">234</span><span id="line-234">   * However, any {@link CdiType} returned from this method is</span>
-<span class="source-line-no">235</span><span id="line-235">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
-<span class="source-line-no">236</span><span id="line-236">   * CdiType} returned from this method, provided the inputs to all</span>
-<span class="source-line-no">237</span><span id="line-237">   * invocations are equal.</span>
-<span class="source-line-no">238</span><span id="line-238">   *</span>
-<span class="source-line-no">239</span><span id="line-239">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">240</span><span id="line-240">   * threads.</span>
-<span class="source-line-no">241</span><span id="line-241">   *</span>
-<span class="source-line-no">242</span><span id="line-242">   * @see #of(Type)</span>
-<span class="source-line-no">243</span><span id="line-243">   */</span>
-<span class="source-line-no">244</span><span id="line-244">  public static JavaType of(final Type type, final boolean box) {</span>
-<span class="source-line-no">245</span><span id="line-245">    if (!box) {</span>
-<span class="source-line-no">246</span><span id="line-246">      throw new IllegalArgumentException("boxing is required by CDI");</span>
-<span class="source-line-no">247</span><span id="line-247">    }</span>
-<span class="source-line-no">248</span><span id="line-248">    return CdiType.of(type);</span>
-<span class="source-line-no">249</span><span id="line-249">  }</span>
-<span class="source-line-no">250</span><span id="line-250"></span>
-<span class="source-line-no">251</span><span id="line-251">}</span>
+<span class="source-line-no">227</span><span id="line-227">   * @idempotency This method is idempotent but not deterministic (in</span>
+<span class="source-line-no">228</span><span id="line-228">   * that it may return a new {@link CdiType} with each invocation).</span>
+<span class="source-line-no">229</span><span id="line-229">   * However, any {@link CdiType} returned from this method is</span>
+<span class="source-line-no">230</span><span id="line-230">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
+<span class="source-line-no">231</span><span id="line-231">   * CdiType} returned from this method, provided the inputs to all</span>
+<span class="source-line-no">232</span><span id="line-232">   * invocations are equal.</span>
+<span class="source-line-no">233</span><span id="line-233">   *</span>
+<span class="source-line-no">234</span><span id="line-234">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">235</span><span id="line-235">   * threads.</span>
+<span class="source-line-no">236</span><span id="line-236">   */</span>
+<span class="source-line-no">237</span><span id="line-237">  public static final CdiType ofExact(final Type type) {</span>
+<span class="source-line-no">238</span><span id="line-238">    return new CdiType(type, t -&gt; List.of());</span>
+<span class="source-line-no">239</span><span id="line-239">  }</span>
+<span class="source-line-no">240</span><span id="line-240"></span>
+<span class="source-line-no">241</span><span id="line-241">  /**</span>
+<span class="source-line-no">242</span><span id="line-242">   * Returns a {@link CdiType} representing the supplied {@code type}.</span>
+<span class="source-line-no">243</span><span id="line-243">   *</span>
+<span class="source-line-no">244</span><span id="line-244">   * @param type the {@link Type} that will be modeled; must not be</span>
+<span class="source-line-no">245</span><span id="line-245">   * {@code null}</span>
+<span class="source-line-no">246</span><span id="line-246">   *</span>
+<span class="source-line-no">247</span><span id="line-247">   * @param box whether autoboxing is enabled; &lt;strong&gt;must be {@code</span>
+<span class="source-line-no">248</span><span id="line-248">   * true} because CDI requires autoboxing&lt;/strong&gt;; see {@link</span>
+<span class="source-line-no">249</span><span id="line-249">   * JavaType#of(Type, boolean)} which this method effectively shadows</span>
+<span class="source-line-no">250</span><span id="line-250">   *</span>
+<span class="source-line-no">251</span><span id="line-251">   * @return a {@link CdiType}; never {@code null}</span>
+<span class="source-line-no">252</span><span id="line-252">   *</span>
+<span class="source-line-no">253</span><span id="line-253">   * @exception NullPointerException if {@code type} is {@code null}.</span>
+<span class="source-line-no">254</span><span id="line-254">   *</span>
+<span class="source-line-no">255</span><span id="line-255">   * @exception IllegalArgumentException if {@code box} is {@code</span>
+<span class="source-line-no">256</span><span id="line-256">   * false}; CDI requires autoboxing</span>
+<span class="source-line-no">257</span><span id="line-257">   *</span>
+<span class="source-line-no">258</span><span id="line-258">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">259</span><span id="line-259">   *</span>
+<span class="source-line-no">260</span><span id="line-260">   * @idempotency This method is idempotent but not deterministic (in</span>
+<span class="source-line-no">261</span><span id="line-261">   * that it may return a new {@link CdiType} with each invocation).</span>
+<span class="source-line-no">262</span><span id="line-262">   * However, any {@link CdiType} returned from this method is</span>
+<span class="source-line-no">263</span><span id="line-263">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
+<span class="source-line-no">264</span><span id="line-264">   * CdiType} returned from this method, provided the inputs to all</span>
+<span class="source-line-no">265</span><span id="line-265">   * invocations are equal.</span>
+<span class="source-line-no">266</span><span id="line-266">   *</span>
+<span class="source-line-no">267</span><span id="line-267">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">268</span><span id="line-268">   * threads.</span>
+<span class="source-line-no">269</span><span id="line-269">   *</span>
+<span class="source-line-no">270</span><span id="line-270">   * @see #of(Type)</span>
+<span class="source-line-no">271</span><span id="line-271">   */</span>
+<span class="source-line-no">272</span><span id="line-272">  public static final CdiType of(final Type type, final boolean box) {</span>
+<span class="source-line-no">273</span><span id="line-273">    if (!box) {</span>
+<span class="source-line-no">274</span><span id="line-274">      throw new IllegalArgumentException("boxing is required by CDI");</span>
+<span class="source-line-no">275</span><span id="line-275">    }</span>
+<span class="source-line-no">276</span><span id="line-276">    return CdiType.of(type);</span>
+<span class="source-line-no">277</span><span id="line-277">  }</span>
+<span class="source-line-no">278</span><span id="line-278"></span>
+<span class="source-line-no">279</span><span id="line-279">}</span>
 
 
 
