@@ -19,11 +19,13 @@ package org.microbean.type;
 import java.lang.reflect.Type;
 
 import java.util.AbstractSet;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -53,6 +55,14 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
 
   /*
+   * Static fields.
+   */
+
+
+  private static final JavaTypeSet EMPTY_JAVA_TYPE_SET = new JavaTypeSet();
+
+
+  /*
    * Instance fields.
    */
 
@@ -69,8 +79,14 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
 
 
+  private JavaTypeSet() {
+    super();
+    this.set = Set.of();
+  }
+
   private JavaTypeSet(final Type type) {
-    this(JavaType.of(type));
+    super();
+    this.set = Set.of(JavaType.of(type));
   }
 
   private JavaTypeSet(final JavaType javaType) {
@@ -80,7 +96,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   private JavaTypeSet(final Collection<?> types) {
     super();
-    final int size = types == null ? 0 : types.size();
+    final int size = types == null || types.isEmpty() ? 0 : types.size();
     if (size <= 0) {
       this.set = Set.of();
     } else if (size == 1) {
@@ -129,8 +145,8 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
   public final JavaTypeSet nonInterfaceTypes() {
     return new JavaTypeSet(this.set.stream()
-                              .filter(JavaTypeSet::nonInterfaceType)
-                              .toList());
+                           .filter(JavaTypeSet::nonInterfaceType)
+                           .toList());
   }
 
   /**
@@ -298,12 +314,13 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @see #mostSpecializedInterfaceType()
    */
   public final Type mostSpecializedNonInterfaceType() {
-    Type mostSpecializedNonInterfaceType = this.mostSpecializedNonInterfaceType;
+    Type mostSpecializedNonInterfaceType = this.mostSpecializedNonInterfaceType; // volatile read
     if (mostSpecializedNonInterfaceType == NullType.INSTANCE) {
       return null;
     } else if (mostSpecializedNonInterfaceType == null) {
       mostSpecializedNonInterfaceType = this.mostSpecialized(JavaTypeSet::nonInterfaceType);
-      this.mostSpecializedNonInterfaceType = mostSpecializedNonInterfaceType == null ? NullType.INSTANCE : mostSpecializedNonInterfaceType;
+      this.mostSpecializedNonInterfaceType =
+        mostSpecializedNonInterfaceType == null ? NullType.INSTANCE : mostSpecializedNonInterfaceType; // volatile write
     }
     return mostSpecializedNonInterfaceType;
   }
@@ -348,12 +365,13 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @see #mostSpecializedNonInterfaceType()
    */
   public final Type mostSpecializedInterfaceType() {
-    Type mostSpecializedInterfaceType = this.mostSpecializedInterfaceType;
+    Type mostSpecializedInterfaceType = this.mostSpecializedInterfaceType; // volatile read
     if (mostSpecializedInterfaceType == NullType.INSTANCE) {
       return null;
     } else if (mostSpecializedInterfaceType == null) {
       mostSpecializedInterfaceType = this.mostSpecialized(JavaTypeSet::interfaceType);
-      this.mostSpecializedInterfaceType = mostSpecializedInterfaceType == null ? NullType.INSTANCE : mostSpecializedInterfaceType;
+      this.mostSpecializedInterfaceType =
+        mostSpecializedInterfaceType == null ? NullType.INSTANCE : mostSpecializedInterfaceType; // volatile write
     }
     return mostSpecializedInterfaceType;
   }
@@ -379,7 +397,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   @Override // Set<Type>
   public final boolean contains(final Object o) {
-    return o instanceof Type t && this.set.contains(JavaType.of(t));
+    return o instanceof Type t ? this.set.contains(JavaType.of(t)) : this.set.contains(o);
   }
 
   @Override // Set<Type>
@@ -446,6 +464,23 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
 
   /**
+   * Returns an {@linkplain #isEmpty() empty} {@link JavaTypeSet}.
+   *
+   * @return an {@linkplain #isEmpty() empty} {@link JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  @Convenience
+  public static final JavaTypeSet of() {
+    return EMPTY_JAVA_TYPE_SET;
+  }
+
+  /**
    * Returns a {@link JavaTypeSet} whose sole element models the
    * supplied {@link Type}.
    *
@@ -505,6 +540,37 @@ public final class JavaTypeSet extends AbstractSet<Type> {
   }
 
   /**
+   * Returns a {@link JavaTypeSet} whose elements are modeled by the
+   * supplied {@link Type}s.
+   *
+   * @param types the {@link Type}s in question; must not be {@code
+   * null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are modeled by the
+   * supplied {@link Type}s; never {@code null}
+   *
+   * @exception NullPointerException if any argument is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Collection)
+   *
+   * @see JavaType#of(Type)
+   */
+  @Convenience
+  public static final JavaTypeSet of(final Type... types) {
+    if (types.length == 0) {
+      return of();
+    }
+    return of(Arrays.asList(types));
+  }
+
+  /**
    * Returns a {@link JavaTypeSet} whose sole element is the supplied
    * {@link JavaType}.
    *
@@ -557,12 +623,42 @@ public final class JavaTypeSet extends AbstractSet<Type> {
   }
 
   /**
+   * Returns a {@link JavaTypeSet} whose elements are modeled by the
+   * supplied {@link JavaType}s.
+   *
+   * @param types the {@link JavaType}s in question; must not be
+   * {@code null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are modeled by the
+   * supplied {@link JavaType}s; never {@code null}
+   *
+   * @exception NullPointerException if any argument is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Collection)
+   */
+  @Convenience
+  public static final JavaTypeSet of(final JavaType... types) {
+    if (types.length == 0) {
+      return of();
+    }
+    return of(Arrays.asList(types));
+  }
+
+  /**
    * Returns a {@link JavaTypeSet} whose elements are drawn from the
    * supplied {@link Collection}, in its {@linkplain
    * Collection#iterator() iteration order}.
    *
    * @param types the {@link Collection} in question; must not be
-   * {@code null}
+   * {@code null}; only its elements that are instances of either
+   * {@link Type} or {@link JavaType} will be considered
    *
    * @return a {@link JavaTypeSet} whose elements are drawn from the
    * supplied {@link Collection}, in its {@linkplain
@@ -674,7 +770,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
     private TypeIterator(final Iterator<? extends JavaType> i) {
       super();
-      this.i = i;
+      this.i = Objects.requireNonNull(i, "i");
     }
 
     @Override // Iterator<Type>
@@ -689,7 +785,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
     @Override // Iterator<Type>
     public final void remove() {
-      throw new UnsupportedOperationException();
+      this.i.remove();
     }
 
   }
