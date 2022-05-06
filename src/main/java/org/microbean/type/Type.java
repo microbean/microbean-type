@@ -38,10 +38,10 @@ import org.microbean.development.annotation.OverridingEncouraged;
  * <p>Concisely: {@link Type}s represent {@link java.lang.reflect.Type
  * java.lang.reflect.Type}s (or other frameworks' similar
  * representations) without any dependence on {@link
- * java.lang.reflect.Type java.lang.reflect.Type}.</p>
+ * java.lang.reflect.Type java.lang.reflect.Type} itself.</p>
  *
- * <p>This class is used primarily by the {@link Semantics} class and
- * its subclasses.</p>
+ * <p>This class is used directly primarily by the {@link Semantics}
+ * class and its subclasses.</p>
  *
  * @param <T> the type of the thing representing a Java type that is
  * being adapted; often a {@link java.lang.reflect.Type
@@ -744,22 +744,28 @@ public abstract class Type<T> implements Owner<T> {
    * {@linkplain Collections#unmodifiableCollection(Collection)
    * unmodifiable <code>Collection</code>} containing the result.</p>
    *
+   * <p>Overrides which alter this algorithm may result in undefined
+   * behavior.  Typically overriding is necessary only to refine the
+   * return type of this method.</p>
+   *
    * @return an {@linkplain
    * Collections#unmodifiableCollection(Collection) unmodifiable
    * <code>Collection</code>} containing all the supertypes of this
    * {@link Type} (which includes this {@link Type}); never {@code
    * null}
    *
-   * @nullability This method never returns {@code null}.
+   * @nullability This method does not, and its overrides must not,
+   * return {@code null}.
    *
-   * @idempotency This method is idempotent and deterministic.
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
    *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
    *
    * @see #directSupertypes()
    */
-  public final Collection<? extends Type<T>> supertypes() {
+  public Collection<? extends Type<T>> supertypes() {
     return this.supertypes(this, null);
   }
 

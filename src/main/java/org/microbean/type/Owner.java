@@ -23,9 +23,10 @@ import java.util.Objects;
 import org.microbean.development.annotation.OverridingEncouraged;
 
 /**
- * An interface whose implementations represent a Java type or a Java
- * {@linkplain java.lang.reflect.Executable executable} for equality
- * comparison purposes and no other.
+ * An interface whose implementations represent a Java {@linkplain
+ * java.lang.reflect.Type type} or a Java {@linkplain
+ * java.lang.reflect.Executable executable} for equality comparison
+ * purposes and no other.
  *
  * @param <T> the type describing the type representation type
  *
@@ -293,13 +294,7 @@ public interface Owner<T> {
    */
   @OverridingEncouraged
   public default <X> boolean represents(final Owner<X> other) {
-    if (other == this) {
-      return true;
-    } else if (other != null && (this.equals(other) || Objects.equals(this.object(), other.object()))) {
-      return true;
-    } else {
-      return false;
-    }
+    return this.equals(other) || other != null && Objects.equals(this.object(), other.object());
   }
 
 }
