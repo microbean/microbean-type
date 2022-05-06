@@ -66,9 +66,9 @@ final class TestJavaTypes {
 
   @Test
   final void testDirectSupertypesOfInteger() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(Integer.class);
+    final Collection<? extends Type> directSupertypes = JavaTypes.directSupertypes(Integer.class);
     assertEquals(4, directSupertypes.size());
-    final Iterator<Type> iterator = directSupertypes.iterator();
+    final Iterator<? extends Type> iterator = directSupertypes.iterator();
     assertTrue(iterator.hasNext());
     for (int i = 0; i < directSupertypes.size(); i++) {
       switch (i) {
@@ -98,9 +98,9 @@ final class TestJavaTypes {
 
   @Test
   final void testDirectSupertypesOfIntArray() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(int[].class);
+    final Collection<? extends Type> directSupertypes = JavaTypes.directSupertypes(int[].class);
     assertEquals(3, directSupertypes.size());
-    final Iterator<Type> iterator = directSupertypes.iterator();
+    final Iterator<? extends Type> iterator = directSupertypes.iterator();
     assertTrue(iterator.hasNext());
     for (int i = 0; i < directSupertypes.size(); i++) {
       switch (i) {
@@ -122,9 +122,9 @@ final class TestJavaTypes {
 
   @Test
   final void testDirectSupertypesOfIntegerArray() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(Integer[].class);
+    final Collection<? extends Type> directSupertypes = JavaTypes.directSupertypes(Integer[].class);
     assertEquals(4, directSupertypes.size(), directSupertypes.toString());
-    final Iterator<Type> iterator = directSupertypes.iterator();
+    final Iterator<? extends Type> iterator = directSupertypes.iterator();
     assertTrue(iterator.hasNext());
     for (int i = 0; i < directSupertypes.size(); i++) {
       switch (i) {
@@ -149,14 +149,15 @@ final class TestJavaTypes {
 
   @Test
   final void testDirectSupertypesOfComparable() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(Comparable.class); // (generic class)
+    final Collection<? extends Type> directSupertypes = JavaTypes.directSupertypes(Comparable.class); // (generic class)
     assertEquals(1, directSupertypes.size());
     assertSame(Object.class, directSupertypes.iterator().next());
   }
 
   @Test
   final void testDirectSupertypesOfArrayListString() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(new DefaultParameterizedType(null, ArrayList.class, String.class));
+    final Collection<? extends Type> directSupertypes =
+      JavaTypes.directSupertypes(new DefaultParameterizedType(null, ArrayList.class, String.class));
     System.out.println(directSupertypes.toString());
   }
 

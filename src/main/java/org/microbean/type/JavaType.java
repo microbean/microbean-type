@@ -84,49 +84,6 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
 
   /**
-   * Creates a new {@link JavaType} with no autoboxing.
-   *
-   * @param type a {@link Token} representing the Java {@link Type}
-   * being modeled; must not be {@code null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}
-   *
-   * @see #JavaType(Token, boolean)
-   */
-  public JavaType(final Token<?> type) {
-    this(type.type(), false);
-  }
-
-  /**
-   * Creates a new {@link JavaType}.
-   *
-   * @param type a {@link Token} representing the Java {@link Type}
-   * being modeled; must not be {@code null}
-   *
-   * @param box whether boxing of primitive types will be in effect;
-   * even if {@code true} boxing only happens to primitive types
-   *
-   * @exception NullPointerException if {@code type} is {@code null}
-   */
-  public JavaType(final Token<?> type, final boolean box) {
-    this(type.type(), box);
-  }
-
-  /**
-   * Creates a new {@link JavaType} with no autoboxing.
-   *
-   * @param type the {@link Type} being modeled; must not be {@code
-   * null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}
-   *
-   * @see #JavaType(Type, boolean)
-   */
-  public JavaType(final Type type) {
-    this(type, false);
-  }
-
-  /**
    * Creates a new {@link JavaType}.
    *
    * @param type the Java {@link Type} being modeled; must not be {@code null}
@@ -136,7 +93,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @exception NullPointerException if {@code type} is {@code null}
    */
-  public JavaType(final Type type, final boolean box) {
+  protected JavaType(final Type type, final boolean box) {
     super(type);
     this.box = box;
   }
@@ -327,8 +284,8 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public Collection<JavaType> directSupertypes() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(this.object());
+  public Collection<? extends JavaType> directSupertypes() {
+    final Collection<? extends Type> directSupertypes = JavaTypes.directSupertypes(this.object());
     if (!directSupertypes.isEmpty()) {
       final Collection<JavaType> c = new ArrayList<>(directSupertypes.size());
       for (final Type type : directSupertypes) {
@@ -480,7 +437,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public List<JavaType> typeArguments() {
+  public List<? extends JavaType> typeArguments() {
     if (this.object() instanceof ParameterizedType p) {
       final Type[] typeArguments = p.getActualTypeArguments();
       final List<JavaType> typeArgumentsList = new ArrayList<>(typeArguments.length);
@@ -516,7 +473,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public List<JavaType> typeParameters() {
+  public List<? extends JavaType> typeParameters() {
     if (this.object() instanceof Class<?> c) {
       final Type[] typeParameters = c.getTypeParameters();
       if (typeParameters.length > 0) {
@@ -660,7 +617,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see WildcardType#getLowerBounds()
    */
   @Override // org.microbean.type.Type<Type>
-  public List<JavaType> lowerBounds() {
+  public List<? extends JavaType> lowerBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
       final Type[] lowerBounds = w.getLowerBounds();
@@ -706,7 +663,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see WildcardType#getUpperBounds()
    */
   @Override // org.microbean.type.Type<Type>
-  public List<JavaType> upperBounds() {
+  public List<? extends JavaType> upperBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
       return List.of(of(w.getUpperBounds()[0], this.box));
@@ -727,6 +684,36 @@ public class JavaType extends org.microbean.type.Type<Type> {
     } else {
       return List.of();
     }
+  }
+
+  /**
+   * Returns all the supertypes of this {@link JavaType} (which
+   * includes this {@link JavaType}).
+   *
+   * <p>This method reflexively and transitively applies the direct
+   * supertype relation (represented by the {@link
+   * #directSupertypes()} method) to this {@link JavaType} and returns
+   * an {@linkplain Collections#unmodifiableCollection(Collection)
+   * unmodifiable <code>Collection</code>} containing the result.</p>
+   *
+   * @return an {@linkplain
+   * Collections#unmodifiableCollection(Collection) unmodifiable
+   * <code>Collection</code>} containing all the supertypes of this
+   * {@link Type} (which includes this {@link JavaType}); never {@code
+   * null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #directSupertypes()
+   */
+  @SuppressWarnings("unchecked")
+  public Collection<? extends JavaType> supertypes() {
+    return (Collection<? extends JavaType>)super.supertypes();
   }
 
   @Override // Object
