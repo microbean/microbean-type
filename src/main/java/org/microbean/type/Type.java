@@ -44,8 +44,9 @@ import org.microbean.development.annotation.OverridingEncouraged;
  * its subclasses.</p>
  *
  * @param <T> the type of the thing representing a Java type that is
- * being adapted; often a {@link java.lang.reflect.Type} or some other
- * framework's representation of one
+ * being adapted; often a {@link java.lang.reflect.Type
+ * java.lang.reflect.Type} or some other framework's representation of
+ * one
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>

@@ -238,7 +238,7 @@ public final class JavaTypes {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    */
-  public static final Collection<Type> directSupertypes(final Type type) {
+  public static final Collection<? extends Type> directSupertypes(final Type type) {
     if (Objects.requireNonNull(type) instanceof Class<?> c) {
       return directSupertypes(c);
     } else if (type instanceof ParameterizedType p) {
@@ -252,7 +252,7 @@ public final class JavaTypes {
     }
   }
 
-  private static final Collection<Type> directSupertypes(final Class<?> c) {
+  private static final Collection<? extends Type> directSupertypes(final Class<?> c) {
     if (c == Object.class) {
       return List.of();
     } else if (c.isPrimitive()) {
@@ -439,7 +439,7 @@ public final class JavaTypes {
   }
 
   private static final Collection<Type> directSupertypes(final GenericArrayType g) {
-    final Collection<Type> genericComponentTypeDirectSupertypes = directSupertypes(g.getGenericComponentType());
+    final Collection<? extends Type> genericComponentTypeDirectSupertypes = directSupertypes(g.getGenericComponentType());
     final Collection<Type> returnValue = new ArrayList<>(genericComponentTypeDirectSupertypes.size());
     for (final Type ds : genericComponentTypeDirectSupertypes) {
       returnValue.add(array(ds));

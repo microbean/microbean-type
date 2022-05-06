@@ -41,7 +41,7 @@ public class CdiType extends JavaType {
    */
 
 
-  private final Function<Type, Collection<Type>> directSupertypesFunction;
+  private final Function<? super Type, ? extends Collection<? extends Type>> directSupertypesFunction;
 
 
   /*
@@ -64,7 +64,7 @@ public class CdiType extends JavaType {
    *
    * @exception NullPointerException if any argument is {@code null}
    */
-  public CdiType(final Type type, final Function<Type, Collection<Type>> directSupertypesFunction) {
+  public CdiType(final Type type, final Function<? super Type, ? extends Collection<? extends Type>> directSupertypesFunction) {
     super(type);
     this.directSupertypesFunction = Objects.requireNonNull(directSupertypesFunction, "directSupertypesFunction");
   }
@@ -100,8 +100,8 @@ public class CdiType extends JavaType {
    * within returned {@link Collection}s is undefined
    */
   @Override
-  public Collection<JavaType> directSupertypes() {
-    final Collection<Type> directSupertypes = this.directSupertypesFunction.apply(this.object());
+  public Collection<? extends JavaType> directSupertypes() {
+    final Collection<? extends Type> directSupertypes = this.directSupertypesFunction.apply(this.object());
     if (directSupertypes != null && !directSupertypes.isEmpty()) {
       final Collection<JavaType> c = new ArrayList<>(directSupertypes.size());
       for (final Type type : directSupertypes) {

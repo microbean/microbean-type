@@ -327,8 +327,8 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public Collection<JavaType> directSupertypes() {
-    final Collection<Type> directSupertypes = JavaTypes.directSupertypes(this.object());
+  public Collection<? extends JavaType> directSupertypes() {
+    final Collection<? extends Type> directSupertypes = JavaTypes.directSupertypes(this.object());
     if (!directSupertypes.isEmpty()) {
       final Collection<JavaType> c = new ArrayList<>(directSupertypes.size());
       for (final Type type : directSupertypes) {
