@@ -252,7 +252,7 @@
 <span class="source-line-no">238</span><span id="line-238">   * @threadsafety This method is safe for concurrent use by multiple</span>
 <span class="source-line-no">239</span><span id="line-239">   * threads.</span>
 <span class="source-line-no">240</span><span id="line-240">   */</span>
-<span class="source-line-no">241</span><span id="line-241">  public static final Collection&lt;Type&gt; directSupertypes(final Type type) {</span>
+<span class="source-line-no">241</span><span id="line-241">  public static final Collection&lt;? extends Type&gt; directSupertypes(final Type type) {</span>
 <span class="source-line-no">242</span><span id="line-242">    if (Objects.requireNonNull(type) instanceof Class&lt;?&gt; c) {</span>
 <span class="source-line-no">243</span><span id="line-243">      return directSupertypes(c);</span>
 <span class="source-line-no">244</span><span id="line-244">    } else if (type instanceof ParameterizedType p) {</span>
@@ -266,7 +266,7 @@
 <span class="source-line-no">252</span><span id="line-252">    }</span>
 <span class="source-line-no">253</span><span id="line-253">  }</span>
 <span class="source-line-no">254</span><span id="line-254"></span>
-<span class="source-line-no">255</span><span id="line-255">  private static final Collection&lt;Type&gt; directSupertypes(final Class&lt;?&gt; c) {</span>
+<span class="source-line-no">255</span><span id="line-255">  private static final Collection&lt;? extends Type&gt; directSupertypes(final Class&lt;?&gt; c) {</span>
 <span class="source-line-no">256</span><span id="line-256">    if (c == Object.class) {</span>
 <span class="source-line-no">257</span><span id="line-257">      return List.of();</span>
 <span class="source-line-no">258</span><span id="line-258">    } else if (c.isPrimitive()) {</span>
@@ -453,7 +453,7 @@
 <span class="source-line-no">439</span><span id="line-439">  }</span>
 <span class="source-line-no">440</span><span id="line-440"></span>
 <span class="source-line-no">441</span><span id="line-441">  private static final Collection&lt;Type&gt; directSupertypes(final GenericArrayType g) {</span>
-<span class="source-line-no">442</span><span id="line-442">    final Collection&lt;Type&gt; genericComponentTypeDirectSupertypes = directSupertypes(g.getGenericComponentType());</span>
+<span class="source-line-no">442</span><span id="line-442">    final Collection&lt;? extends Type&gt; genericComponentTypeDirectSupertypes = directSupertypes(g.getGenericComponentType());</span>
 <span class="source-line-no">443</span><span id="line-443">    final Collection&lt;Type&gt; returnValue = new ArrayList&lt;&gt;(genericComponentTypeDirectSupertypes.size());</span>
 <span class="source-line-no">444</span><span id="line-444">    for (final Type ds : genericComponentTypeDirectSupertypes) {</span>
 <span class="source-line-no">445</span><span id="line-445">      returnValue.add(array(ds));</span>
