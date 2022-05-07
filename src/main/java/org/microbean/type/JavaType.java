@@ -739,7 +739,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
 
   /**
-   * Creates a new {@link JavaType} without autoboxing.
+   * Returns a {@link JavaType} suitable for the supplied arguments.
    *
    * @param type a {@link Token} representing the type to model; must
    * not be {@code null}
@@ -751,7 +751,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link JavaType} with each invocation).
+   * that it may return a new {@link JavaType} with each invocation).
    * However, any {@link JavaType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
    * JavaType} returned from this method, provided the inputs to all
@@ -760,14 +760,14 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #of(Type, boolean)
+   * @see #of(Token, boolean)
    */
   public static JavaType of(final Token<?> type) {
     return of(type, false);
   }
 
   /**
-   * Creates a new {@link JavaType}.
+   * Returns a {@link JavaType} suitable for the supplied arguments.
    *
    * @param type a {@link Token} representing the type to model; must
    * not be {@code null}
@@ -781,7 +781,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link JavaType} with each invocation).
+   * that it may return a new {@link JavaType} with each invocation).
    * However, any {@link JavaType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
    * JavaType} returned from this method, provided the inputs to all
@@ -797,7 +797,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   }
 
   /**
-   * Creates a new {@link JavaType} without autoboxing.
+   * Returns a {@link JavaType} suitable for the supplied arguments.
    *
    * @param type the {@link Type} that will be modeled; must not be
    * {@code null}
@@ -809,7 +809,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link JavaType} with each invocation).
+   * that it may return a new {@link JavaType} with each invocation).
    * However, any {@link JavaType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
    * JavaType} returned from this method, provided the inputs to all
@@ -817,27 +817,56 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
+   *
+   * @see #of(Type, boolean)
    */
   public static JavaType of(final Type type) {
     return of(type, false);
   }
 
   /**
-   * Creates a new {@link JavaType}.
+   * Returns a {@link JavaType} suitable for the supplied arguments.
    *
    * @param type the {@link Type} that will be modeled; must not be
    * {@code null}
    *
    * @param box whether autoboxing is enabled
    *
-   * @return a new {@link JavaType}; never {@code null}
+   * @return a {@link JavaType}; never {@code null}
    *
    * @exception NullPointerException if {@code type} is {@code null}.
    *
    * @nullability This method never returns {@code null}.
    *
    * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link JavaType} with each invocation).
+   * that it may return a new {@link JavaType} with each invocation).
+   * However, any {@link JavaType} returned from this method is
+   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
+   * JavaType} returned from this method, provided the inputs to all
+   * invocations are equal.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static JavaType of(final Type type, final boolean box) {
+    return new JavaType(type, box);
+  }
+
+  /**
+   * Returns a {@link JavaType} suitable for the supplied arguments.
+   *
+   * @param type the {@link org.microbean.type.Type} whose {@linkplain
+   * org.microbean.type.Type#object() represented <code>Type</code>}
+   * will be modeled; must not be {@code null}
+   *
+   * @return a {@link JavaType}; never {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}.
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link JavaType} with each invocation).
    * However, any {@link JavaType} returned from this method is
    * guaranteed to {@linkplain #equals(Object) equal} any other {@link
    * JavaType} returned from this method, provided the inputs to all
@@ -846,10 +875,44 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #of(Type)
+   * @see #of(org.microbean.type.Type, boolean)
    */
-  public static JavaType of(final Type type, final boolean box) {
-    return new JavaType(type, box);
+  public static JavaType of(final org.microbean.type.Type<? extends Type> type) {
+    return of(type, false);
+  }
+
+  /**
+   * Returns a {@link JavaType} suitable for the supplied arguments.
+   *
+   * @param type the {@link org.microbean.type.Type} whose {@linkplain
+   * org.microbean.type.Type#object() represented <code>Type</code>}
+   * will be modeled; must not be {@code null}
+   *
+   * @param box whether autoboxing is enabled
+   *
+   * @return a {@link JavaType}; never {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code null}.
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link JavaType} with each invocation).
+   * However, any {@link JavaType} returned from this method is
+   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
+   * JavaType} returned from this method, provided the inputs to all
+   * invocations are equal.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Type, boolean)
+   */
+  public static JavaType of(final org.microbean.type.Type<? extends Type> type, final boolean box) {
+    if (type instanceof JavaType jt && box == jt.box) {
+      return jt;
+    }
+    return of(type.object(), box);
   }
 
 

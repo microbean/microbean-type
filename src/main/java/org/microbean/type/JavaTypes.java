@@ -252,6 +252,59 @@ public final class JavaTypes {
     }
   }
 
+  /**
+   * Returns the <em>direct supertypes</em> of the supplied {@link
+   * Type}, provided that it is either a {@link Class}, a {@link
+   * ParameterizedType}, a {@link GenericArrayType} or a {@link
+   * TypeVariable}.
+   *
+   * <p>The direct supertypes of a type do not include the type
+   * itself.</p>
+   *
+   * <p>The returned {@link Collection} will contain no duplicate
+   * elements but is not guaranteed to be a {@link Set}
+   * implementation.</p>
+   *
+   * @param type the {@link Type} to introspect; must not be {@code
+   * null}
+   *
+   * @param acceptancePredicate a {@link Predicate} controlling
+   * membership of a {@link Type} in the returned {@link Collection};
+   * must not be {@code null}
+   *
+   * @return a {@link Collection} of the direct supertypes of the
+   * supplied {@code type}; never {@code null}
+   *
+   * @exception NullPointerException if either {@code type} or {@code
+   * acceptancePredicate} is {@code null}.
+   *
+   * @exception IllegalArgumentException if {@code type} is not a
+   * {@link Class} and not a {@link ParameterizedType} and not a
+   * {@link GenericArrayType} and not a {@link TypeVariable}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final Collection<? extends Type> directSupertypes(final Type type,
+                                                                  final Predicate<? super Type> acceptancePredicate) {
+    final ArrayList<Type> c = new ArrayList<>(11);
+    for (final Type ds : directSupertypes(type)) {
+      if (acceptancePredicate.test(ds)) {
+        c.add(ds);
+      }
+    }
+    c.trimToSize();
+    return c.isEmpty() ? List.of() : Collections.unmodifiableCollection(c);
+  }
+  
+  static final boolean acceptAll(final Type type) {
+    return true;
+  }
+
   private static final Collection<? extends Type> directSupertypes(final Class<?> c) {
     if (c == Object.class) {
       return List.of();
@@ -276,7 +329,7 @@ public final class JavaTypes {
       // [We skip all this.]
       return List.of();
     } else {
-      final Collection<Type> directSupertypes = new ArrayList<>(11);
+      final ArrayList<Type> directSupertypes = new ArrayList<>(11);
       final Class<?> componentType = c.getComponentType();
       if (componentType == null) {
         final Type[] parameters = c.getTypeParameters();
@@ -306,7 +359,6 @@ public final class JavaTypes {
               directSupertypes.add(directSuperinterfaceTypeErasure);
             }
           } else if (c.isInterface()) {
-            assert directSuperclassTypeErasure == null;
             directSupertypes.add(Object.class);
           }
         } else {
@@ -333,7 +385,6 @@ public final class JavaTypes {
               directSupertypes.add(directSuperinterfaceType);
             }
           } else if (c.isInterface()) {
-            assert directSuperclassType == null;
             directSupertypes.add(Object.class);
           }
         }
@@ -371,12 +422,13 @@ public final class JavaTypes {
           }
         }
       }
+      directSupertypes.trimToSize();
       return Collections.unmodifiableCollection(directSupertypes);
     }
   }
 
   private static final Collection<Type> directSupertypes(final ParameterizedType p) {
-    final Collection<Type> directSupertypes = new ArrayList<>(11);
+    final ArrayList<Type> directSupertypes = new ArrayList<>(11);
     // 4.10.2. Subtyping among Class and Interface Types
     //
     // […]
@@ -431,10 +483,10 @@ public final class JavaTypes {
         }
       }
     } else if (c.isInterface()) {
-      assert directSuperclassType == null;
       directSupertypes.add(Object.class);
     }
     directSupertypes.add(c);
+    directSupertypes.trimToSize();
     return Collections.unmodifiableCollection(directSupertypes);
   }
 
@@ -490,16 +542,65 @@ public final class JavaTypes {
    * threads.
    */
   public static final Collection<Type> supertypes(final Type type) {
-    return supertypes(type, new HashSet<>()::add);
+    return supertypes0(type, new HashSet<>()::add);
   }
 
-  private static final Collection<Type> supertypes(final Type type, final Predicate<? super JavaType> unseen) {
+  /**
+   * Returns the <em>supertypes</em> of the supplied {@link
+   * Type}, provided that it is either a {@link Class}, a {@link
+   * ParameterizedType}, a {@link GenericArrayType} or a {@link
+   * TypeVariable}.
+   *
+   * <p><strong>The supertypes of a type include the type
+   * itself.</strong></p>
+   *
+   * <p>The returned {@link Collection} will contain no duplicate
+   * elements but is not guaranteed to be a {@link Set}
+   * implementation.</p>
+   *
+   * @param type the {@link Type} to introspect; must not be {@code
+   * null}
+   *
+   * @param acceptancePredicate a {@link Predicate} controlling
+   * membership of a {@link Type} in the returned {@link Collection};
+   * must not be {@code null}
+   *
+   * @return a {@link Collection} of the supertypes of the supplied
+   * {@code type}; never {@code null}
+   *
+   * @exception NullPointerException if either {@code type} or {@code
+   * acceptancePredicate} is {@code null}.
+   *
+   * @exception IllegalArgumentException if {@code type} is not a
+   * {@link Class} and not a {@link ParameterizedType} and not a
+   * {@link GenericArrayType} and not a {@link TypeVariable}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public static final Collection<Type> supertypes(final Type type, final Predicate<? super Type> acceptancePredicate) {
+    final ArrayList<Type> c = new ArrayList<>(11);
+    for (final Type st : supertypes(type)) {
+      if (acceptancePredicate.test(st)) {
+        c.add(st);
+      }
+    }
+    c.trimToSize();
+    return c.isEmpty() ? List.of() : Collections.unmodifiableCollection(c);
+  }
+
+  private static final Collection<Type> supertypes0(final Type type, final Predicate<? super JavaType> unseen) {
     if (unseen.test(JavaType.of(type))) {
-      final Collection<Type> supertypes = new ArrayList<>();
+      final ArrayList<Type> supertypes = new ArrayList<>(11);
       supertypes.add(type); // reflexive
       for (final Type ds : directSupertypes(type)) {
-        supertypes.addAll(supertypes(ds, unseen)); // transitive/recursive
+        supertypes.addAll(supertypes0(ds, unseen)); // transitive/recursive
       }
+      supertypes.trimToSize();
       return Collections.unmodifiableCollection(supertypes);
     } else {
       return List.of();
@@ -545,20 +646,73 @@ public final class JavaTypes {
    * @see #supertypes(Type)
    */
   public static final boolean supertype(final Type sup, final Type sub) {
+    return supertype(sup, sub, null);
+  }
+
+  /**
+   * Returns {@code true} if and only if {@code sup} is a supertype of
+   * {@code sub}.
+   *
+   * <p>This method obeys the <a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.10"
+   * target="_parent">subtyping rules from the Java Language
+   * Specification</a> with the following exceptions:</p>
+   *
+   * <ul>
+   *
+   * <li><a
+   * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.5.1"
+   * target="_parent">Containing types</a> are discarded when
+   * calculating the supertypes of a parameterized type.</li>
+   *
+   * <li>{@linkplain Class#isPrimitive() Primitive types} have no
+   * supertypes.</li>
+   *
+   * </ul>
+   *
+   * @param sup the purported supertype; must not be {@code null}
+   *
+   * @param sub the purported subtype; must not be {@code null}
+   *
+   * @param acceptancePredicate a {@link Predicate} controlling which
+   * supertypes are considered in this method's calculation; may be
+   * {@code null} in which case all supertypes will be considered
+   *
+   * @return {@code true} if and only if {@code sup} is a supertype of
+   * {@code sub}
+   *
+   * @exception NullPointerException if either {@code sup} or {@code
+   * sub} is {@code null}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #supertypes(Type, Predicate)
+   */
+  public static final boolean supertype(final Type sup, final Type sub, Predicate<? super Type> acceptancePredicate) {
     // Is sup a supertype of sub?
-    if (sup == null) {
-      throw new NullPointerException("sup");
-    } else if (sub == null) {
-      throw new NullPointerException("sub");
-    } else if (equals(sup, sub)) {
-      return true;
-    } else if (sup instanceof Class<?> supC && sub instanceof Class<?> subC) {
-      // Easy optimization
-      return supC.isAssignableFrom(subC);
+    Objects.requireNonNull(sup, "sup");
+    Objects.requireNonNull(sub, "sub");
+    final boolean acceptAll;
+    if (acceptancePredicate == null) {
+      acceptancePredicate = JavaTypes::acceptAll;
+      acceptAll = true;
     } else {
-      for (final Type supertype : supertypes(sub, new HashSet<>()::add)) {
-        if (equals(supertype, sup)) {
-          return true;
+      acceptAll = acceptancePredicate == (Predicate<? super Type>)JavaTypes::acceptAll;
+    }
+    if (acceptAll || acceptancePredicate.test(sup) && acceptancePredicate.test(sub)) {
+      if (equals(sup, sub)) {
+        return true;
+      } else if (acceptAll && sup instanceof Class<?> supC && sub instanceof Class<?> subC) {
+        // Easy optimization
+        return supC.isAssignableFrom(subC);
+      } else {
+        for (final Type supertype : supertypes(sub, acceptancePredicate)) {
+          if (equals(supertype, sup)) {
+            return true;
+          }
         }
       }
     }
