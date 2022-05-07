@@ -753,7 +753,7 @@
 <span class="source-line-no">739</span><span id="line-739"></span>
 <span class="source-line-no">740</span><span id="line-740"></span>
 <span class="source-line-no">741</span><span id="line-741">  /**</span>
-<span class="source-line-no">742</span><span id="line-742">   * Creates a new {@link JavaType} without autoboxing.</span>
+<span class="source-line-no">742</span><span id="line-742">   * Returns a {@link JavaType} suitable for the supplied arguments.</span>
 <span class="source-line-no">743</span><span id="line-743">   *</span>
 <span class="source-line-no">744</span><span id="line-744">   * @param type a {@link Token} representing the type to model; must</span>
 <span class="source-line-no">745</span><span id="line-745">   * not be {@code null}</span>
@@ -765,7 +765,7 @@
 <span class="source-line-no">751</span><span id="line-751">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">752</span><span id="line-752">   *</span>
 <span class="source-line-no">753</span><span id="line-753">   * @idempotency This method is idempotent but not deterministic (in</span>
-<span class="source-line-no">754</span><span id="line-754">   * that it returns a new {@link JavaType} with each invocation).</span>
+<span class="source-line-no">754</span><span id="line-754">   * that it may return a new {@link JavaType} with each invocation).</span>
 <span class="source-line-no">755</span><span id="line-755">   * However, any {@link JavaType} returned from this method is</span>
 <span class="source-line-no">756</span><span id="line-756">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
 <span class="source-line-no">757</span><span id="line-757">   * JavaType} returned from this method, provided the inputs to all</span>
@@ -774,14 +774,14 @@
 <span class="source-line-no">760</span><span id="line-760">   * @threadsafety This method is safe for concurrent use by multiple</span>
 <span class="source-line-no">761</span><span id="line-761">   * threads.</span>
 <span class="source-line-no">762</span><span id="line-762">   *</span>
-<span class="source-line-no">763</span><span id="line-763">   * @see #of(Type, boolean)</span>
+<span class="source-line-no">763</span><span id="line-763">   * @see #of(Token, boolean)</span>
 <span class="source-line-no">764</span><span id="line-764">   */</span>
 <span class="source-line-no">765</span><span id="line-765">  public static JavaType of(final Token&lt;?&gt; type) {</span>
 <span class="source-line-no">766</span><span id="line-766">    return of(type, false);</span>
 <span class="source-line-no">767</span><span id="line-767">  }</span>
 <span class="source-line-no">768</span><span id="line-768"></span>
 <span class="source-line-no">769</span><span id="line-769">  /**</span>
-<span class="source-line-no">770</span><span id="line-770">   * Creates a new {@link JavaType}.</span>
+<span class="source-line-no">770</span><span id="line-770">   * Returns a {@link JavaType} suitable for the supplied arguments.</span>
 <span class="source-line-no">771</span><span id="line-771">   *</span>
 <span class="source-line-no">772</span><span id="line-772">   * @param type a {@link Token} representing the type to model; must</span>
 <span class="source-line-no">773</span><span id="line-773">   * not be {@code null}</span>
@@ -795,7 +795,7 @@
 <span class="source-line-no">781</span><span id="line-781">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">782</span><span id="line-782">   *</span>
 <span class="source-line-no">783</span><span id="line-783">   * @idempotency This method is idempotent but not deterministic (in</span>
-<span class="source-line-no">784</span><span id="line-784">   * that it returns a new {@link JavaType} with each invocation).</span>
+<span class="source-line-no">784</span><span id="line-784">   * that it may return a new {@link JavaType} with each invocation).</span>
 <span class="source-line-no">785</span><span id="line-785">   * However, any {@link JavaType} returned from this method is</span>
 <span class="source-line-no">786</span><span id="line-786">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
 <span class="source-line-no">787</span><span id="line-787">   * JavaType} returned from this method, provided the inputs to all</span>
@@ -811,7 +811,7 @@
 <span class="source-line-no">797</span><span id="line-797">  }</span>
 <span class="source-line-no">798</span><span id="line-798"></span>
 <span class="source-line-no">799</span><span id="line-799">  /**</span>
-<span class="source-line-no">800</span><span id="line-800">   * Creates a new {@link JavaType} without autoboxing.</span>
+<span class="source-line-no">800</span><span id="line-800">   * Returns a {@link JavaType} suitable for the supplied arguments.</span>
 <span class="source-line-no">801</span><span id="line-801">   *</span>
 <span class="source-line-no">802</span><span id="line-802">   * @param type the {@link Type} that will be modeled; must not be</span>
 <span class="source-line-no">803</span><span id="line-803">   * {@code null}</span>
@@ -823,7 +823,7 @@
 <span class="source-line-no">809</span><span id="line-809">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">810</span><span id="line-810">   *</span>
 <span class="source-line-no">811</span><span id="line-811">   * @idempotency This method is idempotent but not deterministic (in</span>
-<span class="source-line-no">812</span><span id="line-812">   * that it returns a new {@link JavaType} with each invocation).</span>
+<span class="source-line-no">812</span><span id="line-812">   * that it may return a new {@link JavaType} with each invocation).</span>
 <span class="source-line-no">813</span><span id="line-813">   * However, any {@link JavaType} returned from this method is</span>
 <span class="source-line-no">814</span><span id="line-814">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
 <span class="source-line-no">815</span><span id="line-815">   * JavaType} returned from this method, provided the inputs to all</span>
@@ -831,243 +831,306 @@
 <span class="source-line-no">817</span><span id="line-817">   *</span>
 <span class="source-line-no">818</span><span id="line-818">   * @threadsafety This method is safe for concurrent use by multiple</span>
 <span class="source-line-no">819</span><span id="line-819">   * threads.</span>
-<span class="source-line-no">820</span><span id="line-820">   */</span>
-<span class="source-line-no">821</span><span id="line-821">  public static JavaType of(final Type type) {</span>
-<span class="source-line-no">822</span><span id="line-822">    return of(type, false);</span>
-<span class="source-line-no">823</span><span id="line-823">  }</span>
-<span class="source-line-no">824</span><span id="line-824"></span>
-<span class="source-line-no">825</span><span id="line-825">  /**</span>
-<span class="source-line-no">826</span><span id="line-826">   * Creates a new {@link JavaType}.</span>
-<span class="source-line-no">827</span><span id="line-827">   *</span>
-<span class="source-line-no">828</span><span id="line-828">   * @param type the {@link Type} that will be modeled; must not be</span>
-<span class="source-line-no">829</span><span id="line-829">   * {@code null}</span>
-<span class="source-line-no">830</span><span id="line-830">   *</span>
-<span class="source-line-no">831</span><span id="line-831">   * @param box whether autoboxing is enabled</span>
+<span class="source-line-no">820</span><span id="line-820">   *</span>
+<span class="source-line-no">821</span><span id="line-821">   * @see #of(Type, boolean)</span>
+<span class="source-line-no">822</span><span id="line-822">   */</span>
+<span class="source-line-no">823</span><span id="line-823">  public static JavaType of(final Type type) {</span>
+<span class="source-line-no">824</span><span id="line-824">    return of(type, false);</span>
+<span class="source-line-no">825</span><span id="line-825">  }</span>
+<span class="source-line-no">826</span><span id="line-826"></span>
+<span class="source-line-no">827</span><span id="line-827">  /**</span>
+<span class="source-line-no">828</span><span id="line-828">   * Returns a {@link JavaType} suitable for the supplied arguments.</span>
+<span class="source-line-no">829</span><span id="line-829">   *</span>
+<span class="source-line-no">830</span><span id="line-830">   * @param type the {@link Type} that will be modeled; must not be</span>
+<span class="source-line-no">831</span><span id="line-831">   * {@code null}</span>
 <span class="source-line-no">832</span><span id="line-832">   *</span>
-<span class="source-line-no">833</span><span id="line-833">   * @return a new {@link JavaType}; never {@code null}</span>
+<span class="source-line-no">833</span><span id="line-833">   * @param box whether autoboxing is enabled</span>
 <span class="source-line-no">834</span><span id="line-834">   *</span>
-<span class="source-line-no">835</span><span id="line-835">   * @exception NullPointerException if {@code type} is {@code null}.</span>
+<span class="source-line-no">835</span><span id="line-835">   * @return a {@link JavaType}; never {@code null}</span>
 <span class="source-line-no">836</span><span id="line-836">   *</span>
-<span class="source-line-no">837</span><span id="line-837">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">837</span><span id="line-837">   * @exception NullPointerException if {@code type} is {@code null}.</span>
 <span class="source-line-no">838</span><span id="line-838">   *</span>
-<span class="source-line-no">839</span><span id="line-839">   * @idempotency This method is idempotent but not deterministic (in</span>
-<span class="source-line-no">840</span><span id="line-840">   * that it returns a new {@link JavaType} with each invocation).</span>
-<span class="source-line-no">841</span><span id="line-841">   * However, any {@link JavaType} returned from this method is</span>
-<span class="source-line-no">842</span><span id="line-842">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
-<span class="source-line-no">843</span><span id="line-843">   * JavaType} returned from this method, provided the inputs to all</span>
-<span class="source-line-no">844</span><span id="line-844">   * invocations are equal.</span>
-<span class="source-line-no">845</span><span id="line-845">   *</span>
-<span class="source-line-no">846</span><span id="line-846">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">847</span><span id="line-847">   * threads.</span>
-<span class="source-line-no">848</span><span id="line-848">   *</span>
-<span class="source-line-no">849</span><span id="line-849">   * @see #of(Type)</span>
+<span class="source-line-no">839</span><span id="line-839">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">840</span><span id="line-840">   *</span>
+<span class="source-line-no">841</span><span id="line-841">   * @idempotency This method is idempotent but not deterministic (in</span>
+<span class="source-line-no">842</span><span id="line-842">   * that it may return a new {@link JavaType} with each invocation).</span>
+<span class="source-line-no">843</span><span id="line-843">   * However, any {@link JavaType} returned from this method is</span>
+<span class="source-line-no">844</span><span id="line-844">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
+<span class="source-line-no">845</span><span id="line-845">   * JavaType} returned from this method, provided the inputs to all</span>
+<span class="source-line-no">846</span><span id="line-846">   * invocations are equal.</span>
+<span class="source-line-no">847</span><span id="line-847">   *</span>
+<span class="source-line-no">848</span><span id="line-848">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">849</span><span id="line-849">   * threads.</span>
 <span class="source-line-no">850</span><span id="line-850">   */</span>
 <span class="source-line-no">851</span><span id="line-851">  public static JavaType of(final Type type, final boolean box) {</span>
 <span class="source-line-no">852</span><span id="line-852">    return new JavaType(type, box);</span>
 <span class="source-line-no">853</span><span id="line-853">  }</span>
 <span class="source-line-no">854</span><span id="line-854"></span>
-<span class="source-line-no">855</span><span id="line-855"></span>
-<span class="source-line-no">856</span><span id="line-856">  /*</span>
-<span class="source-line-no">857</span><span id="line-857">   * Inner and nested classes.</span>
-<span class="source-line-no">858</span><span id="line-858">   */</span>
-<span class="source-line-no">859</span><span id="line-859"></span>
-<span class="source-line-no">860</span><span id="line-860"></span>
-<span class="source-line-no">861</span><span id="line-861">  /**</span>
-<span class="source-line-no">862</span><span id="line-862">   * A holder of a {@link Type} that embodies &lt;a</span>
-<span class="source-line-no">863</span><span id="line-863">   * href="http://gafter.blogspot.com/2006/12/super-type-tokens.html"</span>
-<span class="source-line-no">864</span><span id="line-864">   * target="_parent"&gt;Gafter's gadget&lt;/a&gt;.</span>
+<span class="source-line-no">855</span><span id="line-855">  /**</span>
+<span class="source-line-no">856</span><span id="line-856">   * Returns a {@link JavaType} suitable for the supplied arguments.</span>
+<span class="source-line-no">857</span><span id="line-857">   *</span>
+<span class="source-line-no">858</span><span id="line-858">   * @param type the {@link org.microbean.type.Type} whose {@linkplain</span>
+<span class="source-line-no">859</span><span id="line-859">   * org.microbean.type.Type#object() represented &lt;code&gt;Type&lt;/code&gt;}</span>
+<span class="source-line-no">860</span><span id="line-860">   * will be modeled; must not be {@code null}</span>
+<span class="source-line-no">861</span><span id="line-861">   *</span>
+<span class="source-line-no">862</span><span id="line-862">   * @return a {@link JavaType}; never {@code null}</span>
+<span class="source-line-no">863</span><span id="line-863">   *</span>
+<span class="source-line-no">864</span><span id="line-864">   * @exception NullPointerException if {@code type} is {@code null}.</span>
 <span class="source-line-no">865</span><span id="line-865">   *</span>
-<span class="source-line-no">866</span><span id="line-866">   * &lt;p&gt;To use this class, create a new instance of an anonymous</span>
-<span class="source-line-no">867</span><span id="line-867">   * subclass of it, and then call {@link #type() type()} on it.  For</span>
-<span class="source-line-no">868</span><span id="line-868">   * example:&lt;/p&gt;</span>
-<span class="source-line-no">869</span><span id="line-869">   *</span>
-<span class="source-line-no">870</span><span id="line-870">   * &lt;blockquote&gt;&lt;pre&gt;</span>
-<span class="source-line-no">871</span><span id="line-871">   * // type will be a {@link ParameterizedType} whose {@link ParameterizedType#getRawType() rawType} is {@link java.util.List List.class} and</span>
-<span class="source-line-no">872</span><span id="line-872">   * // whose {@linkplain ParameterizedType#getActualTypeArguments() sole type argument} is {@link String String.class}</span>
-<span class="source-line-no">873</span><span id="line-873">   * {@link Type} type = new {@link Token Token}&amp;lt;{@link java.util.List List}&amp;lt;{@link String}&amp;gt;&amp;gt;() {}.{@link #type() type()};&lt;/pre&gt;&lt;/blockquote&gt;</span>
+<span class="source-line-no">866</span><span id="line-866">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">867</span><span id="line-867">   *</span>
+<span class="source-line-no">868</span><span id="line-868">   * @idempotency This method is idempotent but not deterministic (in</span>
+<span class="source-line-no">869</span><span id="line-869">   * that it may return a new {@link JavaType} with each invocation).</span>
+<span class="source-line-no">870</span><span id="line-870">   * However, any {@link JavaType} returned from this method is</span>
+<span class="source-line-no">871</span><span id="line-871">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
+<span class="source-line-no">872</span><span id="line-872">   * JavaType} returned from this method, provided the inputs to all</span>
+<span class="source-line-no">873</span><span id="line-873">   * invocations are equal.</span>
 <span class="source-line-no">874</span><span id="line-874">   *</span>
-<span class="source-line-no">875</span><span id="line-875">   * @param &lt;T&gt; the modeled type; often parameterized</span>
-<span class="source-line-no">876</span><span id="line-876">   *</span>
-<span class="source-line-no">877</span><span id="line-877">   * @author &lt;a href="https://about.me/lairdnelson"</span>
-<span class="source-line-no">878</span><span id="line-878">   * target="_parent"&gt;Laird Nelson&lt;/a&gt;</span>
-<span class="source-line-no">879</span><span id="line-879">   *</span>
-<span class="source-line-no">880</span><span id="line-880">   * @see #type()</span>
-<span class="source-line-no">881</span><span id="line-881">   */</span>
-<span class="source-line-no">882</span><span id="line-882">  public static abstract class Token&lt;T&gt; {</span>
+<span class="source-line-no">875</span><span id="line-875">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">876</span><span id="line-876">   * threads.</span>
+<span class="source-line-no">877</span><span id="line-877">   *</span>
+<span class="source-line-no">878</span><span id="line-878">   * @see #of(org.microbean.type.Type, boolean)</span>
+<span class="source-line-no">879</span><span id="line-879">   */</span>
+<span class="source-line-no">880</span><span id="line-880">  public static JavaType of(final org.microbean.type.Type&lt;? extends Type&gt; type) {</span>
+<span class="source-line-no">881</span><span id="line-881">    return of(type, false);</span>
+<span class="source-line-no">882</span><span id="line-882">  }</span>
 <span class="source-line-no">883</span><span id="line-883"></span>
-<span class="source-line-no">884</span><span id="line-884"></span>
-<span class="source-line-no">885</span><span id="line-885">    /*</span>
-<span class="source-line-no">886</span><span id="line-886">     * Instance fields.</span>
-<span class="source-line-no">887</span><span id="line-887">     */</span>
-<span class="source-line-no">888</span><span id="line-888"></span>
-<span class="source-line-no">889</span><span id="line-889"></span>
-<span class="source-line-no">890</span><span id="line-890">    private final Type type;</span>
-<span class="source-line-no">891</span><span id="line-891"></span>
-<span class="source-line-no">892</span><span id="line-892"></span>
-<span class="source-line-no">893</span><span id="line-893">    /*</span>
-<span class="source-line-no">894</span><span id="line-894">     * Constructors.</span>
-<span class="source-line-no">895</span><span id="line-895">     */</span>
-<span class="source-line-no">896</span><span id="line-896"></span>
-<span class="source-line-no">897</span><span id="line-897"></span>
-<span class="source-line-no">898</span><span id="line-898">    /**</span>
-<span class="source-line-no">899</span><span id="line-899">     * Creates a new {@link Token}.</span>
-<span class="source-line-no">900</span><span id="line-900">     */</span>
-<span class="source-line-no">901</span><span id="line-901">    protected Token() {</span>
-<span class="source-line-no">902</span><span id="line-902">      super();</span>
-<span class="source-line-no">903</span><span id="line-903">      this.type = mostSpecializedParameterizedSuperclass(this.getClass()).getActualTypeArguments()[0];</span>
-<span class="source-line-no">904</span><span id="line-904">    }</span>
-<span class="source-line-no">905</span><span id="line-905"></span>
-<span class="source-line-no">906</span><span id="line-906"></span>
-<span class="source-line-no">907</span><span id="line-907">    /*</span>
-<span class="source-line-no">908</span><span id="line-908">     * Instance methods.</span>
-<span class="source-line-no">909</span><span id="line-909">     */</span>
-<span class="source-line-no">910</span><span id="line-910"></span>
-<span class="source-line-no">911</span><span id="line-911"></span>
-<span class="source-line-no">912</span><span id="line-912">    /**</span>
-<span class="source-line-no">913</span><span id="line-913">     * Returns the {@link Type} modeled by this {@link Token}.</span>
-<span class="source-line-no">914</span><span id="line-914">     *</span>
-<span class="source-line-no">915</span><span id="line-915">     * @return the {@link Type} modeled by this {@link Token}; never</span>
-<span class="source-line-no">916</span><span id="line-916">     * {@code null}</span>
-<span class="source-line-no">917</span><span id="line-917">     *</span>
-<span class="source-line-no">918</span><span id="line-918">     * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">919</span><span id="line-919">     *</span>
-<span class="source-line-no">920</span><span id="line-920">     * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">921</span><span id="line-921">     * threads.</span>
-<span class="source-line-no">922</span><span id="line-922">     *</span>
-<span class="source-line-no">923</span><span id="line-923">     * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">924</span><span id="line-924">     */</span>
-<span class="source-line-no">925</span><span id="line-925">    public final Type type() {</span>
-<span class="source-line-no">926</span><span id="line-926">      return this.type;</span>
-<span class="source-line-no">927</span><span id="line-927">    }</span>
-<span class="source-line-no">928</span><span id="line-928"></span>
-<span class="source-line-no">929</span><span id="line-929">    /**</span>
-<span class="source-line-no">930</span><span id="line-930">     * Returns the {@linkplain JavaTypes#erase(Type) type erasure} of</span>
-<span class="source-line-no">931</span><span id="line-931">     * this {@link Token}'s {@linkplain #type() modeled</span>
-<span class="source-line-no">932</span><span id="line-932">     * &lt;code&gt;Type&lt;/code&gt;}, or {@code null} if erasing the {@link Type}</span>
-<span class="source-line-no">933</span><span id="line-933">     * would result in a non-{@link Class} erasure (in which case the</span>
-<span class="source-line-no">934</span><span id="line-934">     * erasure is simply the {@link Type} itself), or if an erasure</span>
-<span class="source-line-no">935</span><span id="line-935">     * cannot be determined.</span>
-<span class="source-line-no">936</span><span id="line-936">     *</span>
-<span class="source-line-no">937</span><span id="line-937">     * @return the {@linkplain JavaTypes#erase(Type) type erasure} of</span>
-<span class="source-line-no">938</span><span id="line-938">     * this {@link Token}'s {@linkplain #type() modeled</span>
-<span class="source-line-no">939</span><span id="line-939">     * &lt;code&gt;Type&lt;/code&gt;}, or {@code null} if erasing the {@link Type}</span>
-<span class="source-line-no">940</span><span id="line-940">     * would result in a non-{@link Class} erasure, or if an erasure</span>
-<span class="source-line-no">941</span><span id="line-941">     * cannot be determined</span>
-<span class="source-line-no">942</span><span id="line-942">     *</span>
-<span class="source-line-no">943</span><span id="line-943">     * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">944</span><span id="line-944">     *</span>
-<span class="source-line-no">945</span><span id="line-945">     * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">946</span><span id="line-946">     * threads.</span>
-<span class="source-line-no">947</span><span id="line-947">     *</span>
-<span class="source-line-no">948</span><span id="line-948">     * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">949</span><span id="line-949">     */</span>
-<span class="source-line-no">950</span><span id="line-950">    public final Class&lt;?&gt; erase() {</span>
-<span class="source-line-no">951</span><span id="line-951">      return JavaTypes.erase(this.type());</span>
-<span class="source-line-no">952</span><span id="line-952">    }</span>
-<span class="source-line-no">953</span><span id="line-953"></span>
-<span class="source-line-no">954</span><span id="line-954">    /**</span>
-<span class="source-line-no">955</span><span id="line-955">     * Returns a hashcode for this {@link Token} computed from the</span>
-<span class="source-line-no">956</span><span id="line-956">     * {@link Type} it {@linkplain #type() models}.</span>
-<span class="source-line-no">957</span><span id="line-957">     *</span>
-<span class="source-line-no">958</span><span id="line-958">     * @return a hashcode for this {@link Token}</span>
-<span class="source-line-no">959</span><span id="line-959">     *</span>
-<span class="source-line-no">960</span><span id="line-960">     * @threadsafety This method is, and its overrides must be, safe for</span>
-<span class="source-line-no">961</span><span id="line-961">     * concurrent use by multiple threads.</span>
-<span class="source-line-no">962</span><span id="line-962">     *</span>
-<span class="source-line-no">963</span><span id="line-963">     * @idempotency This method is, and its overrides must be,</span>
-<span class="source-line-no">964</span><span id="line-964">     * idempotent and deterministic.</span>
-<span class="source-line-no">965</span><span id="line-965">     *</span>
-<span class="source-line-no">966</span><span id="line-966">     * @see #equals(Object)</span>
-<span class="source-line-no">967</span><span id="line-967">     */</span>
-<span class="source-line-no">968</span><span id="line-968">    @Override // Object</span>
-<span class="source-line-no">969</span><span id="line-969">    public int hashCode() {</span>
-<span class="source-line-no">970</span><span id="line-970">      final Type type = this.type();</span>
-<span class="source-line-no">971</span><span id="line-971">      return type == null ? 0 : type.hashCode();</span>
-<span class="source-line-no">972</span><span id="line-972">    }</span>
+<span class="source-line-no">884</span><span id="line-884">  /**</span>
+<span class="source-line-no">885</span><span id="line-885">   * Returns a {@link JavaType} suitable for the supplied arguments.</span>
+<span class="source-line-no">886</span><span id="line-886">   *</span>
+<span class="source-line-no">887</span><span id="line-887">   * @param type the {@link org.microbean.type.Type} whose {@linkplain</span>
+<span class="source-line-no">888</span><span id="line-888">   * org.microbean.type.Type#object() represented &lt;code&gt;Type&lt;/code&gt;}</span>
+<span class="source-line-no">889</span><span id="line-889">   * will be modeled; must not be {@code null}</span>
+<span class="source-line-no">890</span><span id="line-890">   *</span>
+<span class="source-line-no">891</span><span id="line-891">   * @param box whether autoboxing is enabled</span>
+<span class="source-line-no">892</span><span id="line-892">   *</span>
+<span class="source-line-no">893</span><span id="line-893">   * @return a {@link JavaType}; never {@code null}</span>
+<span class="source-line-no">894</span><span id="line-894">   *</span>
+<span class="source-line-no">895</span><span id="line-895">   * @exception NullPointerException if {@code type} is {@code null}.</span>
+<span class="source-line-no">896</span><span id="line-896">   *</span>
+<span class="source-line-no">897</span><span id="line-897">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">898</span><span id="line-898">   *</span>
+<span class="source-line-no">899</span><span id="line-899">   * @idempotency This method is idempotent but not deterministic (in</span>
+<span class="source-line-no">900</span><span id="line-900">   * that it may return a new {@link JavaType} with each invocation).</span>
+<span class="source-line-no">901</span><span id="line-901">   * However, any {@link JavaType} returned from this method is</span>
+<span class="source-line-no">902</span><span id="line-902">   * guaranteed to {@linkplain #equals(Object) equal} any other {@link</span>
+<span class="source-line-no">903</span><span id="line-903">   * JavaType} returned from this method, provided the inputs to all</span>
+<span class="source-line-no">904</span><span id="line-904">   * invocations are equal.</span>
+<span class="source-line-no">905</span><span id="line-905">   *</span>
+<span class="source-line-no">906</span><span id="line-906">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">907</span><span id="line-907">   * threads.</span>
+<span class="source-line-no">908</span><span id="line-908">   *</span>
+<span class="source-line-no">909</span><span id="line-909">   * @see #of(Type, boolean)</span>
+<span class="source-line-no">910</span><span id="line-910">   */</span>
+<span class="source-line-no">911</span><span id="line-911">  public static JavaType of(final org.microbean.type.Type&lt;? extends Type&gt; type, final boolean box) {</span>
+<span class="source-line-no">912</span><span id="line-912">    if (type instanceof JavaType jt &amp;&amp; box == jt.box) {</span>
+<span class="source-line-no">913</span><span id="line-913">      return jt;</span>
+<span class="source-line-no">914</span><span id="line-914">    }</span>
+<span class="source-line-no">915</span><span id="line-915">    return of(type.object(), box);</span>
+<span class="source-line-no">916</span><span id="line-916">  }</span>
+<span class="source-line-no">917</span><span id="line-917"></span>
+<span class="source-line-no">918</span><span id="line-918"></span>
+<span class="source-line-no">919</span><span id="line-919">  /*</span>
+<span class="source-line-no">920</span><span id="line-920">   * Inner and nested classes.</span>
+<span class="source-line-no">921</span><span id="line-921">   */</span>
+<span class="source-line-no">922</span><span id="line-922"></span>
+<span class="source-line-no">923</span><span id="line-923"></span>
+<span class="source-line-no">924</span><span id="line-924">  /**</span>
+<span class="source-line-no">925</span><span id="line-925">   * A holder of a {@link Type} that embodies &lt;a</span>
+<span class="source-line-no">926</span><span id="line-926">   * href="http://gafter.blogspot.com/2006/12/super-type-tokens.html"</span>
+<span class="source-line-no">927</span><span id="line-927">   * target="_parent"&gt;Gafter's gadget&lt;/a&gt;.</span>
+<span class="source-line-no">928</span><span id="line-928">   *</span>
+<span class="source-line-no">929</span><span id="line-929">   * &lt;p&gt;To use this class, create a new instance of an anonymous</span>
+<span class="source-line-no">930</span><span id="line-930">   * subclass of it, and then call {@link #type() type()} on it.  For</span>
+<span class="source-line-no">931</span><span id="line-931">   * example:&lt;/p&gt;</span>
+<span class="source-line-no">932</span><span id="line-932">   *</span>
+<span class="source-line-no">933</span><span id="line-933">   * &lt;blockquote&gt;&lt;pre&gt;</span>
+<span class="source-line-no">934</span><span id="line-934">   * // type will be a {@link ParameterizedType} whose {@link ParameterizedType#getRawType() rawType} is {@link java.util.List List.class} and</span>
+<span class="source-line-no">935</span><span id="line-935">   * // whose {@linkplain ParameterizedType#getActualTypeArguments() sole type argument} is {@link String String.class}</span>
+<span class="source-line-no">936</span><span id="line-936">   * {@link Type} type = new {@link Token Token}&amp;lt;{@link java.util.List List}&amp;lt;{@link String}&amp;gt;&amp;gt;() {}.{@link #type() type()};&lt;/pre&gt;&lt;/blockquote&gt;</span>
+<span class="source-line-no">937</span><span id="line-937">   *</span>
+<span class="source-line-no">938</span><span id="line-938">   * @param &lt;T&gt; the modeled type; often parameterized</span>
+<span class="source-line-no">939</span><span id="line-939">   *</span>
+<span class="source-line-no">940</span><span id="line-940">   * @author &lt;a href="https://about.me/lairdnelson"</span>
+<span class="source-line-no">941</span><span id="line-941">   * target="_parent"&gt;Laird Nelson&lt;/a&gt;</span>
+<span class="source-line-no">942</span><span id="line-942">   *</span>
+<span class="source-line-no">943</span><span id="line-943">   * @see #type()</span>
+<span class="source-line-no">944</span><span id="line-944">   */</span>
+<span class="source-line-no">945</span><span id="line-945">  public static abstract class Token&lt;T&gt; {</span>
+<span class="source-line-no">946</span><span id="line-946"></span>
+<span class="source-line-no">947</span><span id="line-947"></span>
+<span class="source-line-no">948</span><span id="line-948">    /*</span>
+<span class="source-line-no">949</span><span id="line-949">     * Instance fields.</span>
+<span class="source-line-no">950</span><span id="line-950">     */</span>
+<span class="source-line-no">951</span><span id="line-951"></span>
+<span class="source-line-no">952</span><span id="line-952"></span>
+<span class="source-line-no">953</span><span id="line-953">    private final Type type;</span>
+<span class="source-line-no">954</span><span id="line-954"></span>
+<span class="source-line-no">955</span><span id="line-955"></span>
+<span class="source-line-no">956</span><span id="line-956">    /*</span>
+<span class="source-line-no">957</span><span id="line-957">     * Constructors.</span>
+<span class="source-line-no">958</span><span id="line-958">     */</span>
+<span class="source-line-no">959</span><span id="line-959"></span>
+<span class="source-line-no">960</span><span id="line-960"></span>
+<span class="source-line-no">961</span><span id="line-961">    /**</span>
+<span class="source-line-no">962</span><span id="line-962">     * Creates a new {@link Token}.</span>
+<span class="source-line-no">963</span><span id="line-963">     */</span>
+<span class="source-line-no">964</span><span id="line-964">    protected Token() {</span>
+<span class="source-line-no">965</span><span id="line-965">      super();</span>
+<span class="source-line-no">966</span><span id="line-966">      this.type = mostSpecializedParameterizedSuperclass(this.getClass()).getActualTypeArguments()[0];</span>
+<span class="source-line-no">967</span><span id="line-967">    }</span>
+<span class="source-line-no">968</span><span id="line-968"></span>
+<span class="source-line-no">969</span><span id="line-969"></span>
+<span class="source-line-no">970</span><span id="line-970">    /*</span>
+<span class="source-line-no">971</span><span id="line-971">     * Instance methods.</span>
+<span class="source-line-no">972</span><span id="line-972">     */</span>
 <span class="source-line-no">973</span><span id="line-973"></span>
-<span class="source-line-no">974</span><span id="line-974">    /**</span>
-<span class="source-line-no">975</span><span id="line-975">     * Returns {@code true} if the supplied {@link Object} is equal to</span>
-<span class="source-line-no">976</span><span id="line-976">     * this {@link Token}.</span>
+<span class="source-line-no">974</span><span id="line-974"></span>
+<span class="source-line-no">975</span><span id="line-975">    /**</span>
+<span class="source-line-no">976</span><span id="line-976">     * Returns the {@link Type} modeled by this {@link Token}.</span>
 <span class="source-line-no">977</span><span id="line-977">     *</span>
-<span class="source-line-no">978</span><span id="line-978">     * &lt;p&gt;This method returns {@code true} if the supplied {@link</span>
-<span class="source-line-no">979</span><span id="line-979">     * Object}'s {@linkplain Object#getClass() class} is this {@link</span>
-<span class="source-line-no">980</span><span id="line-980">     * Token}'s class and if its {@linkplain #type() modeled</span>
-<span class="source-line-no">981</span><span id="line-981">     * &lt;code&gt;Type&lt;/code&gt;} is equal to this {@link Token}'s</span>
-<span class="source-line-no">982</span><span id="line-982">     * {@linkplain #type() modeled &lt;code&gt;Type&lt;/code&gt;}.&lt;/p&gt;</span>
-<span class="source-line-no">983</span><span id="line-983">     *</span>
-<span class="source-line-no">984</span><span id="line-984">     * @param other the {@link Object} to test; may be {@code null} in</span>
-<span class="source-line-no">985</span><span id="line-985">     * which case {@code false} will be returned</span>
-<span class="source-line-no">986</span><span id="line-986">     *</span>
-<span class="source-line-no">987</span><span id="line-987">     * @return {@code true} if the supplied {@link Object} is equal to</span>
-<span class="source-line-no">988</span><span id="line-988">     * this {@link Token}; {@code false} otherwise</span>
-<span class="source-line-no">989</span><span id="line-989">     *</span>
-<span class="source-line-no">990</span><span id="line-990">     * @threadsafety This method is, and its overrides must be, safe for</span>
-<span class="source-line-no">991</span><span id="line-991">     * concurrent use by multiple threads.</span>
-<span class="source-line-no">992</span><span id="line-992">     *</span>
-<span class="source-line-no">993</span><span id="line-993">     * @idempotency This method is, and its overrides must be,</span>
-<span class="source-line-no">994</span><span id="line-994">     * idempotent and deterministic.</span>
-<span class="source-line-no">995</span><span id="line-995">     *</span>
-<span class="source-line-no">996</span><span id="line-996">     * @see #hashCode()</span>
-<span class="source-line-no">997</span><span id="line-997">     */</span>
-<span class="source-line-no">998</span><span id="line-998">    @Override // Object</span>
-<span class="source-line-no">999</span><span id="line-999">    public boolean equals(final Object other) {</span>
-<span class="source-line-no">1000</span><span id="line-1000">      if (other == this) {</span>
-<span class="source-line-no">1001</span><span id="line-1001">        return true;</span>
-<span class="source-line-no">1002</span><span id="line-1002">      } else if (other instanceof Token&lt;?&gt; tt) {</span>
-<span class="source-line-no">1003</span><span id="line-1003">        return Objects.equals(this.type(), tt.type());</span>
-<span class="source-line-no">1004</span><span id="line-1004">      } else {</span>
-<span class="source-line-no">1005</span><span id="line-1005">        return false;</span>
-<span class="source-line-no">1006</span><span id="line-1006">      }</span>
-<span class="source-line-no">1007</span><span id="line-1007">    }</span>
-<span class="source-line-no">1008</span><span id="line-1008"></span>
-<span class="source-line-no">1009</span><span id="line-1009">    /**</span>
-<span class="source-line-no">1010</span><span id="line-1010">     * Returns a {@link String} representation of this {@link</span>
-<span class="source-line-no">1011</span><span id="line-1011">     * Token}.</span>
-<span class="source-line-no">1012</span><span id="line-1012">     *</span>
-<span class="source-line-no">1013</span><span id="line-1013">     * &lt;p&gt;This method returns a value equal to that returned by {@link</span>
-<span class="source-line-no">1014</span><span id="line-1014">     * Type#getTypeName() this.type().getTypeName()}.&lt;/p&gt;</span>
-<span class="source-line-no">1015</span><span id="line-1015">     *</span>
-<span class="source-line-no">1016</span><span id="line-1016">     * @return a {@link String} representation of this {@link</span>
-<span class="source-line-no">1017</span><span id="line-1017">     * Token}; never {@code null}</span>
-<span class="source-line-no">1018</span><span id="line-1018">     *</span>
-<span class="source-line-no">1019</span><span id="line-1019">     * @nullability This method does not, and its overrides must not,</span>
-<span class="source-line-no">1020</span><span id="line-1020">     * return {@code null}.</span>
-<span class="source-line-no">1021</span><span id="line-1021">     *</span>
-<span class="source-line-no">1022</span><span id="line-1022">     * @threadsafety This method is, and its overrides must be, safe for</span>
-<span class="source-line-no">1023</span><span id="line-1023">     * concurrent use by multiple threads.</span>
-<span class="source-line-no">1024</span><span id="line-1024">     *</span>
-<span class="source-line-no">1025</span><span id="line-1025">     * @idempotency This method is, and its overrides must be,</span>
-<span class="source-line-no">1026</span><span id="line-1026">     * idempotent and deterministic.</span>
-<span class="source-line-no">1027</span><span id="line-1027">     */</span>
-<span class="source-line-no">1028</span><span id="line-1028">    @Override // Object</span>
-<span class="source-line-no">1029</span><span id="line-1029">    public String toString() {</span>
-<span class="source-line-no">1030</span><span id="line-1030">      final Type type = this.type();</span>
-<span class="source-line-no">1031</span><span id="line-1031">      return type == null ? "null" : type.getTypeName();</span>
-<span class="source-line-no">1032</span><span id="line-1032">    }</span>
-<span class="source-line-no">1033</span><span id="line-1033"></span>
-<span class="source-line-no">1034</span><span id="line-1034"></span>
-<span class="source-line-no">1035</span><span id="line-1035">    /*</span>
-<span class="source-line-no">1036</span><span id="line-1036">     * Static methods.</span>
-<span class="source-line-no">1037</span><span id="line-1037">     */</span>
-<span class="source-line-no">1038</span><span id="line-1038"></span>
-<span class="source-line-no">1039</span><span id="line-1039"></span>
-<span class="source-line-no">1040</span><span id="line-1040">    private static final ParameterizedType mostSpecializedParameterizedSuperclass(final Type type) {</span>
-<span class="source-line-no">1041</span><span id="line-1041">      if (type == null || type == Object.class || type == Token.class) {</span>
-<span class="source-line-no">1042</span><span id="line-1042">        return null;</span>
-<span class="source-line-no">1043</span><span id="line-1043">      } else {</span>
-<span class="source-line-no">1044</span><span id="line-1044">        final Class&lt;?&gt; erasure = JavaTypes.erase(type);</span>
-<span class="source-line-no">1045</span><span id="line-1045">        if (erasure == null || erasure == Object.class || !(Token.class.isAssignableFrom(erasure))) {</span>
-<span class="source-line-no">1046</span><span id="line-1046">          return null;</span>
-<span class="source-line-no">1047</span><span id="line-1047">        } else {</span>
-<span class="source-line-no">1048</span><span id="line-1048">          return type instanceof ParameterizedType p ? p : mostSpecializedParameterizedSuperclass(erasure.getGenericSuperclass());</span>
-<span class="source-line-no">1049</span><span id="line-1049">        }</span>
-<span class="source-line-no">1050</span><span id="line-1050">      }</span>
-<span class="source-line-no">1051</span><span id="line-1051">    }</span>
-<span class="source-line-no">1052</span><span id="line-1052"></span>
-<span class="source-line-no">1053</span><span id="line-1053"></span>
-<span class="source-line-no">1054</span><span id="line-1054">  }</span>
-<span class="source-line-no">1055</span><span id="line-1055"></span>
-<span class="source-line-no">1056</span><span id="line-1056">}</span>
+<span class="source-line-no">978</span><span id="line-978">     * @return the {@link Type} modeled by this {@link Token}; never</span>
+<span class="source-line-no">979</span><span id="line-979">     * {@code null}</span>
+<span class="source-line-no">980</span><span id="line-980">     *</span>
+<span class="source-line-no">981</span><span id="line-981">     * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">982</span><span id="line-982">     *</span>
+<span class="source-line-no">983</span><span id="line-983">     * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">984</span><span id="line-984">     * threads.</span>
+<span class="source-line-no">985</span><span id="line-985">     *</span>
+<span class="source-line-no">986</span><span id="line-986">     * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">987</span><span id="line-987">     */</span>
+<span class="source-line-no">988</span><span id="line-988">    public final Type type() {</span>
+<span class="source-line-no">989</span><span id="line-989">      return this.type;</span>
+<span class="source-line-no">990</span><span id="line-990">    }</span>
+<span class="source-line-no">991</span><span id="line-991"></span>
+<span class="source-line-no">992</span><span id="line-992">    /**</span>
+<span class="source-line-no">993</span><span id="line-993">     * Returns the {@linkplain JavaTypes#erase(Type) type erasure} of</span>
+<span class="source-line-no">994</span><span id="line-994">     * this {@link Token}'s {@linkplain #type() modeled</span>
+<span class="source-line-no">995</span><span id="line-995">     * &lt;code&gt;Type&lt;/code&gt;}, or {@code null} if erasing the {@link Type}</span>
+<span class="source-line-no">996</span><span id="line-996">     * would result in a non-{@link Class} erasure (in which case the</span>
+<span class="source-line-no">997</span><span id="line-997">     * erasure is simply the {@link Type} itself), or if an erasure</span>
+<span class="source-line-no">998</span><span id="line-998">     * cannot be determined.</span>
+<span class="source-line-no">999</span><span id="line-999">     *</span>
+<span class="source-line-no">1000</span><span id="line-1000">     * @return the {@linkplain JavaTypes#erase(Type) type erasure} of</span>
+<span class="source-line-no">1001</span><span id="line-1001">     * this {@link Token}'s {@linkplain #type() modeled</span>
+<span class="source-line-no">1002</span><span id="line-1002">     * &lt;code&gt;Type&lt;/code&gt;}, or {@code null} if erasing the {@link Type}</span>
+<span class="source-line-no">1003</span><span id="line-1003">     * would result in a non-{@link Class} erasure, or if an erasure</span>
+<span class="source-line-no">1004</span><span id="line-1004">     * cannot be determined</span>
+<span class="source-line-no">1005</span><span id="line-1005">     *</span>
+<span class="source-line-no">1006</span><span id="line-1006">     * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1007</span><span id="line-1007">     *</span>
+<span class="source-line-no">1008</span><span id="line-1008">     * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1009</span><span id="line-1009">     * threads.</span>
+<span class="source-line-no">1010</span><span id="line-1010">     *</span>
+<span class="source-line-no">1011</span><span id="line-1011">     * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">1012</span><span id="line-1012">     */</span>
+<span class="source-line-no">1013</span><span id="line-1013">    public final Class&lt;?&gt; erase() {</span>
+<span class="source-line-no">1014</span><span id="line-1014">      return JavaTypes.erase(this.type());</span>
+<span class="source-line-no">1015</span><span id="line-1015">    }</span>
+<span class="source-line-no">1016</span><span id="line-1016"></span>
+<span class="source-line-no">1017</span><span id="line-1017">    /**</span>
+<span class="source-line-no">1018</span><span id="line-1018">     * Returns a hashcode for this {@link Token} computed from the</span>
+<span class="source-line-no">1019</span><span id="line-1019">     * {@link Type} it {@linkplain #type() models}.</span>
+<span class="source-line-no">1020</span><span id="line-1020">     *</span>
+<span class="source-line-no">1021</span><span id="line-1021">     * @return a hashcode for this {@link Token}</span>
+<span class="source-line-no">1022</span><span id="line-1022">     *</span>
+<span class="source-line-no">1023</span><span id="line-1023">     * @threadsafety This method is, and its overrides must be, safe for</span>
+<span class="source-line-no">1024</span><span id="line-1024">     * concurrent use by multiple threads.</span>
+<span class="source-line-no">1025</span><span id="line-1025">     *</span>
+<span class="source-line-no">1026</span><span id="line-1026">     * @idempotency This method is, and its overrides must be,</span>
+<span class="source-line-no">1027</span><span id="line-1027">     * idempotent and deterministic.</span>
+<span class="source-line-no">1028</span><span id="line-1028">     *</span>
+<span class="source-line-no">1029</span><span id="line-1029">     * @see #equals(Object)</span>
+<span class="source-line-no">1030</span><span id="line-1030">     */</span>
+<span class="source-line-no">1031</span><span id="line-1031">    @Override // Object</span>
+<span class="source-line-no">1032</span><span id="line-1032">    public int hashCode() {</span>
+<span class="source-line-no">1033</span><span id="line-1033">      final Type type = this.type();</span>
+<span class="source-line-no">1034</span><span id="line-1034">      return type == null ? 0 : type.hashCode();</span>
+<span class="source-line-no">1035</span><span id="line-1035">    }</span>
+<span class="source-line-no">1036</span><span id="line-1036"></span>
+<span class="source-line-no">1037</span><span id="line-1037">    /**</span>
+<span class="source-line-no">1038</span><span id="line-1038">     * Returns {@code true} if the supplied {@link Object} is equal to</span>
+<span class="source-line-no">1039</span><span id="line-1039">     * this {@link Token}.</span>
+<span class="source-line-no">1040</span><span id="line-1040">     *</span>
+<span class="source-line-no">1041</span><span id="line-1041">     * &lt;p&gt;This method returns {@code true} if the supplied {@link</span>
+<span class="source-line-no">1042</span><span id="line-1042">     * Object}'s {@linkplain Object#getClass() class} is this {@link</span>
+<span class="source-line-no">1043</span><span id="line-1043">     * Token}'s class and if its {@linkplain #type() modeled</span>
+<span class="source-line-no">1044</span><span id="line-1044">     * &lt;code&gt;Type&lt;/code&gt;} is equal to this {@link Token}'s</span>
+<span class="source-line-no">1045</span><span id="line-1045">     * {@linkplain #type() modeled &lt;code&gt;Type&lt;/code&gt;}.&lt;/p&gt;</span>
+<span class="source-line-no">1046</span><span id="line-1046">     *</span>
+<span class="source-line-no">1047</span><span id="line-1047">     * @param other the {@link Object} to test; may be {@code null} in</span>
+<span class="source-line-no">1048</span><span id="line-1048">     * which case {@code false} will be returned</span>
+<span class="source-line-no">1049</span><span id="line-1049">     *</span>
+<span class="source-line-no">1050</span><span id="line-1050">     * @return {@code true} if the supplied {@link Object} is equal to</span>
+<span class="source-line-no">1051</span><span id="line-1051">     * this {@link Token}; {@code false} otherwise</span>
+<span class="source-line-no">1052</span><span id="line-1052">     *</span>
+<span class="source-line-no">1053</span><span id="line-1053">     * @threadsafety This method is, and its overrides must be, safe for</span>
+<span class="source-line-no">1054</span><span id="line-1054">     * concurrent use by multiple threads.</span>
+<span class="source-line-no">1055</span><span id="line-1055">     *</span>
+<span class="source-line-no">1056</span><span id="line-1056">     * @idempotency This method is, and its overrides must be,</span>
+<span class="source-line-no">1057</span><span id="line-1057">     * idempotent and deterministic.</span>
+<span class="source-line-no">1058</span><span id="line-1058">     *</span>
+<span class="source-line-no">1059</span><span id="line-1059">     * @see #hashCode()</span>
+<span class="source-line-no">1060</span><span id="line-1060">     */</span>
+<span class="source-line-no">1061</span><span id="line-1061">    @Override // Object</span>
+<span class="source-line-no">1062</span><span id="line-1062">    public boolean equals(final Object other) {</span>
+<span class="source-line-no">1063</span><span id="line-1063">      if (other == this) {</span>
+<span class="source-line-no">1064</span><span id="line-1064">        return true;</span>
+<span class="source-line-no">1065</span><span id="line-1065">      } else if (other instanceof Token&lt;?&gt; tt) {</span>
+<span class="source-line-no">1066</span><span id="line-1066">        return Objects.equals(this.type(), tt.type());</span>
+<span class="source-line-no">1067</span><span id="line-1067">      } else {</span>
+<span class="source-line-no">1068</span><span id="line-1068">        return false;</span>
+<span class="source-line-no">1069</span><span id="line-1069">      }</span>
+<span class="source-line-no">1070</span><span id="line-1070">    }</span>
+<span class="source-line-no">1071</span><span id="line-1071"></span>
+<span class="source-line-no">1072</span><span id="line-1072">    /**</span>
+<span class="source-line-no">1073</span><span id="line-1073">     * Returns a {@link String} representation of this {@link</span>
+<span class="source-line-no">1074</span><span id="line-1074">     * Token}.</span>
+<span class="source-line-no">1075</span><span id="line-1075">     *</span>
+<span class="source-line-no">1076</span><span id="line-1076">     * &lt;p&gt;This method returns a value equal to that returned by {@link</span>
+<span class="source-line-no">1077</span><span id="line-1077">     * Type#getTypeName() this.type().getTypeName()}.&lt;/p&gt;</span>
+<span class="source-line-no">1078</span><span id="line-1078">     *</span>
+<span class="source-line-no">1079</span><span id="line-1079">     * @return a {@link String} representation of this {@link</span>
+<span class="source-line-no">1080</span><span id="line-1080">     * Token}; never {@code null}</span>
+<span class="source-line-no">1081</span><span id="line-1081">     *</span>
+<span class="source-line-no">1082</span><span id="line-1082">     * @nullability This method does not, and its overrides must not,</span>
+<span class="source-line-no">1083</span><span id="line-1083">     * return {@code null}.</span>
+<span class="source-line-no">1084</span><span id="line-1084">     *</span>
+<span class="source-line-no">1085</span><span id="line-1085">     * @threadsafety This method is, and its overrides must be, safe for</span>
+<span class="source-line-no">1086</span><span id="line-1086">     * concurrent use by multiple threads.</span>
+<span class="source-line-no">1087</span><span id="line-1087">     *</span>
+<span class="source-line-no">1088</span><span id="line-1088">     * @idempotency This method is, and its overrides must be,</span>
+<span class="source-line-no">1089</span><span id="line-1089">     * idempotent and deterministic.</span>
+<span class="source-line-no">1090</span><span id="line-1090">     */</span>
+<span class="source-line-no">1091</span><span id="line-1091">    @Override // Object</span>
+<span class="source-line-no">1092</span><span id="line-1092">    public String toString() {</span>
+<span class="source-line-no">1093</span><span id="line-1093">      final Type type = this.type();</span>
+<span class="source-line-no">1094</span><span id="line-1094">      return type == null ? "null" : type.getTypeName();</span>
+<span class="source-line-no">1095</span><span id="line-1095">    }</span>
+<span class="source-line-no">1096</span><span id="line-1096"></span>
+<span class="source-line-no">1097</span><span id="line-1097"></span>
+<span class="source-line-no">1098</span><span id="line-1098">    /*</span>
+<span class="source-line-no">1099</span><span id="line-1099">     * Static methods.</span>
+<span class="source-line-no">1100</span><span id="line-1100">     */</span>
+<span class="source-line-no">1101</span><span id="line-1101"></span>
+<span class="source-line-no">1102</span><span id="line-1102"></span>
+<span class="source-line-no">1103</span><span id="line-1103">    private static final ParameterizedType mostSpecializedParameterizedSuperclass(final Type type) {</span>
+<span class="source-line-no">1104</span><span id="line-1104">      if (type == null || type == Object.class || type == Token.class) {</span>
+<span class="source-line-no">1105</span><span id="line-1105">        return null;</span>
+<span class="source-line-no">1106</span><span id="line-1106">      } else {</span>
+<span class="source-line-no">1107</span><span id="line-1107">        final Class&lt;?&gt; erasure = JavaTypes.erase(type);</span>
+<span class="source-line-no">1108</span><span id="line-1108">        if (erasure == null || erasure == Object.class || !(Token.class.isAssignableFrom(erasure))) {</span>
+<span class="source-line-no">1109</span><span id="line-1109">          return null;</span>
+<span class="source-line-no">1110</span><span id="line-1110">        } else {</span>
+<span class="source-line-no">1111</span><span id="line-1111">          return type instanceof ParameterizedType p ? p : mostSpecializedParameterizedSuperclass(erasure.getGenericSuperclass());</span>
+<span class="source-line-no">1112</span><span id="line-1112">        }</span>
+<span class="source-line-no">1113</span><span id="line-1113">      }</span>
+<span class="source-line-no">1114</span><span id="line-1114">    }</span>
+<span class="source-line-no">1115</span><span id="line-1115"></span>
+<span class="source-line-no">1116</span><span id="line-1116"></span>
+<span class="source-line-no">1117</span><span id="line-1117">  }</span>
+<span class="source-line-no">1118</span><span id="line-1118"></span>
+<span class="source-line-no">1119</span><span id="line-1119">}</span>
 
 
 
