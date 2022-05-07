@@ -16,6 +16,11 @@
  */
 package org.microbean.type;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+
+import java.lang.invoke.VarHandle;
+
 import java.lang.reflect.Type;
 
 import java.util.AbstractSet;
@@ -61,6 +66,20 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   private static final JavaTypeSet EMPTY_JAVA_TYPE_SET = new JavaTypeSet();
 
+  private static final VarHandle MOST_SPECIALIZED_INTERFACE_TYPE;
+
+  private static final VarHandle MOST_SPECIALIZED_NON_INTERFACE_TYPE;
+
+  static {
+    final Lookup lookup = MethodHandles.lookup();
+    try {
+      MOST_SPECIALIZED_INTERFACE_TYPE = lookup.findVarHandle(JavaTypeSet.class, "mostSpecializedInterfaceType", Type.class);
+      MOST_SPECIALIZED_NON_INTERFACE_TYPE = lookup.findVarHandle(JavaTypeSet.class, "mostSpecializedNonInterfaceType", Type.class);
+    } catch (final NoSuchFieldException | IllegalAccessException reflectiveOperationException) {
+      throw (Error)new ExceptionInInitializerError(reflectiveOperationException.getMessage()).initCause(reflectiveOperationException);
+    }
+  }
+
 
   /*
    * Instance fields.
@@ -85,13 +104,12 @@ public final class JavaTypeSet extends AbstractSet<Type> {
   }
 
   private JavaTypeSet(final Type type) {
-    super();
-    this.set = Set.of(JavaType.of(type));
+    this(JavaType.of(type));
   }
 
-  private JavaTypeSet(final JavaType javaType) {
+  private JavaTypeSet(final org.microbean.type.Type<? extends Type> t) {
     super();
-    this.set = Set.of(javaType);
+    this.set = Set.of(t instanceof JavaType jt ? jt : JavaType.of(t.object()));
   }
 
   private JavaTypeSet(final Collection<?> types) {
@@ -105,6 +123,13 @@ public final class JavaTypeSet extends AbstractSet<Type> {
         this.set = Set.of(jt);
       } else if (o instanceof Type t) {
         this.set = Set.of(JavaType.of(t));
+      } else if (o instanceof org.microbean.type.Type<?> t) {
+        final Object modeledType = t.object();
+        if (modeledType instanceof Type) {
+          this.set = Set.of(JavaType.of((Type)modeledType));
+        } else {
+          this.set = Set.of();
+        }
       } else {
         this.set = Set.of();
       }
@@ -115,6 +140,11 @@ public final class JavaTypeSet extends AbstractSet<Type> {
           set.add(jt);
         } else if (type instanceof Type t) {
           set.add(JavaType.of(t));
+        } else if (type instanceof org.microbean.type.Type<?> t) {
+          final Object modeledType = t.object();
+          if (modeledType instanceof Type) {
+            set.add(JavaType.of((Type)modeledType));
+          }
         }
       }
       this.set = Collections.unmodifiableSet(set);
@@ -315,14 +345,13 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
   public final Type mostSpecializedNonInterfaceType() {
     Type mostSpecializedNonInterfaceType = this.mostSpecializedNonInterfaceType; // volatile read
-    if (mostSpecializedNonInterfaceType == NullType.INSTANCE) {
-      return null;
-    } else if (mostSpecializedNonInterfaceType == null) {
+    if (mostSpecializedNonInterfaceType == null) {
       mostSpecializedNonInterfaceType = this.mostSpecialized(JavaTypeSet::nonInterfaceType);
-      this.mostSpecializedNonInterfaceType =
-        mostSpecializedNonInterfaceType == null ? NullType.INSTANCE : mostSpecializedNonInterfaceType; // volatile write
+      if (!MOST_SPECIALIZED_NON_INTERFACE_TYPE.compareAndSet(this, null, mostSpecializedNonInterfaceType)) { // volatile write
+        return this.mostSpecializedNonInterfaceType; // volatile read
+      }
     }
-    return mostSpecializedNonInterfaceType;
+    return mostSpecializedNonInterfaceType == NullType.INSTANCE ? null : mostSpecializedNonInterfaceType;
   }
 
   /**
@@ -366,14 +395,13 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
   public final Type mostSpecializedInterfaceType() {
     Type mostSpecializedInterfaceType = this.mostSpecializedInterfaceType; // volatile read
-    if (mostSpecializedInterfaceType == NullType.INSTANCE) {
-      return null;
-    } else if (mostSpecializedInterfaceType == null) {
+    if (mostSpecializedInterfaceType == null) {
       mostSpecializedInterfaceType = this.mostSpecialized(JavaTypeSet::interfaceType);
-      this.mostSpecializedInterfaceType =
-        mostSpecializedInterfaceType == null ? NullType.INSTANCE : mostSpecializedInterfaceType; // volatile write
+      if (!MOST_SPECIALIZED_INTERFACE_TYPE.compareAndSet(this, null, mostSpecializedInterfaceType)) { // volatile write
+        return this.mostSpecializedInterfaceType; // volatile read
+      }
     }
-    return mostSpecializedInterfaceType;
+    return mostSpecializedInterfaceType == NullType.INSTANCE ? null : mostSpecializedInterfaceType;
   }
 
   private final Type mostSpecialized(final Predicate<? super Type> p) {
@@ -436,11 +464,35 @@ public final class JavaTypeSet extends AbstractSet<Type> {
     }
   }
 
+  /**
+   * Returns a hashcode for this {@link JavaTypeSet}.
+   *
+   * @return a hashcode for this {@link JavaTypeSet}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Object
   public final int hashCode() {
     return this.set.hashCode();
   }
 
+  /**
+   * Returns {@code true} if this {@link JavaTypeSet} is equal to the
+   * supplied {@link Object}.
+   *
+   * @param other the {@link Object} to test; may be {@code null}
+   *
+   * @return {@code true} if this {@link JavaTypeSet} is equal to the
+   * supplied {@link Object}; {@code false} otherwise
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Object
   public final boolean equals(final Object other) {
     if (other == this) {
@@ -452,6 +504,24 @@ public final class JavaTypeSet extends AbstractSet<Type> {
     }
   }
 
+  /**
+   * Returns a {@link String} representation of this {@link
+   * JavaTypeSet}.
+   *
+   * <p>The format of the returned {@link String} is deliberately
+   * undefined and is subject to change without prior notice between
+   * versions of this class.</p>
+   *
+   * @return a {@link String} representation of this {@link
+   * JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
   @Override // Object
   public final String toString() {
     return this.set.toString();
@@ -572,10 +642,10 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   /**
    * Returns a {@link JavaTypeSet} whose sole element is the supplied
-   * {@link JavaType}.
+   * {@link org.microbean.type.Type}.
    *
-   * @param t the {@link JavaType} in question; must not be {@code
-   * null}
+   * @param t the {@link org.microbean.type.Type} in question; must
+   * not be {@code null}
    *
    * @return a {@link JavaTypeSet} whose sole element is the supplied
    * {@link JavaType}; never {@code null}
@@ -589,22 +659,22 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    */
-  public static final JavaTypeSet of(final JavaType t) {
-    return new JavaTypeSet(t);
+  public static final JavaTypeSet of(final org.microbean.type.Type<? extends Type> t) {
+    return new JavaTypeSet(t.object());
   }
 
   /**
    * Returns a {@link JavaTypeSet} whose elements are the supplied
-   * {@link JavaType}s.
+   * {@link org.microbean.type.Type}s.
    *
-   * @param t0 one of the {@link JavaType}s in question; must not be
-   * {@code null}
+   * @param t0 one of the {@link org.microbean.type.Type}s in
+   * question; must not be {@code null}
    *
-   * @param t1 one of the {@link JavaType}s in question; must not be
-   * {@code null}
+   * @param t1 one of the {@link org.microbean.type.Type}s in
+   * question; must not be {@code null}
    *
    * @return a {@link JavaTypeSet} whose elements are modeled by the
-   * supplied {@link JavaType}s; never {@code null}
+   * supplied {@link org.microbean.type.Type}s; never {@code null}
    *
    * @exception NullPointerException if any argument is {@code null}
    *
@@ -618,19 +688,20 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @see #of(Collection)
    */
   @Convenience
-  public static final JavaTypeSet of(final JavaType t0, final JavaType t1) {
-    return of(List.of(t0, t1));
+  public static final JavaTypeSet of(final org.microbean.type.Type<? extends Type> t0,
+                                     final org.microbean.type.Type<? extends Type> t1) {
+    return of(List.of(t0.object(), t1.object()));
   }
 
   /**
    * Returns a {@link JavaTypeSet} whose elements are modeled by the
-   * supplied {@link JavaType}s.
+   * supplied {@link org.microbean.type.Type}s.
    *
-   * @param types the {@link JavaType}s in question; must not be
-   * {@code null}
+   * @param types the {@link org.microbean.type.Type}s in question;
+   * must not be {@code null}
    *
    * @return a {@link JavaTypeSet} whose elements are modeled by the
-   * supplied {@link JavaType}s; never {@code null}
+   * supplied {@link org.microbean.type.Type}s; never {@code null}
    *
    * @exception NullPointerException if any argument is {@code null}
    *
@@ -644,7 +715,9 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @see #of(Collection)
    */
   @Convenience
-  public static final JavaTypeSet of(final JavaType... types) {
+  @SafeVarargs
+  @SuppressWarnings("varargs")
+  public static final JavaTypeSet of(final org.microbean.type.Type<? extends Type>... types) {
     if (types.length == 0) {
       return of();
     }
@@ -658,7 +731,9 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    *
    * @param types the {@link Collection} in question; must not be
    * {@code null}; only its elements that are instances of either
-   * {@link Type} or {@link JavaType} will be considered
+   * {@link Type} or {@link JavaType} or {@link
+   * org.microbean.type.Type org.microbean.type.Type&lt;? extends
+   * Type&gt;} will be considered
    *
    * @return a {@link JavaTypeSet} whose elements are drawn from the
    * supplied {@link Collection}, in its {@linkplain
@@ -677,6 +752,71 @@ public final class JavaTypeSet extends AbstractSet<Type> {
     return new JavaTypeSet(types);
   }
 
+  /**
+   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
+   * modeled by the supplied {@link org.microbean.type.Type} (which
+   * include the modeled {@link Type} itself).
+   *
+   * @param t the {@link org.microbean.type.Type} in question; must
+   * not be {@code null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
+   * modeled by the supplied {@link org.microbean.type.Type} (which
+   * include the modeled {@link Type} itself); never {@code null}
+   *
+   * @exception NullPointerException if {@code t} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #ofSupertypes(org.microbean.type.Type, Predicate)
+   */
+  @Convenience
+  public static final JavaTypeSet ofSupertypes(final org.microbean.type.Type<? extends Type> t) {
+    return ofSupertypes(t.object(), JavaTypes::acceptAll);
+  }
+
+  /**
+   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
+   * modeled by the supplied {@link org.microbean.type.Type} (which
+   * include the modeled {@link Type} itself).
+   *
+   * @param t the {@link org.microbean.type.Type} in question; must
+   * not be {@code null}
+   *
+   * @param acceptancePredicate a {@link Predicate} controlling
+   * membership of a {@link Type} in the returned {@link JavaTypeSet};
+   * must not be {@code null}
+   *
+   * @return a {@link JavaTypeSet} whose elements are the {@linkplain
+   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
+   * modeled by the supplied {@link org.microbean.type.Type} (which
+   * include the modeled {@link Type} itself); never {@code null}
+   *
+   * @exception NullPointerException if {@code t} is {@code null}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #ofSupertypes(org.microbean.type.Type, Predicate)
+   */
+  @Convenience
+  public static final JavaTypeSet ofSupertypes(final org.microbean.type.Type<? extends Type> t,
+                                               final Predicate<? super Type> acceptancePredicate) {
+    return ofSupertypes(t.object(), acceptancePredicate);
+  }
+  
   /**
    * Returns a {@link JavaTypeSet} whose elements are the {@linkplain
    * JavaTypes#supertypes(Type) supertypes of the supplied
@@ -699,30 +839,32 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #of(Collection)
-   *
-   * @see JavaTypes#supertypes(Type)
+   * @see #ofSupertypes(Type, Predicate)
    */
   @Convenience
   public static final JavaTypeSet ofSupertypes(final Type t) {
-    return of(JavaTypes.supertypes(t));
+    return ofSupertypes(t, JavaTypes::acceptAll);
   }
 
   /**
    * Returns a {@link JavaTypeSet} whose elements are the {@linkplain
-   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
-   * modeled by the supplied {@link JavaType} (which include the
-   * modeled {@link Type} itself).
+   * JavaTypes#supertypes(Type) supertypes of the supplied
+   * <code>Type</code>} (which include the supplied {@link Type}
+   * itself), gated by the supplied {@link Predicate}.
    *
-   * @param jt the {@link JavaType} in question; must not be {@code
-   * null}
+   * @param t the {@link Type} in question; must not be {@code null}
+   *
+   * @param acceptancePredicate a {@link Predicate} controlling
+   * membership of a {@link Type} in the returned {@link Collection};
+   * must not be {@code null}
    *
    * @return a {@link JavaTypeSet} whose elements are the {@linkplain
-   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}
-   * modeled by the supplied {@link JavaType} (which include the
-   * modeled {@link Type} itself); never {@code null}
+   * JavaTypes#supertypes(Type) supertypes of the supplied
+   * <code>Type</code>} (which include the supplied {@link Type}
+   * itself)
    *
-   * @exception NullPointerException if {@code jt} is {@code null}
+   * @exception NullPointerException if either {@code t} or {@code
+   * acceptancePredicate} is {@code null}
    *
    * @nullability This method never returns {@code null}.
    *
@@ -731,13 +873,14 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #ofSupertypes(Type)
+   * @see #of(Collection)
    *
    * @see JavaTypes#supertypes(Type)
    */
   @Convenience
-  public static final JavaTypeSet ofSupertypes(final JavaType jt) {
-    return ofSupertypes(jt.type());
+  public static final JavaTypeSet ofSupertypes(final Type t,
+                                               final Predicate<? super Type> acceptancePredicate) {
+    return of(JavaTypes.supertypes(t, acceptancePredicate));
   }
 
   private static final boolean nonInterfaceType(final JavaType t) {
