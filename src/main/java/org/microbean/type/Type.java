@@ -766,7 +766,14 @@ public abstract class Type<T> implements Owner<T> {
    * @see #directSupertypes()
    */
   public Collection<? extends Type<T>> supertypes() {
-    return this.supertypes(this, null);
+    final ArrayList<Type<T>> c = new ArrayList<>(11);
+    for (final Type<T> t : this.supertypes(this, null)) {
+      if (this.acceptSupertype(this, t)) {
+        c.add(t);
+      }
+    }
+    c.trimToSize();
+    return Collections.unmodifiableList(c);
   }
 
   @SuppressWarnings("unchecked")
@@ -775,22 +782,70 @@ public abstract class Type<T> implements Owner<T> {
       final Collection<? extends Type<X>> directSupertypes = type.directSupertypes();
       if (directSupertypes.isEmpty()) {
         return List.of(type); // the supertype relation is reflexive as well as transitive
-      } else {
-        if (unseen == null) {
-          unseen = new HashSet<>(8)::add;
-        }
-        final Collection<Type<X>> supertypes = new ArrayList<>(3 * directSupertypes.size() + 1);
-        supertypes.add(type); // the supertype relation is reflexive as well as transitive
-        for (final Type<X> directSupertype : directSupertypes) {
-          for (final Type<X> supertype : this.supertypes(directSupertype, unseen)) {
-            supertypes.add(supertype);
-          }
-        }
-        return Collections.unmodifiableCollection(supertypes);
       }
-    } else {
-      return List.of();
+      if (unseen == null) {
+        unseen = new HashSet<>(11)::add;
+      }
+      final ArrayList<Type<X>> supertypes = new ArrayList<>(3 * directSupertypes.size() + 1);
+      supertypes.add(type); // the supertype relation is reflexive as well as transitive
+      for (final Type<X> directSupertype : directSupertypes) {
+        for (final Type<X> supertype : this.supertypes(directSupertype, unseen)) { // RECURSIVE CALL
+          supertypes.add(supertype);
+        }
+      }
+      supertypes.trimToSize();
+      return Collections.unmodifiableList(supertypes);
     }
+    return List.of();
+  }
+
+  /**
+   * Returns {@code true} if and only if the supplied {@code
+   * supertype}, which in the normal course of events will be a {@link
+   * Type} computed by the reflexive and transitive application of the
+   * {@link #directSupertypes()} method, should be included in the
+   * return value of an invocation of the {@link #supertypes()} method
+   * that is in the process of being invoked on the supplied {@code
+   * subtype}.
+   *
+   * <p>Any other use of this method is undefined.</p>
+   *
+   * <p>The default implementation of this method returns {@code true}
+   * for all inputs.  Most subclasses will have no need to override
+   * this method.</p>
+   *
+   * <p>Overrides must not call either the {@link #directSupertypes()}
+   * or {@link #supertypes()} or {@link #supertypeOf(Type)} methods or
+   * undefined behavior, such as an infinite loop, may result.</p>
+   *
+   * @param subtype the subtype for which the supplied {@code
+   * supertype} has been determined to be a valid supertype; must not
+   * be {@code null}; is often {@code this}
+   *
+   * @param supertype the supertype to accept or reject; must not be
+   * {@code null}; may be {@code this}
+   *
+   * @return {@code true} if and only if the supplied {@link Type},
+   * which in the normal course of events will be a {@link Type}
+   * computed by the reflexive and transitive application of the
+   * {@link #directSupertypes()} method, should be included in the
+   * return value of an invocation of the {@link #supertypes()} method
+   * that is in the process of being invoked on the supplied {@code
+   * subtype}
+   *
+   * @exception NullPointerException if either {@code subtype} or
+   * {@code supertype} is {@code null}
+   *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @see #supertypes()
+   */
+  protected boolean acceptSupertype(final Type<? extends T> subtype, final Type<? extends T> supertype) {
+    return true;
   }
 
   /**
@@ -810,11 +865,17 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @exception NullPointerException if {@code sub} is {@code null}
    *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
    * @see #supertypes()
    *
    * @see #represents(Owner)
    */
-  public final <X> boolean supertype(final Type<X> sub) {
+  public <X> boolean supertypeOf(final Type<X> sub) {
     final Type<T> me = this.box();
     // Does this represent a supertype of sub?  Remember that the supertype relation is reflexive.
     for (final Type<?> supertype : this.supertypes(sub.box(), null)) {
@@ -2533,7 +2594,7 @@ public abstract class Type<T> implements Owner<T> {
      * method.</p>
      *
      * <p>This implementation returns {@code true} if and only if
-     * {@link Type#supertype(Type)
+     * {@link Type#supertypeOf(Type)
      * receiverClass.supertype(payloadClass)} returns {@code true}.
      *
      * @param <X> the kind of type modeled by the {@code
@@ -2549,8 +2610,9 @@ public abstract class Type<T> implements Owner<T> {
      * @param payloadClass the payload type as described above; must
      * not be {@code null}
      *
-     * @return {@code true} if and only if {@link Type#supertype(Type)
-     * receiverClass.supertype(payloadClass)} returns {@code true}
+     * @return {@code true} if and only if {@link
+     * Type#supertypeOf(Type) receiverClass.supertypeOf(payloadClass)}
+     * returns {@code true}
      *
      * @idempotency This method is, and its overrides must be,
      * idempotent and deterministic.
@@ -2562,7 +2624,7 @@ public abstract class Type<T> implements Owner<T> {
      */
     @Override
     protected <X, Y> boolean classIsAssignableFromClass(final Type<X> receiverClass, final Type<Y> payloadClass) {
-      return receiverClass.supertype(payloadClass);
+      return receiverClass.supertypeOf(payloadClass);
     }
 
     /**
@@ -2771,7 +2833,7 @@ public abstract class Type<T> implements Owner<T> {
     @Override
     protected final <X, Y> boolean typeVariableIsAssignableFromTypeVariable(final Type<X> receiverTypeVariable,
                                                                             final Type<Y> payloadTypeVariable) {
-      return receiverTypeVariable.supertype(payloadTypeVariable);
+      return receiverTypeVariable.supertypeOf(payloadTypeVariable);
     }
 
     @Override
