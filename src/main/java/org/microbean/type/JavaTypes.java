@@ -301,7 +301,11 @@ public final class JavaTypes {
     return c.isEmpty() ? List.of() : Collections.unmodifiableCollection(c);
   }
   
-  static final boolean acceptAll(final Type type) {
+  static final <T> boolean acceptAll(final T type) {
+    return true;
+  }
+
+  static final <T> boolean acceptAll(final T subtype, final T supertype) {
     return true;
   }
 
