@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
@@ -46,14 +45,6 @@ public final class CdiType extends JavaType {
 
 
   /*
-   * Instance fields.
-   */
-
-
-  private final Function<? super Type, ? extends Collection<? extends Type>> directSupertypesFunction;
-
-
-  /*
    * Constructors.
    */
 
@@ -66,24 +57,10 @@ public final class CdiType extends JavaType {
    * href="https://jakarta.ee/specifications/cdi/3.0/jakarta-cdi-spec-3.0.html#legal_bean_types"
    * target="_parent">legal CDI bean type</a>
    *
-   * @param directSupertypesFunction a {@link Function} that, when
-   * supplied with a {@link Type} (which will be the {@code type}
-   * parameter value), returns those {@link Type}s which are its
-   * direct supertypes; must not be {@code null}
-   *
-   * @param supertypeAcceptancePredicate a {@link BiPredicate} gating
-   * a {@link Type}'s membership in the represented type's collection
-   * of {@linkplain #supertypes() supertypes} ({@linkplain
-   * #directSupertypes() direct} and {@linkplain #supertypes()
-   * otherwise}); may be {@code null}
-   *
    * @exception NullPointerException if any argument is {@code null}
    */
-  private CdiType(final Type type,
-                  final Function<? super Type, ? extends Collection<? extends Type>> directSupertypesFunction,
-                  final BiPredicate<? super Type, ? super Type> supertypeAcceptancePredicate) {
-    super(type, true, supertypeAcceptancePredicate);
-    this.directSupertypesFunction = Objects.requireNonNull(directSupertypesFunction, "directSupertypesFunction");
+  private CdiType(final Type type) {
+    super(type, true);
   }
 
 
@@ -116,12 +93,12 @@ public final class CdiType extends JavaType {
   public CdiType box() {
     final Type type = this.object();
     if (type == void.class) {
-      return of(Void.class, this.directSupertypesFunction);
+      return of(Void.class);
     } else if (type == int.class) {
       // This is such a ridiculously common case we avoid the map lookup
-      return of(Integer.class, this.directSupertypesFunction);
+      return of(Integer.class);
     } else if (type instanceof Class<?> c && c.isPrimitive()) {
-      return of(wrapperTypes.get(c), this.directSupertypesFunction);
+      return of(wrapperTypes.get(c));
     }
     return this;
   }
@@ -130,14 +107,12 @@ public final class CdiType extends JavaType {
    * Returns an {@linkplain
    * Collections#unmodifiableCollection(Collection) unmodifiable and
    * immutable <code>Collection</code>} of the <em>direct
-   * supertypes</em> of this {@link CdiType} as provided by the
-   * {@linkplain #of(Type, Function, BiPredicate)
-   * <code>directSupertypesFunction</code> supplied at creation time}.
+   * supertypes</em> of this {@link CdiType}.
    *
    * @return an {@linkplain
    * Collections#unmodifiableCollection(Collection) unmodifiable and
    * immutable <code>Collection</code>} of the <em>direct
-   * supertypes</em> of this {@link JavaType}; never {@code null}
+   * supertypes</em> of this {@link CdiType}; never {@code null}
    *
    * @nullability This method does not, and its overrides must not,
    * return {@code null}.
@@ -150,12 +125,12 @@ public final class CdiType extends JavaType {
    * within returned {@link Collection}s is undefined
    */
   @Override
-  public Collection<? extends JavaType> directSupertypes() {
-    final Collection<? extends Type> directSupertypes = this.directSupertypesFunction.apply(this.object());
+  public Collection<? extends CdiType> directSupertypes() {
+    final Collection<? extends JavaType> directSupertypes = super.directSupertypes();
     if (directSupertypes != null && !directSupertypes.isEmpty()) {
-      final Collection<JavaType> c = new ArrayList<>(directSupertypes.size());
-      for (final Type type : directSupertypes) {
-        c.add(of(type, this.directSupertypesFunction));
+      final Collection<CdiType> c = new ArrayList<>(directSupertypes.size());
+      for (final JavaType type : directSupertypes) {
+        c.add(of(type.object()));
       }
       return Collections.unmodifiableCollection(c);
     }
@@ -187,9 +162,9 @@ public final class CdiType extends JavaType {
   public CdiType type() {
     final Type type = this.object();
     if (type instanceof ParameterizedType p) {
-      return of(p.getRawType(), this.directSupertypesFunction);
+      return of(p.getRawType());
     } else if (type instanceof GenericArrayType g) {
-      return of(g.getGenericComponentType(), this.directSupertypesFunction);
+      return of(g.getGenericComponentType());
     } else {
       return this;
     }
@@ -224,7 +199,7 @@ public final class CdiType extends JavaType {
       final Type[] typeArguments = p.getActualTypeArguments();
       final List<CdiType> typeArgumentsList = new ArrayList<>(typeArguments.length);
       for (final Type typeArgument : typeArguments) {
-        typeArgumentsList.add(of(typeArgument, this.directSupertypesFunction));
+        typeArgumentsList.add(of(typeArgument));
       }
       return Collections.unmodifiableList(typeArgumentsList);
     }
@@ -261,7 +236,7 @@ public final class CdiType extends JavaType {
       if (typeParameters.length > 0) {
         final List<CdiType> typeParametersList = new ArrayList<>(typeParameters.length);
         for (final Type typeParameter : typeParameters) {
-          typeParametersList.add(of(typeParameter, this.directSupertypesFunction));
+          typeParametersList.add(of(typeParameter));
         }
         return Collections.unmodifiableList(typeParametersList);
       }
@@ -309,7 +284,7 @@ public final class CdiType extends JavaType {
     if (newType == null) {
       return null;
     }
-    return of(newType, this.directSupertypesFunction);
+    return of(newType);
   }
 
   /**
@@ -349,7 +324,7 @@ public final class CdiType extends JavaType {
       if (lowerBounds.length > 0) {
         final List<CdiType> lowerBoundsList = new ArrayList<>(lowerBounds.length);
         for (final Type lowerBound : lowerBounds) {
-          lowerBoundsList.add(of(lowerBound, this.directSupertypesFunction));
+          lowerBoundsList.add(of(lowerBound));
         }
         return Collections.unmodifiableList(lowerBoundsList);
       }
@@ -391,18 +366,18 @@ public final class CdiType extends JavaType {
   public List<? extends CdiType> upperBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
-      return List.of(of(w.getUpperBounds()[0], this.directSupertypesFunction));
+      return List.of(of(w.getUpperBounds()[0]));
     } else if (type instanceof TypeVariable<?> t) {
       final Type[] upperBounds = t.getBounds();
       switch (upperBounds.length) {
       case 0:
         throw new AssertionError();
       case 1:
-        return List.of(of(upperBounds[0], this.directSupertypesFunction));
+        return List.of(of(upperBounds[0]));
       default:
         final List<CdiType> upperBoundsList = new ArrayList<>(upperBounds.length);
         for (final Type upperBound : upperBounds) {
-          upperBoundsList.add(of(upperBound, this.directSupertypesFunction));
+          upperBoundsList.add(of(upperBound));
         }
         return Collections.unmodifiableList(upperBoundsList);
       }
@@ -478,41 +453,7 @@ public final class CdiType extends JavaType {
    * @see #of(Type)
    */
   public static final CdiType of(final Token<?> type) {
-    return of(type.type(), JavaTypes::directSupertypes, JavaTypes::acceptAll);
-  }
-
-  /**
-   * Creates a new {@link CdiType}.
-   *
-   * @param type a {@link Token} representing the type to model; must
-   * not be {@code null}
-   *
-   * @param directSupertypesFunction a {@link Function} that, when
-   * supplied with a {@link Type} (which will be the {@code type}
-   * parameter value), returns those {@link Type}s which are its
-   * direct supertypes; must not be {@code null}
-   *
-   * @return a new {@link CdiType}; never {@code null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}.
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent but not deterministic (in
-   * that it returns a new {@link CdiType} with each invocation).
-   * However, any {@link CdiType} returned from this method is
-   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * CdiType} returned from this method, provided the inputs to all
-   * invocations are equal.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   *
-   * @see #of(Type)
-   */
-  public static final CdiType of(final Token<?> type,
-                                 final Function<? super Type, ? extends Collection<? extends Type>> directSupertypesFunction) {
-    return of(type.type(), directSupertypesFunction, JavaTypes::acceptAll);
+    return of(type.type());
   }
 
   /**
@@ -550,7 +491,7 @@ public final class CdiType extends JavaType {
     if (!box) {
       throw new IllegalArgumentException("!box; boxing is required by CDI");
     }
-    return of(type.type(), JavaTypes::directSupertypes, JavaTypes::acceptAll);
+    return of(type.type());
   }
 
   /**
@@ -588,7 +529,7 @@ public final class CdiType extends JavaType {
     if (!box) {
       throw new IllegalArgumentException("boxing is required by CDI");
     }
-    return of(type, JavaTypes::directSupertypes, JavaTypes::acceptAll);
+    return of(type);
   }
 
   /**
@@ -614,106 +555,7 @@ public final class CdiType extends JavaType {
    * threads.
    */
   public static final CdiType of(final Type type) {
-    return of(type, JavaTypes::directSupertypes, JavaTypes::acceptAll);
-  }
-
-  /**
-   * Returns a {@link CdiType} representing the supplied {@code type}.
-   *
-   * @param type the {@link Type} that will be modeled; must not be
-   * {@code null}
-   *
-   * @param directSupertypesFunction a {@link Function} that, when
-   * supplied with a {@link Type} (which will be the {@code type}
-   * parameter value), returns those {@link Type}s which are its
-   * direct supertypes; must not be {@code null}
-   *
-   * @return a {@link CdiType}; never {@code null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}.
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent but not deterministic (in
-   * that it may return a new {@link CdiType} with each invocation).
-   * However, any {@link CdiType} returned from this method is
-   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * CdiType} returned from this method, provided the inputs to all
-   * invocations are equal.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  public static final CdiType of(final Type type,
-                                 final Function<? super Type, ? extends Collection<? extends Type>> directSupertypesFunction) {
-    return of(type, directSupertypesFunction, JavaTypes::acceptAll);
-  }
-
-  /**
-   * Returns a {@link CdiType} representing the supplied {@code type}.
-   *
-   * @param type the {@link Type} that will be modeled; must not be
-   * {@code null}
-   *
-   * @param directSupertypesFunction a {@link Function} that, when
-   * supplied with a {@link Type} (which will be the {@code type}
-   * parameter value), returns those {@link Type}s which are its
-   * direct supertypes; must not be {@code null}
-   *
-   * @param supertypeAcceptancePredicate a {@link BiPredicate} gating
-   * a {@link Type}'s membership in the represented type's collection
-   * of {@linkplain #supertypes() supertypes} ({@linkplain
-   * #directSupertypes() direct} and {@linkplain #supertypes()
-   * otherwise}); may be {@code null}
-   *
-   * @return a {@link CdiType}; never {@code null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}.
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent but not deterministic (in
-   * that it may return a new {@link CdiType} with each invocation).
-   * However, any {@link CdiType} returned from this method is
-   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * CdiType} returned from this method, provided the inputs to all
-   * invocations are equal.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  public static final CdiType of(final Type type,
-                                 final Function<? super Type, ? extends Collection<? extends Type>> directSupertypesFunction,
-                                 final BiPredicate<? super Type, ? super Type> supertypeAcceptancePredicate) {
-    return new CdiType(type, directSupertypesFunction, supertypeAcceptancePredicate);
-  }
-
-  /**
-   * Returns a {@link CdiType} <strong>with no direct
-   * supertypes</strong> representing the supplied {@code type}.
-   *
-   * @param type the {@link Type} that will be modeled; must not be
-   * {@code null}
-   *
-   * @return a {@link CdiType} <strong>with no direct
-   * supertypes</strong>; never {@code null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}.
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent but not deterministic (in
-   * that it may return a new {@link CdiType} with each invocation).
-   * However, any {@link CdiType} returned from this method is
-   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * CdiType} returned from this method, provided the inputs to all
-   * invocations are equal.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  public static final CdiType ofExact(final Type type) {
-    return of(type, t -> List.of(), (sub, sup) -> sub == sup);
+    return new CdiType(type);
   }
 
 }

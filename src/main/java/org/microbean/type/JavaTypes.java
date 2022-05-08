@@ -305,10 +305,6 @@ public final class JavaTypes {
     return true;
   }
 
-  static final <T> boolean acceptAll(final T subtype, final T supertype) {
-    return true;
-  }
-
   private static final Collection<? extends Type> directSupertypes(final Class<?> c) {
     if (c == Object.class) {
       return List.of();
