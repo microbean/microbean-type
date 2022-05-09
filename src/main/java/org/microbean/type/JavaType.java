@@ -29,9 +29,12 @@ import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import java.util.function.Function;
 
 import org.microbean.development.annotation.Experimental;
 
@@ -60,14 +63,14 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   public static final Map<Type, Class<?>> wrapperTypes =
     Map.of(boolean.class, Boolean.class,
-           byte.class, Byte.class,
-           char.class, Character.class,
-           double.class, Double.class,
-           float.class, Float.class,
-           int.class, Integer.class,
-           long.class, Long.class,
-           short.class, Short.class,
-           void.class, Void.class);
+           byte.class,    Byte.class,
+           char.class,    Character.class,
+           double.class,  Double.class,
+           float.class,   Float.class,
+           int.class,     Integer.class,
+           long.class,    Long.class,
+           short.class,   Short.class,
+           void.class,    Void.class);
 
 
   /*
@@ -102,6 +105,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   /*
    * Instance methods.
    */
+
 
   /**
    * Returns {@code true} if and only if this {@link JavaType}
@@ -285,12 +289,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   @Override // org.microbean.type.Type<Type>
   public Collection<? extends JavaType> directSupertypes() {
-    final ArrayList<JavaType> c = new ArrayList<>(11);
-    for (final Type type : JavaTypes.directSupertypes(this.object())) {
-      c.add(of(type, this.box));
-    }
-    c.trimToSize();
-    return Collections.unmodifiableCollection(c);
+    return map(JavaTypes.directSupertypes(this.object()), this::boxedLikeMe);
   }
 
   /**
@@ -436,12 +435,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   @Override // org.microbean.type.Type<Type>
   public List<? extends JavaType> typeArguments() {
     if (this.object() instanceof ParameterizedType p) {
-      final Type[] typeArguments = p.getActualTypeArguments();
-      final List<JavaType> typeArgumentsList = new ArrayList<>(typeArguments.length);
-      for (final Type typeArgument : typeArguments) {
-        typeArgumentsList.add(of(typeArgument, this.box));
-      }
-      return Collections.unmodifiableList(typeArgumentsList);
+      return map(p.getActualTypeArguments(), this::boxedLikeMe);
     }
     return List.of();
   }
@@ -472,14 +466,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   @Override // org.microbean.type.Type<Type>
   public List<? extends JavaType> typeParameters() {
     if (this.object() instanceof Class<?> c) {
-      final Type[] typeParameters = c.getTypeParameters();
-      if (typeParameters.length > 0) {
-        final List<JavaType> typeParametersList = new ArrayList<>(typeParameters.length);
-        for (final Type typeParameter : typeParameters) {
-          typeParametersList.add(of(typeParameter, this.box));
-        }
-        return Collections.unmodifiableList(typeParametersList);
-      }
+      return map(c.getTypeParameters(), this::boxedLikeMe);
     }
     return List.of();
   }
@@ -512,19 +499,17 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   @Override // org.microbean.type.Type<Type>
   public JavaType componentType() {
-    final Type newType;
-    final Type type = this.object();
-    if (type instanceof Class<?> c) {
-      newType = c.getComponentType();
+    Type type = this.object();
+    if (type == null) {
+      return null;
+    } else if (type instanceof Class<?> c) {
+      type = c.getComponentType();
     } else if (type instanceof GenericArrayType g) {
-      newType = g.getGenericComponentType();
+      type = g.getGenericComponentType();
     } else {
-      newType = null;
-    }
-    if (newType == null) {
       return null;
     }
-    return of(newType, this.box);
+    return type == null ? null : of(type, this.box);
   }
 
   /**
@@ -580,8 +565,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   @Override // org.microbean.type.Type<Type>
   public boolean lowerBounded() {
-    final Type type = this.object();
-    return type instanceof WildcardType w && w.getLowerBounds().length > 0;
+    return this.object() instanceof WildcardType w && w.getLowerBounds().length > 0;
   }
 
   /**
@@ -615,16 +599,8 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   @Override // org.microbean.type.Type<Type>
   public List<? extends JavaType> lowerBounds() {
-    final Type type = this.object();
-    if (type instanceof WildcardType w) {
-      final Type[] lowerBounds = w.getLowerBounds();
-      if (lowerBounds.length > 0) {
-        final List<JavaType> lowerBoundsList = new ArrayList<>(lowerBounds.length);
-        for (final Type lowerBound : lowerBounds) {
-          lowerBoundsList.add(of(lowerBound, this.box));
-        }
-        return Collections.unmodifiableList(lowerBoundsList);
-      }
+    if (this.object() instanceof WildcardType w) {
+      return map(w.getLowerBounds(), this::boxedLikeMe);
     }
     return List.of();
   }
@@ -663,24 +639,11 @@ public class JavaType extends org.microbean.type.Type<Type> {
   public List<? extends JavaType> upperBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
-      return List.of(of(w.getUpperBounds()[0], this.box));
+      return map(w.getUpperBounds(), this::boxedLikeMe);
     } else if (type instanceof TypeVariable<?> t) {
-      final Type[] upperBounds = t.getBounds();
-      switch (upperBounds.length) {
-      case 0:
-        throw new AssertionError();
-      case 1:
-        return List.of(of(upperBounds[0], this.box));
-      default:
-        final List<JavaType> upperBoundsList = new ArrayList<>(upperBounds.length);
-        for (final Type upperBound : upperBounds) {
-          upperBoundsList.add(of(upperBound, this.box));
-        }
-        return Collections.unmodifiableList(upperBoundsList);
-      }
-    } else {
-      return List.of();
+      return map(t.getBounds(), this::boxedLikeMe);
     }
+    return List.of();
   }
 
   /**
@@ -713,9 +676,13 @@ public class JavaType extends org.microbean.type.Type<Type> {
     return (Collection<? extends JavaType>)super.supertypes();
   }
 
+  private final JavaType boxedLikeMe(final Type t) {
+    return of(t, this.box);
+  }
+
   @Override // Object
   public final int hashCode() {
-    return JavaTypes.hashCode(this.object());
+    return JavaTypes.hashCode(this.box().object());
   }
 
   @Override // Object
@@ -723,7 +690,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
     if (other == this) {
       return true;
     } else if (other != null && this.getClass() == other.getClass()) {
-      return JavaTypes.equals(this.object(), ((JavaType)other).object());
+      return JavaTypes.equals(this.box().object(), ((JavaType)other).box().object());
     } else {
       return false;
     }
@@ -1109,7 +1076,6 @@ public class JavaType extends org.microbean.type.Type<Type> {
         }
       }
     }
-
 
   }
 

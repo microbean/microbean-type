@@ -291,8 +291,12 @@ public final class JavaTypes {
    */
   public static final Collection<? extends Type> directSupertypes(final Type type,
                                                                   final Predicate<? super Type> acceptancePredicate) {
-    final ArrayList<Type> c = new ArrayList<>(11);
-    for (final Type ds : directSupertypes(type)) {
+    final Collection<? extends Type> directSupertypes = directSupertypes(type);
+    if (directSupertypes.isEmpty()) {
+      return List.of();
+    }
+    final ArrayList<Type> c = new ArrayList<>(directSupertypes.size());
+    for (final Type ds : directSupertypes) {
       if (acceptancePredicate.test(ds)) {
         c.add(ds);
       }

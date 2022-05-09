@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.microbean.development.annotation.Convenience;
@@ -746,7 +748,9 @@ public abstract class Type<T> implements Owner<T> {
    *
    * <p>Overrides which alter this algorithm may result in undefined
    * behavior.  Typically overriding is necessary only to refine the
-   * return type of this method.</p>
+   * return type of this method.  The concrete type of the elements
+   * within the returned {@link Collection} is entirely determined by
+   * the implementation of the {@link #directSupertypes()} method.</p>
    *
    * @return an {@linkplain
    * Collections#unmodifiableCollection(Collection) unmodifiable
@@ -828,6 +832,220 @@ public abstract class Type<T> implements Owner<T> {
       }
     }
     return false;
+  }
+
+
+  /*
+   * Static methods.
+   */
+
+  
+  /**
+   * A utility method that maps the supplied {@link Collection} into
+   * an unmodifiable {@link List} using the supplied mapping
+   * function.
+   *
+   * @param <T> the type of the incoming elements
+   *
+   * @param <U> the type of the returned {@link Collection}'s elements
+   *
+   * @param c the incoming {@link Collection}; may be {@code null}
+   *
+   * @param f the mapping {@link Function}
+   *
+   * @return an unmodifiable mapped {@link List}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.  It does not synchronize on the supplied {@link
+   * Collection} when iterating over it.
+   */
+  public static <T, U> List<U> map(final Collection<? extends T> c, final Function<? super T, ? extends U> f) {
+    if (c == null || c.isEmpty()) {
+      return List.of();
+    }
+    final Iterator<? extends T> i = c.iterator();
+    switch (c.size()) {
+    case 0:
+      throw new AssertionError();
+    case 1:
+      return List.of(f.apply(i.next()));
+    case 2:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()));
+    case 3:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    case 4:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    case 5:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    case 6:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    case 7:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    case 8:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    case 9:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    case 10:
+      return List.of(f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()),
+                     f.apply(i.next()));
+    default:
+      final List<U> rv = new ArrayList<>(c.size());
+      while (i.hasNext()) {
+        rv.add(f.apply(i.next()));
+      }
+      return Collections.unmodifiableList(rv);
+    }
+  }
+
+  /**
+   * A utility method that maps the supplied array into an
+   * unmodifiable {@link List} using the supplied mapping function.
+   *
+   * @param <T> the type of the incoming elements
+   *
+   * @param <U> the type of the returned {@link List}'s elements
+   *
+   * @param c the incoming array; may be {@code null}
+   *
+   * @param f the mapping {@link Function}
+   *
+   * @return an unmodifiable mapped {@link Collection}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.  It does not synchronize on the supplied array when
+   * accessing its elements.
+   */
+  public static <T, U> List<U> map(final T[] c, final Function<? super T, ? extends U> f) {
+    if (c == null) {
+      return List.of();
+    }
+    switch (c.length) {
+    case 0:
+      return List.of();
+    case 1:
+      return List.of(f.apply(c[0]));
+    case 2:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]));
+    case 3:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]));
+    case 4:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]),
+                     f.apply(c[3]));
+    case 5:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]),
+                     f.apply(c[3]),
+                     f.apply(c[4]));
+    case 6:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]),
+                     f.apply(c[3]),
+                     f.apply(c[4]),
+                     f.apply(c[5]));
+    case 7:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]),
+                     f.apply(c[3]),
+                     f.apply(c[4]),
+                     f.apply(c[5]),
+                     f.apply(c[6]));
+    case 8:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]),
+                     f.apply(c[3]),
+                     f.apply(c[4]),
+                     f.apply(c[5]),
+                     f.apply(c[6]),
+                     f.apply(c[7]));
+    case 9:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]),
+                     f.apply(c[3]),
+                     f.apply(c[4]),
+                     f.apply(c[5]),
+                     f.apply(c[6]),
+                     f.apply(c[7]),
+                     f.apply(c[8]));
+    case 10:
+      return List.of(f.apply(c[0]),
+                     f.apply(c[1]),
+                     f.apply(c[2]),
+                     f.apply(c[3]),
+                     f.apply(c[4]),
+                     f.apply(c[5]),
+                     f.apply(c[6]),
+                     f.apply(c[7]),
+                     f.apply(c[8]),
+                     f.apply(c[9]));
+    default:
+      final List<U> rv = new ArrayList<>(c.length);
+      for (int i = 0; i < c.length; i++) {
+        rv.add(f.apply(c[i]));
+      }
+      return Collections.unmodifiableList(rv);
+    }
   }
 
 
@@ -2976,7 +3194,7 @@ public abstract class Type<T> implements Owner<T> {
                                     final java.lang.reflect.Type payloadType,
                                     final boolean ignoredBox) {
       // Boxing is always required in CDI.
-      return this.assignable(CdiType.of(receiverType), CdiType.of(payloadType));
+      return this.assignable(JavaType.of(receiverType, true), JavaType.of(payloadType, true));
     }
 
     @Override
