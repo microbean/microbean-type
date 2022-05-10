@@ -155,9 +155,6 @@ public abstract class Type<T> implements Owner<T> {
    * {@link Type#equals(Object) equals(Object)} method must not call
    * {@link #represents(Owner)}.</p>
    *
-   * @param <X> the type representation type used by the supplied
-   * {@link Owner}
-   *
    * @param other the {@link Owner} to test; may be {@code null} in
    * which case {@code false} will be returned
    *
@@ -172,7 +169,7 @@ public abstract class Type<T> implements Owner<T> {
    */
   @Override // Owner<T>
   @OverridingEncouraged
-  public <X> boolean represents(final Owner<X> other) {
+  public boolean represents(final Owner<?> other) {
     return Owner.super.represents(other);
   }
 
@@ -217,29 +214,6 @@ public abstract class Type<T> implements Owner<T> {
    * and deterministic.
    */
   public abstract boolean top();
-
-  /**
-   * If this {@link Type} represents a primitive type, and if and only
-   * if boxing is enabled in the type system being represented,
-   * returns a {@link Type} representing the corresponding "wrapper
-   * type", or this {@link Type} itself in all other cases.
-   *
-   * <p>Undefined behavior will result if an implementation does not
-   * meet these requirements.</p>
-   *
-   * @return a {@link Type} representing the corresponding "wrapper
-   * type" where appropriate, or {@code this}
-   *
-   * @nullability Implementations of this method must not return
-   * {@code null}.
-   *
-   * @threadsafety Implementations of this method must be safe for
-   * concurrent use by multiple threads.
-   *
-   * @idempotency Implementations of this method must be idempotent
-   * and deterministic.
-   */
-  public abstract Type<T> box();
 
   /**
    * Returns an {@linkplain
@@ -333,6 +307,29 @@ public abstract class Type<T> implements Owner<T> {
   @Experimental
   public abstract Owner<T> owner();
 
+  /**
+   * Returns a {@link Type}, <strong>usually new</strong>, whose
+   * {@link #object() object()} method will return the supplied {@code
+   * object}.
+   *
+   * @param object the modeled type; must not be {@code null}
+   *
+   * @return a {@link Type}
+   *
+   * @exception NullPointerException if {@code object} is {@code null}
+   *
+   * @nullability Overrides of this method must not return {@code
+   * null}.
+   *
+   * @idempotency Overrides of this method must be deterministic but
+   * not idempotent.
+   *
+   * @threadsafety Overrides of this method must be safe for
+   * concurrent use by multiple threads.
+   */
+  @Experimental
+  public abstract Type<T> withObject(final T object);
+  
   /**
    * Returns {@code true} if and only if this {@link Type} represents
    * a generic class by virtue of having type parameters.
@@ -769,7 +766,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #directSupertypes()
    */
-  public Collection<? extends Type<T>> supertypes() {
+  public final Collection<? extends Type<T>> supertypes() {
     return this.supertypes(this, null);
   }
 
@@ -804,8 +801,6 @@ public abstract class Type<T> implements Owner<T> {
    * method and the {@link #represents(Owner)} method in its
    * implementation.</p>
    *
-   * @param <X> the type represented by the supplied {@link Type}
-   *
    * @param sub the purported subtype; must not be {@code null}
    *
    * @return {@code true} if and only if this {@link Type} is a
@@ -823,11 +818,11 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #represents(Owner)
    */
-  public <X> boolean supertypeOf(final Type<X> sub) {
-    final Type<T> me = this.box();
-    // Does this represent a supertype of sub?  Remember that the supertype relation is reflexive.
-    for (final Type<?> supertype : this.supertypes(sub.box(), null)) {
-      if (supertype.represents(me)) {
+  public final boolean supertypeOf(final Type<?> sub) {
+    // Does this represent a supertype of sub?  Remember that the
+    // supertype relation is reflexive.
+    for (final Type<?> supertype : this.supertypes(sub, null)) {
+      if (supertype.represents(this)) {
         return true;
       }
     }
@@ -2940,9 +2935,9 @@ public abstract class Type<T> implements Owner<T> {
       return this.parameterizedTypeIsAssignableFromAnyType(receiverParameterizedType, payloadParameterizedType.supertypes());
     }
 
-    private final <X, Y> boolean parameterizedTypeIsAssignableFromAnyType(final Type<X> receiverParameterizedType,
-                                                                          final Iterable<? extends Type<Y>> payloadTypes) {
-      for (final Type<Y> payloadType : payloadTypes) {
+    private final boolean parameterizedTypeIsAssignableFromAnyType(final Type<?> receiverParameterizedType,
+                                                                   final Iterable<? extends Type<?>> payloadTypes) {
+      for (final Type<?> payloadType : payloadTypes) {
         if (payloadType.hasTypeArguments() &&
             this.parameterizedTypeIsAssignableFromParameterizedType0(receiverParameterizedType, payloadType)) {
           return true;
@@ -2951,15 +2946,15 @@ public abstract class Type<T> implements Owner<T> {
       return false;
     }
 
-    private final <X, Y> boolean parameterizedTypeIsAssignableFromParameterizedType0(final Type<X> receiverParameterizedType,
-                                                                                     final Type<Y> payloadParameterizedType) {
+    private final boolean parameterizedTypeIsAssignableFromParameterizedType0(final Type<?> receiverParameterizedType,
+                                                                              final Type<?> payloadParameterizedType) {
       if (receiverParameterizedType.type().represents(payloadParameterizedType.type())) {
-        final List<? extends Type<X>> receiverTypeTypeArguments = receiverParameterizedType.typeArguments();
-        final List<? extends Type<Y>> payloadTypeTypeArguments = payloadParameterizedType.typeArguments();
+        final List<? extends Type<?>> receiverTypeTypeArguments = receiverParameterizedType.typeArguments();
+        final List<? extends Type<?>> payloadTypeTypeArguments = payloadParameterizedType.typeArguments();
         if (receiverTypeTypeArguments.size() == payloadTypeTypeArguments.size()) {
           for (int i = 0; i < receiverTypeTypeArguments.size(); i++) {
-            final Type<X> receiverTypeTypeArgument = receiverTypeTypeArguments.get(i);
-            final Type<Y> payloadTypeTypeArgument = payloadTypeTypeArguments.get(i);
+            final Type<?> receiverTypeTypeArgument = receiverTypeTypeArguments.get(i);
+            final Type<?> payloadTypeTypeArgument = payloadTypeTypeArguments.get(i);
             if (receiverTypeTypeArgument.wildcard() || payloadTypeTypeArgument.wildcard()) {
               if (!this.assignable(receiverTypeTypeArgument, payloadTypeTypeArgument)) {
                 return false;

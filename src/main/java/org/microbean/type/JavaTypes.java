@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -99,6 +100,21 @@ public final class JavaTypes {
 
   private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
 
+    /**
+   * An immutable {@link Map} of Java wrapper {@linkplain Class
+   * classes} indexed by their primitive equivalents.
+   */
+  public static final Map<Type, Class<?>> wrapperTypes =
+    Map.of(boolean.class, Boolean.class,
+           byte.class,    Byte.class,
+           char.class,    Character.class,
+           double.class,  Double.class,
+           float.class,   Float.class,
+           int.class,     Integer.class,
+           long.class,    Long.class,
+           short.class,   Short.class,
+           void.class,    Void.class);
+
 
   /*
    * Constructors.
@@ -114,6 +130,20 @@ public final class JavaTypes {
    * Static methods.
    */
 
+
+  public static final Type box(final Type type) {
+    if (type == void.class) {
+      // This is such a ridiculously common case we avoid the map lookup
+      return Void.class;
+    } else if (type == int.class) {
+      // This is such a ridiculously common case we avoid the map lookup
+      return Integer.class;
+    } else if (type instanceof Class<?> c && c.isPrimitive()) {
+      return wrapperTypes.get(c);
+    } else {
+      return type;
+    }
+  }
 
   /**
    * Returns {@code true} if and only if a reference bearing the
