@@ -72,7 +72,7 @@ public final class JavaType extends org.microbean.type.Type<Type> {
     }
   }
 
-  
+
   /*
    * Instance fields.
    */
@@ -81,7 +81,7 @@ public final class JavaType extends org.microbean.type.Type<Type> {
   private final boolean box;
 
   private volatile Collection<? extends org.microbean.type.Type<Type>> directSupertypes;
-  
+
 
   /*
    * Constructors.
@@ -869,10 +869,53 @@ public final class JavaType extends org.microbean.type.Type<Type> {
     return of(type.object(), box);
   }
 
+  /**
+   * Returns a boxed version of the supplied {@link
+   * org.microbean.type.Type}, if appropriate.
+   *
+   * @param type the {@link org.microbean.type.Type}; must not be
+   * {@code null}
+   *
+   * @return a boxed version of the supplied {@link
+   * org.microbean.type.Type}, if appropriate
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is deterministic, but not necessarily
+   * idempotent.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(org.microbean.type.Type, boolean)
+   *
+   * @see JavaTypes#box(Type)
+   */
   public static final JavaType box(final org.microbean.type.Type<? extends Type> type) {
     return of(type, true);
   }
 
+  /**
+   * Returns a {@link JavaType} representing a boxed version of the
+   * supplied {@link Type}, if appropriate.
+   *
+   * @param type the {@link Type}; must not be {@code null}
+   *
+   * @return a {@link JavaType} representing a boxed version of the
+   * supplied {@link Type}, if appropriate
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is deterministic, but not necessarily
+   * idempotent.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Type, boolean)
+   *
+   * @see JavaTypes#box(Type)
+   */
   public static final JavaType box(final Type type) {
     return of(type, true);
   }
