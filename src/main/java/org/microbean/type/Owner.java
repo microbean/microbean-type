@@ -56,6 +56,10 @@ public interface Owner<T> {
    * Returns the object this {@link Owner} is modeling, or {@code
    * null} if that information is not supplied by the implementation.
    *
+   * <p><strong>The default implementation of this method returns
+   * {@code null}.</strong> {@linkplain OverridingEncouraged
+   * Overriding is encouraged}.</p>
+   *
    * @return the object this {@link Owner} is modeling, or {@code
    * null} if that information is not supplied by the implementation
    *
@@ -107,9 +111,10 @@ public interface Owner<T> {
    * Returns the name of this {@link Owner} if it has one <strong>or
    * {@code null} if it does not</strong>.
    *
-   * <p>Only classes and type variables in the Java reflective type
-   * system have names.  {@linkplain java.lang.reflect.Executable
-   * Owners representing executables} do too.</p>
+   * <p>Only classes (including interfaces) and type variables in the
+   * Java reflective type system have names.  {@linkplain
+   * java.lang.reflect.Executable Owners representing executables} do
+   * too.</p>
    *
    * @return the name of this {@link Owner}, or {@code null}
    *
@@ -173,7 +178,7 @@ public interface Owner<T> {
   @OverridingEncouraged
   public default boolean hasParameters() {
     final Collection<?> p = this.parameters();
-    return p != null && !p.isEmpty();
+    return p != null;
   }
 
   /**
@@ -228,8 +233,7 @@ public interface Owner<T> {
    */
   @OverridingEncouraged
   public default boolean hasTypeParameters() {
-    final Collection<?> tps = this.typeParameters();
-    return tps != null && !tps.isEmpty();
+    return !this.typeParameters().isEmpty();
   }
 
   /**
@@ -262,39 +266,33 @@ public interface Owner<T> {
   public List<? extends Type<T>> typeParameters();
 
   /**
-   * Returns {@code true} if this {@link Owner} represents the same
-   * thing as that represented by the supplied {@link Owner}.
+   * Returns {@code true} if this {@link Owner} implementation is
+   * equal to the supplied {@link Object}.
    *
-   * <p>Representation is not the same thing as equality.
-   * Specifically, an {@link Owner} may represent another {@link Owner}
-   * exactly, but may not be {@linkplain Object#equals(Object) equal to}
-   * it.</p>
-   *
-   * <p>Equality is <em>subordinate</em> to type representation.  That
-   * is, in determining whether a given {@link Owner} represents
-   * another {@link Owner}, their {@link Object#equals(Object)
-   * equals(Object)} methods may be called, but an {@link Owner}'s
-   * {@link Object#equals(Object) equals(Object)} method must not call
-   * {@link #represents(Owner)}.</p>
-   *
-   * @param <X> the type representation type used by the supplied
-   * {@link Owner}
-   *
-   * @param other the {@link Owner} to test; may be {@code null} in
+   * @param other the {@link Object} to test; may be {@code null} in
    * which case {@code false} will be returned
    *
-   * @return {@code true} if this {@link Owner} represents the same
-   * thing as that represented by the supplied {@link Owner}
-   *
-   * @idempotency Implementations of this method must be idempotent
-   * and deterministic.
-   *
-   * @threadsafety Implementations of this method must be safe for
-   * concurrent use by multiple threads.
+   * @return {@code true} if this {@link Owner} implementation is
+   * equal to the supplied {@link Object}
    */
-  @OverridingEncouraged
-  public default <X> boolean represents(final Owner<X> other) {
-    return this.equals(other) || other != null && Objects.equals(this.object(), other.object());
+  @Override // Object
+  public boolean equals(final Object other);
+
+  /**
+   * Returns {@code true} if and only if the supplied {@link Object}
+   * is equal in some way to this {@link Owner}'s {@linkplain
+   * #object() object}.
+   *
+   * @param other the object to test; may be {@code null}
+   *
+   * @return {@code true} if and only if the supplied {@link Object}
+   * is equal in some way to this {@link Owner}'s {@linkplain
+   * #object() object}
+   *
+   * @see #object()
+   */
+  public default boolean objectEquals(final Object other) {
+    return Objects.equals(this.object(), other);
   }
 
 }

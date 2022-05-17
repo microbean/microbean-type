@@ -16,6 +16,10 @@
  */
 package org.microbean.type;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.VarHandle;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.GenericArrayType;
@@ -29,11 +33,12 @@ import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 import org.microbean.development.annotation.Experimental;
 
@@ -52,34 +57,11 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
 
   /*
-   * Static fields.
-   */
-
-
-  /**
-   * An immutable {@link Map} of Java wrapper {@linkplain Class
-   * classes} indexed by their primitive equivalents.
-   */
-  public static final Map<Type, Class<?>> wrapperTypes =
-    Map.of(boolean.class, Boolean.class,
-           byte.class, Byte.class,
-           char.class, Character.class,
-           double.class, Double.class,
-           float.class, Float.class,
-           int.class, Integer.class,
-           long.class, Long.class,
-           short.class, Short.class,
-           void.class, Void.class);
-
-
-  /*
    * Instance fields.
    */
 
 
   private final boolean box;
-
-  private final BiPredicate<? super Type, ? super Type> supertypeAcceptancePredicate;
 
 
   /*
@@ -95,24 +77,38 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @param box whether boxing of primitive types will be in effect;
    * even if {@code true} boxing only happens to primitive types
    *
-   * @param supertypeAcceptancePredicate a {@link BiPredicate} gating
-   * a {@link Type}'s membership in the represented type's collection
-   * of {@linkplain #supertypes() supertypes} ({@linkplain
-   * #directSupertypes() direct} and {@linkplain #supertypes()
-   * otherwise}); may be {@code null}
-   *
    * @exception NullPointerException if {@code type} is {@code null}
    */
-  protected JavaType(final Type type, final boolean box, final BiPredicate<? super Type, ? super Type> supertypeAcceptancePredicate) {
-    super(type);
+  protected JavaType(final Type type, final boolean box) {
+    super(box ? JavaTypes.box(type) : type);
     this.box = box;
-    this.supertypeAcceptancePredicate = Objects.requireNonNull(supertypeAcceptancePredicate, "supertypeAcceptancePredicate");
+  }
+
+  /**
+   * Creates a new {@link JavaType} that models custom supertypes.
+   *
+   * <p>Among other things, this means that the {@link #object()}
+   * method will return {@code null}.</p>
+   *
+   * @param supertypes a {@link List} of supertypes; must not be
+   * {@code null}
+   *
+   * @param box whether boxing of primitive types will be in effect;
+   * even if {@code true} boxing only happens to primitive types
+   *
+   * @exception NullPointerException if {@code supertypes} is {@code
+   * null}
+   */
+  protected JavaType(final List<?> supertypes, final boolean box) {
+    super(map(supertypes, box ? JavaType::ofBoxed : JavaType::of));
+    this.box = box;
   }
 
 
   /*
    * Instance methods.
    */
+
 
   /**
    * Returns {@code true} if and only if this {@link JavaType}
@@ -137,7 +133,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see TypeVariable#getName()
    */
   @Override // org.microbean.type.Type<Type>
-  public boolean named() {
+  public final boolean named() {
     final Type type = this.object();
     return type instanceof Class || type instanceof TypeVariable;
   }
@@ -161,7 +157,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * concurrent use by multiple threads.
    */
   @Override // org.microbean.type.Type<Type>
-  public String name() {
+  public final String name() {
     final Type type = this.object();
     if (type instanceof Class<?> c) {
       return c.getName();
@@ -169,50 +165,6 @@ public class JavaType extends org.microbean.type.Type<Type> {
       return tv.getName();
     }
     return null;
-  }
-
-  /**
-   * Returns {@code true} if this {@link JavaType} represents the same
-   * type as that represented by the supplied {@link Owner}.
-   *
-   * <p>Type representation is not the same thing as equality.
-   * Specifically, a {@link org.microbean.type.Type} may represent
-   * another {@link org.microbean.type.Type} exactly, but may not be
-   * {@linkplain org.microbean.type.Type#equals(Object) equal to}
-   * it.</p>
-   *
-   * <p>Equality is <em>subordinate</em> to type representation.  That
-   * is, in determining whether a given {@link
-   * org.microbean.type.Type} represents another {@link
-   * org.microbean.type.Type}, their {@link
-   * org.microbean.type.Type#equals(Object) equals(Object)} methods
-   * may be called, but a {@link org.microbean.type.Type}'s {@link
-   * org.microbean.type.Type#equals(Object) equals(Object)} method
-   * must not call {@link
-   * org.microbean.type.Type#represents(Owner)}.</p>
-   *
-   * @param <X> the type representation type used by the supplied
-   * {@link Owner}
-   *
-   * @param other the {@link Owner} to test; may be {@code null} in
-   * which case {@code false} will be returned
-   *
-   * @return {@code true} if this {@link Type} represents the same
-   * thing as that represented by the supplied {@link Owner}
-   *
-   * @idempotency This method is, and its overrides must be,
-   * idempotent and deterministic.
-   *
-   * @threadsafety This method is, and its overrides must be, safe for
-   * concurrent use by multiple threads.
-   */
-  @Override // org.microbean.type.Type<Type>
-  public <X> boolean represents(final Owner<X> other) {
-    if (super.represents(other)) {
-      return true;
-    }
-    // TODO: other stuff; could use the equivalent of JavaTypes.toString() here
-    return false;
   }
 
   /**
@@ -233,56 +185,73 @@ public class JavaType extends org.microbean.type.Type<Type> {
   }
 
   /**
-   * If this {@link JavaType} represents a primitive type, and if and
-   * only if boxing was enabled in the {@linkplain #JavaType(Type,
-   * boolean, Predicate) constructor}, returns a {@link JavaType}
-   * representing the corresponding "wrapper type", or this {@link
-   * JavaType} itself in all other cases.
+   * Returns a {@link JavaType}, <strong>usually new</strong>, whose
+   * {@linkplain #object() modeled type} is {@linkplain
+   * JavaTypes#equals(Type, Type) equal to} the supplied {@link Type}.
    *
-   * @return a {@link JavaType} representing the corresponding "wrapper
-   * type" where appropriate, or {@code this}
+   * @param type the new {@link Type}; must not be {@code null}
+   *
+   * @return a {@link JavaType}, usually new
+   *
+   * @exception NullPointerException if {@code type} is {@code null}
    *
    * @nullability This method does not, and its overrides must not,
    * return {@code null}.
    *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
    * @threadsafety This method is, and its overrides must be, safe for
    * concurrent use by multiple threads.
+   *
+   * @see #withBox(boolean)
+   *
+   * @see #of(Type, boolean)
+   */
+  @Override // org.microbean.type.Type<Type>
+  public final JavaType withObject(final Type type) {
+    return of(type, this.box);
+  }
+
+  /**
+   * Returns a {@link JavaType}, <strong>usually new</strong>, whose
+   * boxing strategy is modeled by the supplied {@code boolean}.
+   *
+   * @param box the new boxing strategy
+   *
+   * @return a {@link JavaType}, usually new
+   *
+   * @nullability This method does not, and its overrides must not,
+   * return {@code null}.
    *
    * @idempotency This method is, and its overrides must be,
    * idempotent and deterministic.
    *
-   * @see org.microbean.type.Type#box()
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
+   * @see #withObject(Type)
+   *
+   * @see #of(Type, boolean)
    */
-  @Override // org.microbean.type.Type<Type>
-  public JavaType box() {
-    if (this.box) {
-      final Type type = this.object();
-      if (type == void.class) {
-        return of(Void.class, true, this.supertypeAcceptancePredicate);
-      } else if (type == int.class) {
-        // This is such a ridiculously common case we avoid the map lookup
-        return of(Integer.class, true, this.supertypeAcceptancePredicate);
-      } else if (type instanceof Class<?> c && c.isPrimitive()) {
-        return of(wrapperTypes.get(c), true, this.supertypeAcceptancePredicate);
-      }
-    }
-    return this;
+  public final JavaType withBox(final boolean box) {
+    return of(this.object(), box);
   }
 
   /**
    * Returns an {@linkplain
-   * Collections#unmodifiableCollection(Collection) unmodifiable and
-   * immutable <code>Collection</code>} of the <em>direct
+   * Collections#unmodifiableList(List) unmodifiable and
+   * immutable <code>List</code>} of the computed <em>direct
    * supertypes</em> of this {@link JavaType}, or an {@linkplain
-   * Collection#isEmpty() empty <code>Collection</code>} if there are
+   * Collection#isEmpty() empty <code>List</code>} if there are
    * no direct supertypes.
    *
    * <p>This implementation uses the {@link
    * JavaTypes#directSupertypes(Type)} method.</p>
    *
    * @return an {@linkplain
-   * Collections#unmodifiableCollection(Collection) unmodifiable and
-   * immutable <code>Collection</code>} of the <em>direct
+   * Collections#unmodifiableList(List) unmodifiable and
+   * immutable <code>List</code>} of the computed <em>direct
    * supertypes</em> of this {@link JavaType}; never {@code null}
    *
    * @nullability This method does not, and its overrides must not,
@@ -295,13 +264,9 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public Collection<? extends JavaType> directSupertypes() {
-    final ArrayList<JavaType> c = new ArrayList<>(11);
-    for (final Type type : JavaTypes.directSupertypes(this.object())) {
-      c.add(of(type, this.box, this.supertypeAcceptancePredicate));
-    }
-    c.trimToSize();
-    return Collections.unmodifiableCollection(c);
+  protected final List<? extends org.microbean.type.Type<Type>> computeDirectSupertypes() {
+    final Type type = this.object();
+    return type == null ? List.of() : map(JavaTypes.directSupertypes(type), this::withObject);
   }
 
   /**
@@ -326,46 +291,46 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public JavaType type() {
+  public final JavaType type() {
     final Type type = this.object();
     if (type instanceof ParameterizedType p) {
-      return of(p.getRawType(), this.box, this.supertypeAcceptancePredicate);
+      return this.withObject(p.getRawType());
     } else if (type instanceof GenericArrayType g) {
-      return of(g.getGenericComponentType(), this.box, this.supertypeAcceptancePredicate);
+      return this.withObject(g.getGenericComponentType());
     } else {
       return this;
     }
   }
 
   /**
-   * Returns the owner of this {@link JavaType} as an {@link Object},
-   * suitable only for equality comparisons, or {@code null} if this
-   * {@link JavaType} does not represent either a {@link Class}, a
-   * {@link ParameterizedType} or a {@link TypeVariable}.
+   * Returns the owner of this {@link JavaType}, or {@code null} if
+   * there is no such {@link Owner}.
    *
    * @return the owner of this {@link JavaType}, or {@code null}
    *
-   * @nullability Implementations of this method must not return
-   * {@code null}.
+   * @nullability This method may return {@code null}.
    *
-   * @threadsafety Implementations of this method must be safe for
-   * concurrent use by multiple threads.
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
    *
-   * @idempotency Implementations of this method must be idempotent
-   * and deterministic.
+   * @idempotency This method is idempotent and deterministic.
    */
   @Experimental
   @Override // org.microbean.type.Type<Type>
-  public Owner<Type> owner() {
+  public final Owner<Type> owner() {
     final Type type = this.object();
-    if (type instanceof Class<?> c) {
-      return of(c.getEnclosingClass(), this.box, this.supertypeAcceptancePredicate);
+    if (type == null) {
+      return null;
+    } else if (type instanceof Class<?> c) {
+      final Class<?> enclosingClass = c.getEnclosingClass();
+      return enclosingClass == null ? null : this.withObject(enclosingClass);
     } else if (type instanceof ParameterizedType p) {
-      return of(p.getOwnerType(), this.box, this.supertypeAcceptancePredicate);
+      final Type ownerType = p.getOwnerType();
+      return ownerType == null ? null : this.withObject(ownerType);
     } else if (type instanceof TypeVariable<?> tv) {
       final GenericDeclaration gd = tv.getGenericDeclaration();
       if (gd instanceof Class<?> c) {
-        return of(c, this.box, this.supertypeAcceptancePredicate);
+        return this.withObject(c);
       } else if (gd instanceof Executable e) {
         return new JavaExecutable(e, this.box);
       } else {
@@ -395,7 +360,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see #typeParameters()
    */
   @Override // org.microbean.type.Type<Type>
-  public boolean hasTypeParameters() {
+  public final boolean hasTypeParameters() {
     return this.object() instanceof Class<?> c && c.getTypeParameters().length > 0;
   }
 
@@ -417,7 +382,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see #typeArguments()
    */
   @Override // org.microbean.type.Type<Type>
-  public boolean hasTypeArguments() {
+  public final boolean hasTypeArguments() {
     return this.object() instanceof ParameterizedType;
   }
 
@@ -445,14 +410,9 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public List<? extends JavaType> typeArguments() {
+  public final List<? extends JavaType> typeArguments() {
     if (this.object() instanceof ParameterizedType p) {
-      final Type[] typeArguments = p.getActualTypeArguments();
-      final List<JavaType> typeArgumentsList = new ArrayList<>(typeArguments.length);
-      for (final Type typeArgument : typeArguments) {
-        typeArgumentsList.add(of(typeArgument, this.box, this.supertypeAcceptancePredicate));
-      }
-      return Collections.unmodifiableList(typeArgumentsList);
+      return map(p.getActualTypeArguments(), this::withObject);
     }
     return List.of();
   }
@@ -481,16 +441,9 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * idempotent and deterministic.
    */
   @Override // org.microbean.type.Type<Type>
-  public List<? extends JavaType> typeParameters() {
+  public final List<? extends JavaType> typeParameters() {
     if (this.object() instanceof Class<?> c) {
-      final Type[] typeParameters = c.getTypeParameters();
-      if (typeParameters.length > 0) {
-        final List<JavaType> typeParametersList = new ArrayList<>(typeParameters.length);
-        for (final Type typeParameter : typeParameters) {
-          typeParametersList.add(of(typeParameter, this.box, this.supertypeAcceptancePredicate));
-        }
-        return Collections.unmodifiableList(typeParametersList);
-      }
+      return map(c.getTypeParameters(), this::withObject);
     }
     return List.of();
   }
@@ -522,20 +475,18 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see GenericArrayType#getGenericComponentType()
    */
   @Override // org.microbean.type.Type<Type>
-  public JavaType componentType() {
-    final Type newType;
-    final Type type = this.object();
-    if (type instanceof Class<?> c) {
-      newType = c.getComponentType();
+  public final JavaType componentType() {
+    Type type = this.object();
+    if (type == null) {
+      return null;
+    } else if (type instanceof Class<?> c) {
+      type = c.getComponentType();
     } else if (type instanceof GenericArrayType g) {
-      newType = g.getGenericComponentType();
+      type = g.getGenericComponentType();
     } else {
-      newType = null;
-    }
-    if (newType == null) {
       return null;
     }
-    return of(newType, this.box, this.supertypeAcceptancePredicate);
+    return type == null ? null : this.withObject(type);
   }
 
   /**
@@ -560,7 +511,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see #upperBounds()
    */
   @Override // org.microbean.type.Type<Type>
-  public boolean upperBounded() {
+  public final boolean upperBounded() {
     final Type type = this.object();
     return type instanceof WildcardType || type instanceof TypeVariable;
   }
@@ -590,9 +541,8 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see WildcardType#getLowerBounds()
    */
   @Override // org.microbean.type.Type<Type>
-  public boolean lowerBounded() {
-    final Type type = this.object();
-    return type instanceof WildcardType w && w.getLowerBounds().length > 0;
+  public final boolean lowerBounded() {
+    return this.object() instanceof WildcardType w && w.getLowerBounds().length > 0;
   }
 
   /**
@@ -625,17 +575,9 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see WildcardType#getLowerBounds()
    */
   @Override // org.microbean.type.Type<Type>
-  public List<? extends JavaType> lowerBounds() {
-    final Type type = this.object();
-    if (type instanceof WildcardType w) {
-      final Type[] lowerBounds = w.getLowerBounds();
-      if (lowerBounds.length > 0) {
-        final List<JavaType> lowerBoundsList = new ArrayList<>(lowerBounds.length);
-        for (final Type lowerBound : lowerBounds) {
-          lowerBoundsList.add(of(lowerBound, this.box, this.supertypeAcceptancePredicate));
-        }
-        return Collections.unmodifiableList(lowerBoundsList);
-      }
+  public final List<? extends JavaType> lowerBounds() {
+    if (this.object() instanceof WildcardType w) {
+      return map(w.getLowerBounds(), this::withObject);
     }
     return List.of();
   }
@@ -671,78 +613,19 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @see WildcardType#getUpperBounds()
    */
   @Override // org.microbean.type.Type<Type>
-  public List<? extends JavaType> upperBounds() {
+  public final List<? extends JavaType> upperBounds() {
     final Type type = this.object();
     if (type instanceof WildcardType w) {
-      return List.of(of(w.getUpperBounds()[0], this.box, this.supertypeAcceptancePredicate));
+      return map(w.getUpperBounds(), this::withObject);
     } else if (type instanceof TypeVariable<?> t) {
-      final Type[] upperBounds = t.getBounds();
-      switch (upperBounds.length) {
-      case 0:
-        throw new AssertionError();
-      case 1:
-        return List.of(of(upperBounds[0], this.box, this.supertypeAcceptancePredicate));
-      default:
-        final List<JavaType> upperBoundsList = new ArrayList<>(upperBounds.length);
-        for (final Type upperBound : upperBounds) {
-          upperBoundsList.add(of(upperBound, this.box, this.supertypeAcceptancePredicate));
-        }
-        return Collections.unmodifiableList(upperBoundsList);
-      }
-    } else {
-      return List.of();
+      return map(t.getBounds(), this::withObject);
     }
+    return List.of();
   }
 
-  /**
-   * Returns all the supertypes of this {@link JavaType} (which
-   * includes this {@link JavaType}).
-   *
-   * <p>This method reflexively and transitively applies the direct
-   * supertype relation (represented by the {@link
-   * #directSupertypes()} method) to this {@link JavaType} and returns
-   * an {@linkplain Collections#unmodifiableCollection(Collection)
-   * unmodifiable <code>Collection</code>} containing the result.</p>
-   *
-   * @return an {@linkplain
-   * Collections#unmodifiableCollection(Collection) unmodifiable
-   * <code>Collection</code>} containing all the supertypes of this
-   * {@link Type} (which includes this {@link JavaType}); never {@code
-   * null}
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent and deterministic.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   *
-   * @see #directSupertypes()
-   */
-  @SuppressWarnings("unchecked")
-  public Collection<? extends JavaType> supertypes() {
-    return (Collection<? extends JavaType>)super.supertypes();
-  }
-
-  @Override
-  protected boolean acceptSupertype(final org.microbean.type.Type<? extends Type> subtype, final org.microbean.type.Type<? extends Type> supertype) {
-    return this.supertypeAcceptancePredicate.test(subtype.object(), supertype.object());
-  }
-
-  @Override // Object
-  public final int hashCode() {
-    return JavaTypes.hashCode(this.object());
-  }
-
-  @Override // Object
-  public final boolean equals(final Object other) {
-    if (other == this) {
-      return true;
-    } else if (other != null && this.getClass() == other.getClass()) {
-      return JavaTypes.equals(this.object(), ((JavaType)other).object());
-    } else {
-      return false;
-    }
+  @Override // Owner<Type>
+  public final boolean objectEquals(final Object other) {
+    return this.object() == other || other instanceof Type && JavaTypes.equals(this.object(), this.box ? JavaTypes.box((Type)other) : (Type)other);
   }
 
 
@@ -751,6 +634,27 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
 
 
+  private static final JavaType of(final Object o) {
+    return of(o, false);
+  }
+
+  private static final JavaType ofBoxed(final Object o) {
+    return of(o, true);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static final JavaType of(final Object o, final boolean box) {
+    if (o instanceof Type type) {
+      return of(type, box);
+    } else if (o instanceof Token<?> token) {
+      return of(token, box);
+    } else if (o instanceof org.microbean.type.Type<?> type) {
+      return of((org.microbean.type.Type<? extends Type>)type, box);
+    } else {
+      throw new IllegalArgumentException();
+    }
+  }
+
   /**
    * Returns a {@link JavaType} suitable for the supplied arguments.
    *
@@ -773,10 +677,10 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #of(Token, boolean, Predicate)
+   * @see #of(Token, boolean)
    */
-  public static JavaType of(final Token<?> type) {
-    return of(type, false, null);
+  public static final JavaType of(final Token<?> type) {
+    return of(type, false);
   }
 
   /**
@@ -803,46 +707,10 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #of(Token, boolean, Predicate)
+   * @see #of(Type, boolean)
    */
-  public static JavaType of(final Token<?> type, final boolean box) {
-    return of(type, box, null);
-  }
-
-  /**
-   * Returns a {@link JavaType} suitable for the supplied arguments.
-   *
-   * @param type a {@link Token} representing the type to model; must
-   * not be {@code null}
-   *
-   * @param box whether autoboxing is enabled
-   *
-   * @param supertypeAcceptancePredicate a {@link BiPredicate} gating
-   * a {@link Type}'s membership in the represented type's collection
-   * of {@linkplain #supertypes() supertypes} ({@linkplain
-   * #directSupertypes() direct} and {@linkplain #supertypes()
-   * otherwise}); may be {@code null}
-   *
-   * @return a new {@link JavaType}; never {@code null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}.
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent but not deterministic (in
-   * that it may return a new {@link JavaType} with each invocation).
-   * However, any {@link JavaType} returned from this method is
-   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * JavaType} returned from this method, provided the inputs to all
-   * invocations are equal.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   *
-   * @see #of(Type, boolean, Predicate)
-   */
-  public static JavaType of(final Token<?> type, final boolean box, final BiPredicate<? super Type, ? super Type> supertypeAcceptancePredicate) {
-    return of(type.type(), box, supertypeAcceptancePredicate);
+  public static final JavaType of(final Token<?> type, final boolean box) {
+    return of(type.type(), box);
   }
 
   /**
@@ -867,10 +735,10 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    *
-   * @see #of(Type, boolean, Predicate)
+   * @see #of(Type, boolean)
    */
-  public static JavaType of(final Type type) {
-    return of(type, false, null);
+  public static final JavaType of(final Type type) {
+    return of(type, false);
   }
 
   /**
@@ -896,45 +764,9 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
-   *
-   * @see #of(Type, boolean, Predicate)
    */
-  public static JavaType of(final Type type, final boolean box) {
-    return of(type, box, null);
-  }
-
-  /**
-   * Returns a {@link JavaType} suitable for the supplied arguments.
-   *
-   * @param type the {@link Type} that will be modeled; must not be
-   * {@code null}
-   *
-   * @param box whether autoboxing is enabled
-   *
-   * @param supertypeAcceptancePredicate a {@link BiPredicate} gating a
-   * {@link Type}'s membership in the represented type's collection of
-   * {@linkplain #supertypes() supertypes} ({@linkplain
-   * #directSupertypes() direct} and {@linkplain #supertypes()
-   * otherwise}); may be {@code null}
-   *
-   * @return a {@link JavaType}; never {@code null}
-   *
-   * @exception NullPointerException if {@code type} is {@code null}.
-   *
-   * @nullability This method never returns {@code null}.
-   *
-   * @idempotency This method is idempotent but not deterministic (in
-   * that it may return a new {@link JavaType} with each invocation).
-   * However, any {@link JavaType} returned from this method is
-   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
-   * JavaType} returned from this method, provided the inputs to all
-   * invocations are equal.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  public static JavaType of(final Type type, final boolean box, final BiPredicate<? super Type, ? super Type> supertypeAcceptancePredicate) {
-    return new JavaType(type, box, supertypeAcceptancePredicate == null ? JavaTypes::acceptAll : supertypeAcceptancePredicate);
+  public static final JavaType of(final Type type, final boolean box) {
+    return new JavaType(type, box);
   }
 
   /**
@@ -962,7 +794,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see #of(org.microbean.type.Type, boolean)
    */
-  public static JavaType of(final org.microbean.type.Type<? extends Type> type) {
+  public static final JavaType of(final org.microbean.type.Type<? extends Type> type) {
     return of(type, false);
   }
 
@@ -993,11 +825,188 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see #of(Type, boolean)
    */
-  public static JavaType of(final org.microbean.type.Type<? extends Type> type, final boolean box) {
+  public static final JavaType of(final org.microbean.type.Type<? extends Type> type, final boolean box) {
     if (type instanceof JavaType jt && box == jt.box) {
       return jt;
     }
     return of(type.object(), box);
+  }
+
+  /**
+   * Returns a {@link JavaType} suitable for the supplied arguments.
+   *
+   * @param supertypes a {@link List} of custom supertypes; must not
+   * be {@code null}
+   *
+   * @return a {@link JavaType}; never {@code null}
+   *
+   * @exception NullPointerException if {@code supertypes} is {@code
+   * null}.
+   *
+   * @exception IllegalArgumentException if any supertype is neither a
+   * {@link Type} nor a {@link Token} nor a {@link JavaType}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link JavaType} with each invocation).
+   * However, any {@link JavaType} returned from this method is
+   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
+   * JavaType} returned from this method, provided the inputs to all
+   * invocations are equal.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #ofExact(List, boolean)
+   */
+  public static final JavaType ofExact(final List<?> supertypes) {
+    return ofExact(supertypes, false);
+  }
+
+  /**
+   * Returns a {@link JavaType} suitable for the supplied arguments.
+   *
+   * @param supertypes a {@link List} of custom supertypes; must not
+   * be {@code null}
+   *
+   * @param box whether autoboxing is enabled
+   *
+   * @return a {@link JavaType}; never {@code null}
+   *
+   * @exception NullPointerException if {@code supertypes} is {@code
+   * null}.
+   *
+   * @exception IllegalArgumentException if any supertype is neither a
+   * {@link Type} nor a {@link Token} nor a {@link JavaType}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link JavaType} with each invocation).
+   * However, any {@link JavaType} returned from this method is
+   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
+   * JavaType} returned from this method, provided the inputs to all
+   * invocations are equal.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(org.microbean.type.Type, boolean)
+   */
+  public static final JavaType ofExact(final List<?> supertypes, final boolean box) {
+    return new JavaType(supertypes, box);
+  }
+
+  /**
+   * Returns a {@link JavaType} suitable for the supplied arguments.
+   *
+   * @param type the sole supertype the returned {@link JavaType} will
+   * represent; must not be {@code null}
+   *
+   * @return a {@link JavaType}; never {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code
+   * null}.
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link JavaType} with each invocation).
+   * However, any {@link JavaType} returned from this method is
+   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
+   * JavaType} returned from this method, provided the inputs to all
+   * invocations are equal.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #ofExact(Type, boolean)
+   */
+  public static final JavaType ofExact(final Type type) {
+    return ofExact(List.of(type), false);
+  }
+
+  /**
+   * Returns a {@link JavaType} suitable for the supplied arguments.
+   *
+   * @param type the sole supertype the returned {@link JavaType} will
+   * represent; must not be {@code null}
+   *
+   * @param box whether autoboxing is enabled
+   *
+   * @return a {@link JavaType}; never {@code null}
+   *
+   * @exception NullPointerException if {@code type} is {@code
+   * null}.
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent but not deterministic (in
+   * that it may return a new {@link JavaType} with each invocation).
+   * However, any {@link JavaType} returned from this method is
+   * guaranteed to {@linkplain #equals(Object) equal} any other {@link
+   * JavaType} returned from this method, provided the inputs to all
+   * invocations are equal.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #ofExact(List, boolean)
+   */
+  public static final JavaType ofExact(final Type type, final boolean box) {
+    return ofExact(List.of(type), box);
+  }
+
+  /**
+   * Returns a boxed version of the supplied {@link
+   * org.microbean.type.Type}, if appropriate.
+   *
+   * @param type the {@link org.microbean.type.Type}; must not be
+   * {@code null}
+   *
+   * @return a boxed version of the supplied {@link
+   * org.microbean.type.Type}, if appropriate
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is deterministic, but not necessarily
+   * idempotent.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(org.microbean.type.Type, boolean)
+   *
+   * @see JavaTypes#box(Type)
+   */
+  public static final JavaType box(final org.microbean.type.Type<? extends Type> type) {
+    return of(type, true);
+  }
+
+  /**
+   * Returns a {@link JavaType} representing a boxed version of the
+   * supplied {@link Type}, if appropriate.
+   *
+   * @param type the {@link Type}; must not be {@code null}
+   *
+   * @return a {@link JavaType} representing a boxed version of the
+   * supplied {@link Type}, if appropriate
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is deterministic, but not necessarily
+   * idempotent.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #of(Type, boolean)
+   *
+   * @see JavaTypes#box(Type)
+   */
+  public static final JavaType box(final Type type) {
+    return of(type, true);
   }
 
 
@@ -1197,7 +1206,6 @@ public class JavaType extends org.microbean.type.Type<Type> {
         }
       }
     }
-
 
   }
 
