@@ -914,7 +914,7 @@ public abstract class Type<T> implements Owner<T> {
    * supertype of the supplied {@link Type}.
    *
    * <p>This method uses a combination of the {@link #supertypes()}
-   * method and the {@link #represents(Owner)} method in its
+   * method and the {@link #equals(Type, Type)} method in its
    * implementation.</p>
    *
    * @param sub the purported subtype; must not be {@code null}
@@ -931,7 +931,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #supertypes()
    *
-   * @see #represents(Owner)
+   * @see #equals(Type, Type)
    */
   @Convenience
   public final boolean supertypeOf(final Type<?> sub) {
@@ -941,11 +941,6 @@ public abstract class Type<T> implements Owner<T> {
       if (equals(supertype, this)) {
         return true;
       }
-      /*
-      if (supertype.represents(this)) {
-        return true;
-      }
-      */
     }
     return false;
   }
@@ -955,7 +950,7 @@ public abstract class Type<T> implements Owner<T> {
    * subtype of the supplied {@link Type}.
    *
    * <p>This method uses a combination of the {@link #supertypes()}
-   * method and the {@link #represents(Owner)} method in its
+   * method and the {@link #equals(Type, Type)} method in its
    * implementation.</p>
    *
    * @param sup the purported supertype; must not be {@code null}
@@ -972,7 +967,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #supertypes()
    *
-   * @see #represents(Owner)
+   * @see #equals(Type, Type)
    */
   @Convenience
   public final boolean subtypeOf(final Type<?> sup) {
@@ -980,30 +975,8 @@ public abstract class Type<T> implements Owner<T> {
       if (equals(sup, supertype)) {
         return true;
       }
-      /*
-      if (sup.represents(supertype)) {
-        return true;
-      }
-      */
     }
     return false;
-  }
-
-  @Deprecated(forRemoval = true)
-  @Override // Owner<T>
-  public boolean represents(final Owner<?> other) {
-    if (this == other) {
-      return true;
-    } else if (other instanceof Type<?> type) {
-      final Object myObject = this.object();
-      if (myObject == null) {
-        return other.object() == null && supertypesEqual(this, type);
-      } else {
-        return this.objectEquals(other.object());
-      }
-    } else {
-      return false;
-    }
   }
 
   @Override // Object
@@ -1842,134 +1815,6 @@ public abstract class Type<T> implements Owner<T> {
                                               final Collection<? extends Type<Y>> payloadTypes) {
       for (final Type<Y> payloadType : payloadTypes) {
         if (this.assignable(receiverType, payloadType)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    /**
-     * Returns {@code true} if and only if a {@link JavaType}
-     * representation of a {@link java.lang.reflect.Type} contained in
-     * the supplied {@code candidateRepresenterTypes} {@linkplain
-     * #represents(Owner) represents} a {@link JavaType}
-     * representation of the supplied supplied {@code
-     * representedType}.
-     *
-     * @param representedType a {@link java.lang.reflect.Type}; must
-     * not be {@code null}
-     *
-     * @param candidateRepresenterTypes a {@link Collection} of {@link
-     * java.lang.reflect.Type}s; must not be {@code null}
-     *
-     * @return {@code true} if and only if a {@link JavaType}
-     * representation of a {@link java.lang.reflect.Type} contained in
-     * the supplied {@code candidateRepresenterTypes} {@linkplain
-     * #represents(Owner) represents} a {@link JavaType}
-     * representation of the supplied supplied {@code
-     * representedType}; {@code false} in all other cases
-     *
-     * @exception NullPointerException if any argument is {@code null}
-     *
-     * @idempotency This method is, and its overrides must be,
-     * idempotent and deterministic.
-     *
-     * @threadsafety This method is, and its overrides must be, safe
-     * for concurrent use by multiple threads.
-     *
-     * @see #anyRepresents(java.lang.reflect.Type, Collection,
-     * boolean)
-     */
-    public final boolean anyRepresents(final java.lang.reflect.Type representedType,
-                                       final Collection<? extends java.lang.reflect.Type> candidateRepresenterTypes) {
-      return this.anyRepresents(representedType, candidateRepresenterTypes, false);
-    }
-
-    /**
-     * Returns {@code true} if and only if a {@link JavaType}
-     * representation of a {@link java.lang.reflect.Type} contained in
-     * the supplied {@code candidateRepresenterTypes} {@linkplain
-     * #represents(Owner) represents} a {@link JavaType}
-     * representation of the supplied supplied {@code
-     * representedType}.
-     *
-     * @param representedType a {@link java.lang.reflect.Type}; must
-     * not be {@code null}
-     *
-     * @param candidateRepresenterTypes a {@link Collection} of {@link
-     * java.lang.reflect.Type}s; must not be {@code null}
-     *
-     * @param box whether boxing is enabled
-     *
-     * @return {@code true} if and only if a {@link JavaType}
-     * representation of a {@link java.lang.reflect.Type} contained in
-     * the supplied {@code candidateRepresenterTypes} {@linkplain
-     * #represents(Owner) represents} a {@link JavaType}
-     * representation of the supplied supplied {@code
-     * representedType}; {@code false} in all other cases
-     *
-     * @exception NullPointerException if any argument is {@code null}
-     *
-     * @idempotency This method is, and its overrides must be,
-     * idempotent and deterministic.
-     *
-     * @threadsafety This method is, and its overrides must be, safe
-     * for concurrent use by multiple threads.
-     *
-     * @see JavaType#represents(Owner)
-     */
-    @Deprecated(forRemoval = true)
-    public final boolean anyRepresents(final java.lang.reflect.Type representedType,
-                                       final Collection<? extends java.lang.reflect.Type> candidateRepresenterTypes,
-                                       final boolean box) {
-      final JavaType representedJavaType = JavaType.of(representedType, box);
-      for (final java.lang.reflect.Type candidateRepresenterType : candidateRepresenterTypes) {
-        if (JavaType.of(candidateRepresenterType, box).represents(representedJavaType)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    /**
-     * Returns {@code true} if and only if a {@link Type} contained in
-     * the supplied {@code candidateRepresenterTypes} {@linkplain
-     * #represents(Owner) represents} the supplied {@code
-     * representedType}.
-     *
-     * @param <X> the kind of type modeled by the {@code
-     * representedType}; often a {@link java.lang.reflect.Type
-     * java.lang.reflect.Type}
-     *
-     * @param <Y> the kind of type modeled by a {@code
-     * candidateRepresenterTypes} element; often a {@link
-     * java.lang.reflect.Type java.lang.reflect.Type}
-     *
-     * @param representedType a {@link Type}; must not be {@code null}
-     *
-     * @param candidateRepresenterTypes a {@link Collection} of {@link
-     * Type}s; must not be {@code null}
-     *
-     * @return {@code true} if and only if a {@link Type} contained in
-     * the supplied {@code candidateRepresenterTypes} {@linkplain
-     * #represents(Owner) represents} the supplied {@code
-     * representedType}; {@code false} in all other cases
-     *
-     * @exception NullPointerException if any argument is {@code null}
-     *
-     * @idempotency This method is, and its overrides must be,
-     * idempotent and deterministic.
-     *
-     * @threadsafety This method is, and its overrides must be, safe
-     * for concurrent use by multiple threads.
-     *
-     * @see #represents(Owner)
-     */
-    @Deprecated(forRemoval = true)
-    public final <X, Y> boolean anyRepresents(final Type<X> representedType,
-                                              final Collection<? extends Type<Y>> candidateRepresenterTypes) {
-      for (final Type<Y> candidateRepresenterType : candidateRepresenterTypes) {
-        if (candidateRepresenterType.represents(representedType)) {
           return true;
         }
       }
@@ -3609,7 +3454,7 @@ public abstract class Type<T> implements Owner<T> {
 
     private final boolean parameterizedTypeIsAssignableFromParameterizedType0(final Type<?> receiverParameterizedType,
                                                                               final Type<?> payloadParameterizedType) {
-      if (receiverParameterizedType.type().represents(payloadParameterizedType.type())) {
+      if (Type.equals(receiverParameterizedType.type(), payloadParameterizedType.type())) {
         final List<? extends Type<?>> receiverTypeTypeArguments = receiverParameterizedType.typeArguments();
         final List<? extends Type<?>> payloadTypeTypeArguments = payloadParameterizedType.typeArguments();
         if (receiverTypeTypeArguments.size() == payloadTypeTypeArguments.size()) {
@@ -3620,7 +3465,7 @@ public abstract class Type<T> implements Owner<T> {
               if (!this.assignable(receiverTypeTypeArgument, payloadTypeTypeArgument)) {
                 return false;
               }
-            } else if (!receiverTypeTypeArgument.represents(payloadTypeTypeArgument)) {
+            } else if (!Type.equals(receiverTypeTypeArgument, payloadTypeTypeArgument)) {
               return false;
             }
           }
@@ -3759,7 +3604,7 @@ public abstract class Type<T> implements Owner<T> {
       if (receiverType.wildcard() || payloadType.wildcard()) {
         return CovariantSemantics.INSTANCE.assignable(receiverType, payloadType);
       }
-      return receiverType.represents(payloadType);
+      return Type.equals(receiverType, payloadType);
     }
 
   }
@@ -3856,7 +3701,7 @@ public abstract class Type<T> implements Owner<T> {
     @Override
     protected final <X, Y> boolean classIsAssignableFromParameterizedType(final Type<X> receiverClass,
                                                                           final Type<Y> payloadParameterizedType) {
-      if (receiverClass.represents(payloadParameterizedType.type())) {
+      if (Type.equals(receiverClass, payloadParameterizedType.type())) {
         for (final Type<Y> payloadTypeTypeArgument : payloadParameterizedType.typeArguments()) {
           if (payloadTypeTypeArgument.top()) {
             // OK; it's Object.class or similar
@@ -3886,7 +3731,7 @@ public abstract class Type<T> implements Owner<T> {
     @Override
     protected final <X, Y> boolean parameterizedTypeIsAssignableFromClass(final Type<X> receiverParameterizedType,
                                                                           final Type<Y> payloadClass) {
-      if (receiverParameterizedType.type().represents(payloadClass)) {
+      if (Type.equals(receiverParameterizedType.type(), payloadClass)) {
         for (final Type<X> receiverTypeTypeArgument : receiverParameterizedType.typeArguments()) {
           if (receiverTypeTypeArgument.top()) {
             // OK
@@ -3916,7 +3761,7 @@ public abstract class Type<T> implements Owner<T> {
     @Override
     protected final <X, Y> boolean parameterizedTypeIsAssignableFromParameterizedType(final Type<X> receiverParameterizedType,
                                                                                       final Type<Y> payloadParameterizedType) {
-      if (receiverParameterizedType.type().represents(payloadParameterizedType.type())) {
+      if (Type.equals(receiverParameterizedType.type(), payloadParameterizedType.type())) {
         final List<? extends Type<X>> receiverTypeTypeArguments = receiverParameterizedType.typeArguments();
         final List<? extends Type<Y>> payloadTypeTypeArguments = payloadParameterizedType.typeArguments();
         if (receiverTypeTypeArguments.size() == payloadTypeTypeArguments.size()) {

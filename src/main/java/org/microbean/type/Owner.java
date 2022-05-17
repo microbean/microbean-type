@@ -266,57 +266,8 @@ public interface Owner<T> {
   public List<? extends Type<T>> typeParameters();
 
   /**
-   * Returns {@code true} if this {@link Owner} represents the same
-   * thing as that represented by the supplied {@link Owner}.
-   *
-   * <p>Representation is not the same thing as equality.
-   * Specifically, an {@link Owner} may represent another {@link Owner}
-   * exactly, but may not be {@linkplain Object#equals(Object) equal to}
-   * it.</p>
-   *
-   * <p>Overrides of this method may call {@link #equals(Object)}, but
-   * it is not recommended.</p>
-   *
-   * <p>Overrides of {@link #equals(Object)} must not call this
-   * method.</p>
-   *
-   * @param other the {@link Owner} to test; may be {@code null} in
-   * which case {@code false} will be returned
-   *
-   * @return {@code true} if this {@link Owner} represents the same
-   * thing as that represented by the supplied {@link Owner}
-   *
-   * @idempotency Implementations of this method must be idempotent
-   * and deterministic.
-   *
-   * @threadsafety Implementations of this method must be safe for
-   * concurrent use by multiple threads.
-   *
-   * @see #object()
-   *
-   * @see #objectEquals(Object)
-   *
-   * @see #equals(Object)
-   */
-  @Deprecated(forRemoval = true)
-  @OverridingEncouraged
-  public default boolean represents(final Owner<?> other) {
-    if (this == other) {
-      return true;
-    } else if (other != null) {
-      final Object otherObject = other.object();
-      return otherObject != null && this.objectEquals(otherObject);
-    } else {
-      return false;
-    }
-  }
-
-  /**
    * Returns {@code true} if this {@link Owner} implementation is
    * equal to the supplied {@link Object}.
-   *
-   * <p><strong>Overrides of this method must not call {@link
-   * #represents(Owner)}.</strong></p>
    *
    * @param other the {@link Object} to test; may be {@code null} in
    * which case {@code false} will be returned
