@@ -677,7 +677,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #upperBounded()
    */
-  public final boolean isClass() {
+  public final boolean isClassOrInterface() {
     return this.named() && !this.upperBounded();
   }
 
@@ -938,9 +938,14 @@ public abstract class Type<T> implements Owner<T> {
     // Does this represent a supertype of sub?  Remember that the
     // supertype relation is reflexive.
     for (final Type<?> supertype : sub.supertypes()) {
+      if (equals(supertype, this)) {
+        return true;
+      }
+      /*
       if (supertype.represents(this)) {
         return true;
       }
+      */
     }
     return false;
   }
@@ -972,11 +977,49 @@ public abstract class Type<T> implements Owner<T> {
   @Convenience
   public final boolean subtypeOf(final Type<?> sup) {
     for (final Type<?> supertype : this.supertypes()) {
+      if (equals(sup, supertype)) {
+        return true;
+      }
+      /*
       if (sup.represents(supertype)) {
         return true;
       }
+      */
     }
     return false;
+  }
+
+  @Deprecated(forRemoval = true)
+  @Override // Owner<T>
+  public boolean represents(final Owner<?> other) {
+    if (this == other) {
+      return true;
+    } else if (other instanceof Type<?> type) {
+      final Object myObject = this.object();
+      if (myObject == null) {
+        return other.object() == null && supertypesEqual(this, type);
+      } else {
+        return this.objectEquals(other.object());
+      }
+    } else {
+      return false;
+    }
+  }
+
+  @Override // Object
+  public int hashCode() {
+    return hashCode(this);
+  }
+  
+  @Override // Owner
+  public boolean equals(final Object other) {
+    if (other == this) {
+      return true;
+    } else if (other instanceof Type<?> type) { // instanceof is deliberate
+      return equals(this, type);
+    } else {
+      return false;
+    }
   }
 
 
@@ -1104,8 +1147,15 @@ public abstract class Type<T> implements Owner<T> {
       return true;
     } else if (t1 == null || t2 == null) {
       return false;
-    } else if (Objects.equals(t1.object(), t2.object())) {
-      return true;
+    }
+
+    final Object t1Object = t1.object();
+    if (t1Object == null) {
+      if (t2.object() != null) {
+        return false;
+      }
+    } else {
+      return t1.objectEquals(t2.object());
     }
 
     if (t1.hasTypeArguments()) {
@@ -1124,11 +1174,9 @@ public abstract class Type<T> implements Owner<T> {
         return false;
       } else if (t1.lowerBounded()) {
         return lowerBoundedWildcardTypeEqualsType(t1, t2);
-      } else if (t2.lowerBounded()) {
-        return false;
       } else if (t1.upperBounded()) {
         return upperBoundedTypeEqualsType(t1, t2);
-      } else if (t2.upperBounded()) {
+      } else if (t2.lowerBounded() || t2.upperBounded()) {
         return false;
       }
 
@@ -1145,26 +1193,11 @@ public abstract class Type<T> implements Owner<T> {
         if (t2Name != null) {
           return false;
         }
-        final List<? extends Type<?>> t1Supertypes = t1.supertypes();
-        final List<? extends Type<?>> t2Supertypes = t2.supertypes();
-        final int size = t1Supertypes.size();
-        if (t2Supertypes.size() != size) {
-          return false;
-        }
-        for (int i = 0; i < size; i++) {
-          final Type<?> t1Supertype = t1Supertypes.get(i);
-          if (t1Supertype != t1 && t1Supertype != t2) {
-            final Type<?> t2Supertype = t2Supertypes.get(i);
-            if (t2Supertype != t1 && t2Supertype != t2 && !equals(t1Supertypes.get(i), t2Supertypes.get(i))) {
-              return false;
-            }
-          }
-        }
-        return true;
-      } else if (!t1Name.equals(t2Name)) {
-        return false;
+        return supertypesEqual(t1, t2);
       } else {
-        return equals((Type<?>)t1.owner(), (Type<?>)t2.owner());
+        return
+          t1Name.equals(t2Name) &&
+          equals((Type<?>)t1.owner(), (Type<?>)t2.owner());
       }
     } else if (!equals(t1ComponentType, t2ComponentType)) {
       return false;
@@ -1180,6 +1213,30 @@ public abstract class Type<T> implements Owner<T> {
     }
     // Generic array types.
     return equals(t1Type, t2Type);
+  }
+
+  private static final boolean supertypesEqual(final Type<?> t1, final Type<?> t2) {
+    if (t1 == t2) {
+      return true;
+    } else if (t1 == null || t2 == null) {
+      return false;
+    }
+    final List<? extends Type<?>> s1 = t1.supertypes();
+    final List<? extends Type<?>> s2 = t2.supertypes();
+    final int size = s1.size();
+    if (s2.size() != size) {
+      return false;
+    }
+    for (int i = 0; i < size; i++) {
+      final Type<?> supertype1 = s1.get(i);
+      if (supertype1 != s1 && supertype1 != s2) {
+        final Type<?> supertype2 = s2.get(i);
+        if (supertype2 != t1 && supertype2 != t2 && !equals(supertype1, supertype2)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   private static final boolean parameterizedTypeEqualsParameterizedType(final Type<?> t1, final Type<?> t2) {
@@ -1861,6 +1918,7 @@ public abstract class Type<T> implements Owner<T> {
      *
      * @see JavaType#represents(Owner)
      */
+    @Deprecated(forRemoval = true)
     public final boolean anyRepresents(final java.lang.reflect.Type representedType,
                                        final Collection<? extends java.lang.reflect.Type> candidateRepresenterTypes,
                                        final boolean box) {
@@ -1907,6 +1965,7 @@ public abstract class Type<T> implements Owner<T> {
      *
      * @see #represents(Owner)
      */
+    @Deprecated(forRemoval = true)
     public final <X, Y> boolean anyRepresents(final Type<X> representedType,
                                               final Collection<? extends Type<Y>> candidateRepresenterTypes) {
       for (final Type<Y> candidateRepresenterType : candidateRepresenterTypes) {
@@ -1955,7 +2014,7 @@ public abstract class Type<T> implements Owner<T> {
     @EntryPoint
     @OverridingDiscouraged
     public <X, Y> boolean assignable(final Type<X> receiverType, final Type<Y> payloadType) {
-      if (receiverType == Objects.requireNonNull(payloadType, "payloadType") || receiverType.represents(payloadType)) {
+      if (receiverType == Objects.requireNonNull(payloadType, "payloadType")) {
         return true;
       } else if (receiverType.hasTypeArguments()) {
         return parameterizedTypeIsAssignableFromType(receiverType, payloadType);

@@ -298,6 +298,7 @@ public interface Owner<T> {
    *
    * @see #equals(Object)
    */
+  @Deprecated(forRemoval = true)
   @OverridingEncouraged
   public default boolean represents(final Owner<?> other) {
     if (this == other) {

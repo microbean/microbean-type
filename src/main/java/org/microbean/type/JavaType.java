@@ -168,33 +168,6 @@ public class JavaType extends org.microbean.type.Type<Type> {
   }
 
   /**
-   * Returns {@code true} if this {@link JavaType} represents the same
-   * type as that represented by the supplied {@link Owner}.
-   *
-   * <p>Type representation is not the same thing as equality.
-   * Specifically, a {@link org.microbean.type.Type} may represent
-   * another {@link org.microbean.type.Type} exactly, but may not be
-   * {@linkplain org.microbean.type.Type#equals(Object) equal to}
-   * it.</p>
-   *
-   * @param other the {@link Owner} to test; may be {@code null} in
-   * which case {@code false} will be returned
-   *
-   * @return {@code true} if this {@link Type} represents the same
-   * thing as that represented by the supplied {@link Owner}
-   *
-   * @idempotency This method is, and its overrides must be,
-   * idempotent and deterministic.
-   *
-   * @threadsafety This method is, and its overrides must be, safe for
-   * concurrent use by multiple threads.
-   */
-  @Override // org.microbean.type.Type<Type>
-  public final boolean represents(final Owner<?> other) {
-    return super.represents(other);
-  }
-
-  /**
    * Returns {@code true} if and only if the return value of {@link
    * #object()} is identical to {@link Object Object.class}.
    *
@@ -653,22 +626,6 @@ public class JavaType extends org.microbean.type.Type<Type> {
   @Override // Owner<Type>
   public final boolean objectEquals(final Object other) {
     return this.object() == other || other instanceof Type && JavaTypes.equals(this.object(), this.box ? JavaTypes.box((Type)other) : (Type)other);
-  }
-
-  @Override // Object
-  public final int hashCode() {
-    return JavaTypes.hashCode(this.object());
-  }
-
-  @Override // Object
-  public final boolean equals(final Object other) {
-    if (other == this) {
-      return true;
-    } else if (other != null && this.getClass() == other.getClass()) {
-      return this.objectEquals(((JavaType)other).object());
-    } else {
-      return false;
-    }
   }
 
 
