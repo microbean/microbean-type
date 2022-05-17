@@ -23,12 +23,15 @@ import java.util.Objects;
 import org.microbean.development.annotation.OverridingEncouraged;
 
 /**
- * An interface whose implementations represent a Java {@linkplain
- * java.lang.reflect.Type type} or a Java {@linkplain
+ * An interface whose implementations skeletally represent a Java
+ * {@linkplain java.lang.reflect.Type type} or a Java {@linkplain
  * java.lang.reflect.Executable executable} for equality comparison
  * purposes and no other.
  *
- * @param <T> the type describing the type representation type
+ * @param <T> the type describing the type representation type; often
+ * {@link java.lang.reflect.Type}, {@link
+ * java.lang.reflect.Constructor}, {@link
+ * java.lang.reflect.Executable} or {@link java.lang.reflect.Method}
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
@@ -86,6 +89,10 @@ public interface Owner<T> {
    * java.lang.reflect.TypeVariable}, and {@link
    * java.lang.reflect.Executable} instances have names.</p>
    *
+   * <p>The default implementation of this method returns {@code true}
+   * if and only if an invocation of the {@link #name()} method
+   * returns a non-{@code null} value.</p>
+   *
    * @return {@code true} if and only if this {@link Owner} represents
    * either a Java type that has a name, or an {@linkplain
    * java.lang.reflect.Executable executable}
@@ -102,7 +109,6 @@ public interface Owner<T> {
    *
    * @see java.lang.reflect.TypeVariable#getName()
    */
-  @OverridingEncouraged
   public default boolean named() {
     return this.name() != null;
   }
@@ -164,10 +170,9 @@ public interface Owner<T> {
    * an {@linkplain java.lang.reflect.Executable executable} by virtue
    * of having parameters.
    *
-   * <p>This implementation calls the {@link #parameters()} method and
-   * returns {@code true} if the resulting {@link List} is not {@code
-   * null} and {@linkplain List#isEmpty() is not empty}.  Subclasses
-   * are encouraged to provide a faster implementation.</p>
+   * <p>The default implementation of this method calls the {@link
+   * #parameters()} method and returns {@code true} if the resulting
+   * {@link List} is not {@code null}.</p>
    *
    * @return {@code true} if and only if this {@link Owner} represents
    * an {@linkplain java.lang.reflect.Executable executable} by virtue
@@ -175,10 +180,8 @@ public interface Owner<T> {
    *
    * @see #parameters()
    */
-  @OverridingEncouraged
   public default boolean hasParameters() {
-    final Collection<?> p = this.parameters();
-    return p != null;
+    return this.parameters() != null;
   }
 
   /**
@@ -214,9 +217,8 @@ public interface Owner<T> {
    * parameters.
    *
    * <p>This implementation calls the {@link #typeParameters()} method
-   * and returns {@code true} if the resulting {@link List} is not
-   * {@code null} and {@linkplain List#isEmpty() not empty}.
-   * Subclasses are encouraged to provide a faster implementation.</p>
+   * and returns {@code true} if the resulting {@link List} is
+   * {@linkplain List#isEmpty() not empty}.</p>
    *
    * @return {@code true} if and only if this {@link Owner} represents
    * a generic class or a generic {@linkplain
@@ -266,33 +268,31 @@ public interface Owner<T> {
   public List<? extends Type<T>> typeParameters();
 
   /**
-   * Returns {@code true} if this {@link Owner} implementation is
-   * equal to the supplied {@link Object}.
-   *
-   * @param other the {@link Object} to test; may be {@code null} in
-   * which case {@code false} will be returned
-   *
-   * @return {@code true} if this {@link Owner} implementation is
-   * equal to the supplied {@link Object}
-   */
-  @Override // Object
-  public boolean equals(final Object other);
-
-  /**
    * Returns {@code true} if and only if the supplied {@link Object}
    * is equal in some way to this {@link Owner}'s {@linkplain
    * #object() object}.
    *
-   * @param other the object to test; may be {@code null}
+   * <p>The default implementation of this method invokes {@link
+   * Objects#equals(Object, Object)} with the return value of an
+   * invocation of the {@link #object()} method and the supplied
+   * {@code object} and returns the result.</p>
+   *
+   * @param object the object to test; may be {@code null}
    *
    * @return {@code true} if and only if the supplied {@link Object}
    * is equal in some way to this {@link Owner}'s {@linkplain
    * #object() object}
    *
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @threadsafety This method is, and its overrides must be, safe for
+   * concurrent use by multiple threads.
+   *
    * @see #object()
    */
-  public default boolean objectEquals(final Object other) {
-    return Objects.equals(this.object(), other);
+  public default boolean objectEquals(final Object object) {
+    return Objects.equals(this.object(), object);
   }
 
 }

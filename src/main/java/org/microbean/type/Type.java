@@ -164,8 +164,8 @@ public abstract class Type<T> implements Owner<T> {
    * Returns the name of this {@link Type} if it has one <strong>or
    * {@code null} if it does not</strong>.
    *
-   * <p>Only classes and type variables in the Java reflective type
-   * system have names.</p>
+   * <p>Only classes (and interfaces) and type variables in the Java
+   * reflective type system have names.</p>
    *
    * @return the name of this {@link Type}, or {@code null}
    *
@@ -183,8 +183,9 @@ public abstract class Type<T> implements Owner<T> {
 
   /**
    * Returns the object supplied at construction time that is the type
-   * this {@link Type} is representing, or {@code null} if this {@link
-   * Type} represents a collection of custom {@linkplain #supertypes()
+   * this {@link Type} is representing, or {@code null} if this
+   * information is not available, or if this {@link Type} {@linkplain
+   * #customSupertyped() represents a collection of custom
    * supertypes}.
    *
    * @return the object supplied at construction time that is the type
@@ -347,7 +348,6 @@ public abstract class Type<T> implements Owner<T> {
    * and deterministic.
    */
   @Override // Owner<T>
-  @Experimental
   public abstract Owner<T> owner();
 
   /**
@@ -370,7 +370,6 @@ public abstract class Type<T> implements Owner<T> {
    * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    */
-  @Experimental
   public abstract Type<T> withObject(final T object);
 
   /**
@@ -659,6 +658,54 @@ public abstract class Type<T> implements Owner<T> {
 
   /**
    * Returns {@code true} if and only if this {@link Type} models a
+   * custom {@linkplain #supertypes() list of supertypes} and nothing
+   * else.
+   *
+   * <p>This method returns {@code true} when and only when all of the
+   * following conditions are met:</p>
+   *
+   * <ul>
+   *
+   * <li>The {@link #object()} method returns {@code null}</li>
+   *
+   * <li>The {@link #hasTypeArguments()} method returns {@code
+   * false}</li>
+   *
+   * <li>The {@link #arrayType()} method returns {@code false}</li>
+   *
+   * <li>The {@link #lowerBounded()} method returns {@code false}</li>
+   *
+   * <li>The {@link #upperBounded()} method returns {@code false}</li>
+   *
+   * <li>The {@link #named()} method returns {@code false}</li>
+   *
+   * </ul>
+   *
+   * @return {@code true} if and only if this {@link type} models a
+   * custom {@linkplain #supertypes() list of supertypes} and nothing
+   * else
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #supertypes()
+   *
+   * @see #Type(List)
+   */
+  public final boolean customSupertyped() {
+    return
+      this.object() == null &&
+      !this.named() &&
+      !this.hasTypeArguments() &&
+      !this.arrayType() &&
+      !this.lowerBounded() &&
+      !this.upperBounded();
+  }
+  
+  /**
+   * Returns {@code true} if and only if this {@link Type} models a
    * class or interface.
    *
    * <p>This method returns {@code true} if and only if {@link
@@ -677,7 +724,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #upperBounded()
    */
-  public final boolean isClassOrInterface() {
+  public final boolean classOrInterface() {
     return this.named() && !this.upperBounded();
   }
 
@@ -1097,7 +1144,7 @@ public abstract class Type<T> implements Owner<T> {
   /**
    * Returns {@code true} if and only if the two supplied {@link
    * Type}s are equal, based solely upon the properties publicly
-   * exposed by the {@link Type} abstract class.
+   * exposed by the {@link Type} class.
    *
    * @param t1 the first {@link Type}; may be {@code null}
    *
@@ -1114,7 +1161,6 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #hashCode(Type)
    */
-  @Experimental
   public static final boolean equals(final Type<?> t1, final Type<?> t2) {
     if (t1 == t2) {
       return true;
