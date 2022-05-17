@@ -16,6 +16,11 @@
  */
 package org.microbean.type;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.invoke.VarHandle;
+
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -60,11 +66,30 @@ public abstract class Type<T> implements Owner<T> {
 
 
   /*
+   * Static fields.
+   */
+
+
+  private static final VarHandle SUPERTYPES;
+
+  static {
+    final Lookup lookup = MethodHandles.lookup();
+    try {
+      SUPERTYPES = lookup.findVarHandle(Type.class, "supertypes", List.class);
+    } catch (final NoSuchFieldException | IllegalAccessException reflectiveOperationException) {
+      throw (Error)new ExceptionInInitializerError(reflectiveOperationException.getMessage()).initCause(reflectiveOperationException);
+    }
+  }
+
+
+  /*
    * Instance fields.
    */
 
 
   private final T type;
+
+  private volatile List<? extends Type<T>> supertypes;
 
 
   /*
@@ -82,6 +107,23 @@ public abstract class Type<T> implements Owner<T> {
   protected Type(final T type) {
     super();
     this.type = Objects.requireNonNull(type, "type");
+  }
+
+  /**
+   * Creates a new {@link Type} that models custom supertypes.
+   *
+   * <p>Among other things, this means that the {@link #object()}
+   * method will return {@code null}.</p>
+   *
+   * @param supertypes the custom supertypes; must not be {@code null}
+   *
+   * @exception NullPointerException if {@code supertypes} is {@code
+   * null}
+   */
+  protected Type(final List<? extends Type<T>> supertypes) {
+    super();
+    this.type = null;
+    this.supertypes = List.copyOf(supertypes);
   }
 
 
@@ -140,47 +182,15 @@ public abstract class Type<T> implements Owner<T> {
   public abstract String name();
 
   /**
-   * Returns {@code true} if this {@link Type} represents the same
-   * type as that represented by the supplied {@link Owner}.
-   *
-   * <p>Type representation is not the same thing as equality.
-   * Specifically, a {@link Type} may represent another {@link Type}
-   * exactly, but may not be {@linkplain Type#equals(Object) equal to}
-   * it.</p>
-   *
-   * <p>Equality is <em>subordinate</em> to type representation.  That
-   * is, in determining whether a given {@link Type} represents
-   * another {@link Type}, their {@link Type#equals(Object)
-   * equals(Object)} methods may be called, but a {@link Type}'s
-   * {@link Type#equals(Object) equals(Object)} method must not call
-   * {@link #represents(Owner)}.</p>
-   *
-   * @param other the {@link Owner} to test; may be {@code null} in
-   * which case {@code false} will be returned
-   *
-   * @return {@code true} if this {@link Type} represents the same
-   * type as that represented by the supplied {@link Owner}
-   *
-   * @idempotency This method is, and its overrides must be,
-   * idempotent and deterministic.
-   *
-   * @threadsafety This method is, and its overrides must be, safe for
-   * concurrent use by multiple threads.
-   */
-  @Override // Owner<T>
-  @OverridingEncouraged
-  public boolean represents(final Owner<?> other) {
-    return Owner.super.represents(other);
-  }
-
-  /**
    * Returns the object supplied at construction time that is the type
-   * this {@link Type} is representing.
+   * this {@link Type} is representing, or {@code null} if this {@link
+   * Type} represents a collection of custom {@linkplain #supertypes()
+   * supertypes}.
    *
    * @return the object supplied at construction time that is the type
    * this {@link Type} is representing
    *
-   * @nullability This method never returns {@code null}.
+   * @nullability This method may return {@code null}.
    *
    * @idempotency This method is idempotent and deterministic.
    *
@@ -216,51 +226,84 @@ public abstract class Type<T> implements Owner<T> {
   public abstract boolean top();
 
   /**
-   * Returns an {@linkplain
-   * Collections#unmodifiableCollection(Collection) unmodifiable and
-   * immutable <code>Collection</code>} of the <em>direct
-   * supertypes</em> of this {@link Type}, or an {@linkplain
-   * Collection#isEmpty() empty <code>Collection</code>} if there are
-   * no direct supertypes.
+   * Returns a (possibly cached) {@link List} of this {@link Type}'s
+   * <em>direct supertypes</em>, defined to be its immediate
+   * superclass or supertype, if any, and any interfaces it directly
+   * implements.
    *
-   * <p>The direct supertypes of a type are defined to be those which
-   * are described by the <a
+   * @return a (possibly cached) {@link List} of this {@link Type}'s
+   * direct supertypes
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #computeDirectSupertypes()
+   */
+  public final List<? extends Type<T>> directSupertypes() {
+    return List.copyOf(this.computeDirectSupertypes());
+  }
+
+  /**
+   * Returns an {@linkplain
+   * Collections#unmodifiableList(List) unmodifiable and
+   * immutable <code>List</code>} of the <em>direct
+   * supertypes</em> of this {@link Type}, or an {@linkplain
+   * List#isEmpty() empty <code>List</code>} if there are
+   * no direct supertypes, or if this {@link Type} implementation does
+   * not distinguish between direct and non-direct supertypes.
+   *
+   * <p>The direct supertypes of a type are defined to be those
+   * analogous to those described by the <a
    * href="https://docs.oracle.com/javase/specs/jls/se17/html/jls-4.html#jls-4.10.2"
    * target="_parent">Java Language Specification, section 4.10.2</a>,
    * minus any types featuring wildcards.</p>
    *
-   * <p>These direct supertypes of a reflective Java type may be
-   * acquired if needed via the {@link
-   * JavaTypes#directSupertypes(java.lang.reflect.Type)} method.</p>
-   *
-   * <p>The {@link Collection} returned must not contain {@code this}
+   * <p>The {@link List} returned must not contain {@code this}
    * and must have no {@code null} or duplicate elements.</p>
    *
-   * <p>The ordering within the returned {@link Collection} is not
+   * <p>The ordering within the returned {@link List} is not
    * specified, <strong>but must be deterministic between
    * invocations</strong>.</p>
    *
-   * <p>The size of the {@link Collection} returned must not change
+   * <p>The size of the {@link List} returned must not change
    * between calls.</p>
    *
    * <p>Undefined behavior will result if an implementation does not
    * meet these requirements.</p>
    *
+   * <p><strong>The default implementation of this method returns an
+   * empty {@link List}.</strong> Many subclasses may wish to
+   * override this behavior.</p>
+   *
    * @return an {@linkplain
-   * Collections#unmodifiableCollection(Collection) unmodifiable and
-   * immutable <code>Collection</code>} of the <em>direct
+   * Collections#unmodifiableList(List) unmodifiable and
+   * immutable <code>List</code>} of the <em>direct
    * supertypes</em> of this {@link Type}; never {@code null}
    *
-   * @nullability Implementations of this method must not return
-   * {@code null}.
+   * @nullability This method does not, and its overrides must not,
+   * return {@code null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety This method is, and its overrides must be, safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
-   * and deterministic.
+   * @idempotency This method is, and its overrides must be,
+   * idempotent and deterministic.
+   *
+   * @see JavaTypes#directSupertypes(java.lang.reflect.Type)
+   *
+   * @see #directSupertypes()
+   *
+   * @see #supertypes()
+   *
+   * @see #computeSupertypes()
    */
-  public abstract Collection<? extends Type<T>> directSupertypes();
+  protected List<? extends Type<T>> computeDirectSupertypes() {
+    return List.of();
+  }
 
   /**
    * If this {@link Type} represents a parameterized type or a generic
@@ -275,14 +318,14 @@ public abstract class Type<T> implements Owner<T> {
    * @return a suitable {@link Type}; never {@code null}; often {@code
    * this}
    *
-   * @nullability Implementations of this method must not return
-   * {@code null}.
+   * @nullability Overrides of this method must not return {@code
+   * null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
-   * and deterministic.
+   * @idempotency Overrides of this method must be idempotent and
+   * deterministic.
    */
   @Override // Owner<T>
   public abstract Type<T> type();
@@ -294,13 +337,13 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @return the owner of this {@link Type}, or {@code null}
    *
-   * @nullability Implementations of this method must not return
+   * @nullability Overrides of this method must not return
    * {@code null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
+   * @idempotency Overrides of this method must be idempotent
    * and deterministic.
    */
   @Override // Owner<T>
@@ -329,7 +372,7 @@ public abstract class Type<T> implements Owner<T> {
    */
   @Experimental
   public abstract Type<T> withObject(final T object);
-  
+
   /**
    * Returns {@code true} if and only if this {@link Type} represents
    * a generic class by virtue of having type parameters.
@@ -399,13 +442,13 @@ public abstract class Type<T> implements Owner<T> {
    * unmodifiable <code>List</code>} of this {@link Type}'s type
    * parameters; never {@code null}
    *
-   * @nullability Implementations of this method must not return
+   * @nullability Overrides of this method must not return
    * {@code null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
+   * @idempotency Overrides of this method must be idempotent
    * and deterministic.
    */
   @Override // Owner<T>
@@ -427,13 +470,13 @@ public abstract class Type<T> implements Owner<T> {
    * unmodifiable <code>List</code>} of this {@link Type}'s type
    * parameters; never {@code null}
    *
-   * @nullability Implementations of this method must not return
+   * @nullability Overrides of this method must not return
    * {@code null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
+   * @idempotency Overrides of this method must be idempotent
    * and deterministic.
    */
   public abstract List<? extends Type<T>> typeArguments();
@@ -480,7 +523,7 @@ public abstract class Type<T> implements Owner<T> {
    * Returns the <em>component type</em> of this {@link Type}, if
    * there is one, <strong>or {@code null} if there is not</strong>.
    *
-   * <p>Implementations of this method must return a non-{@code null}
+   * <p>Overrides of this method must return a non-{@code null}
    * result only when this {@link Type} represents a type that is
    * either an array or a generic array type.</p>
    *
@@ -490,13 +533,13 @@ public abstract class Type<T> implements Owner<T> {
    * @return the <em>component type</em> of this {@link Type}, if
    * there is one, or {@code null} if there is not
    *
-   * @nullability Implementations of this method may return {@code
+   * @nullability Overrides of this method may return {@code
    * null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
+   * @idempotency Overrides of this method must be idempotent
    * and deterministic.
    */
   public abstract Type<T> componentType();
@@ -574,13 +617,13 @@ public abstract class Type<T> implements Owner<T> {
    * bounds; never {@code null}; often {@linkplain List#isEmpty()
    * empty}
    *
-   * @nullability Implementations of this method must not return
+   * @nullability Overrides of this method must not return
    * {@code null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
+   * @idempotency Overrides of this method must be idempotent
    * and deterministic.
    */
   public abstract List<? extends Type<T>> lowerBounds();
@@ -603,20 +646,20 @@ public abstract class Type<T> implements Owner<T> {
    * bounds; never {@code null}; often {@linkplain List#isEmpty()
    * empty}
    *
-   * @nullability Implementations of this method must not return
+   * @nullability Overrides of this method must not return
    * {@code null}.
    *
-   * @threadsafety Implementations of this method must be safe for
+   * @threadsafety Overrides of this method must be safe for
    * concurrent use by multiple threads.
    *
-   * @idempotency Implementations of this method must be idempotent
+   * @idempotency Overrides of this method must be idempotent
    * and deterministic.
    */
   public abstract List<? extends Type<T>> upperBounds();
 
   /**
    * Returns {@code true} if and only if this {@link Type} models a
-   * class.
+   * class or interface.
    *
    * <p>This method returns {@code true} if and only if {@link
    * #named()} returns {@code true} and {@link #upperBounded()}
@@ -639,12 +682,35 @@ public abstract class Type<T> implements Owner<T> {
   }
 
   /**
+   * Returns {@code true} if and only if this {@link Type} models an
+   * array type (which may be a {@linkplain #genericArrayType()
+   * generic array type}).
+   *
+   * <p>This method returns {@code true} if and only if {@link
+   * #componentType()} returns a non-{@code null} value.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} models an
+   * array type (which may be a {@linkplain #genericArrayType()
+   * generic array type})
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #componentType()
+   */
+  public final boolean arrayType() {
+    return this.componentType() != null;
+  }
+
+  /**
    * Returns {@code true} if and only if this {@link Type} models a
    * generic array type.
    *
    * <p>This method returns {@code true} if and only if {@link
-   * #componentType()} returns a non-{@code value} and {@link #type()}
-   * returns a {@link Type} that is not {@code this}.</p>
+   * #componentType()} returns a non-{@code null} value and {@link
+   * #type()} returns a {@link Type} that is not {@code this}.</p>
    *
    * @return {@code true} if and only if this {@link Type} models a
    * generic array type
@@ -660,6 +726,30 @@ public abstract class Type<T> implements Owner<T> {
    */
   public final boolean genericArrayType() {
     return this.componentType() != null && this.type() != this;
+  }
+
+  /**
+   * Returns {@code true} if and only if this {@link Type} models a
+   * non-generic array type.
+   *
+   * <p>This method returns {@code true} if and only if {@link
+   * #componentType()} returns a non-{@code null} value and {@link
+   * #type()} returns a {@link Type} that is {@code this}.</p>
+   *
+   * @return {@code true} if and only if this {@link Type} models a
+   * non-generic array type
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #componentType()
+   *
+   * @see #type()
+   */
+  public final boolean nonGenericArrayType() {
+    return this.componentType() != null && this.type() == this;
   }
 
   /**
@@ -734,26 +824,71 @@ public abstract class Type<T> implements Owner<T> {
   }
 
   /**
-   * Returns all the supertypes of this {@link Type} (which includes
-   * this {@link Type}).
+   * Returns all the supertypes of this {@link Type} (which normally
+   * includes this {@link Type}).
    *
-   * <p>This method reflexively and transitively applies the direct
-   * supertype relation (represented by the {@link
-   * #directSupertypes()} method) to this {@link Type} and returns an
-   * {@linkplain Collections#unmodifiableCollection(Collection)
-   * unmodifiable <code>Collection</code>} containing the result.</p>
-   *
-   * <p>Overrides which alter this algorithm may result in undefined
-   * behavior.  Typically overriding is necessary only to refine the
-   * return type of this method.  The concrete type of the elements
-   * within the returned {@link Collection} is entirely determined by
-   * the implementation of the {@link #directSupertypes()} method.</p>
+   * <p>This method returns a cached list of supertypes, or, if
+   * such a list does not yet exist, returns the result of
+   * invoking the {@link #computeSupertypes()} method.</p>
    *
    * @return an {@linkplain
-   * Collections#unmodifiableCollection(Collection) unmodifiable
-   * <code>Collection</code>} containing all the supertypes of this
-   * {@link Type} (which includes this {@link Type}); never {@code
-   * null}
+   * Collections#unmodifiableList(List) unmodifiable
+   * <code>List</code>} containing all the supertypes of this
+   * {@link Type} (which normally includes this {@link Type}); never
+   * {@code null}; never {@linkplain Collection#isEmpty() empty}
+   *
+   * @exception IllegalStateException if the return value of an
+   * invocation of {@link #computeSupertypes()} is {@linkplain
+   * Collection#isEmpty() empty}
+   *
+   * @nullability This method does not return {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #computeSupertypes()
+   */
+  public final List<? extends Type<T>> supertypes() {
+    List<? extends Type<T>> c = this.supertypes; // volatile read
+    if (c == null) {
+      c = List.copyOf(this.computeSupertypes());
+      if (c.isEmpty()) {
+        throw new IllegalStateException();
+      }
+      if (!SUPERTYPES.compareAndSet(this, null, c)) { // volatile write
+        return this.supertypes; // volatile read
+      }
+    }
+    return c;
+  }
+
+  /**
+   * Returns all the supertypes of this {@link Type} (which normally
+   * includes this {@link Type}).
+   *
+   * <p>The returned {@link List} must not be {@code null} and
+   * must not be {@linkplain Collection#isEmpty() empty}.  Undefined
+   * behavior will result if overrides do not adhere to this
+   * requirement.</p>
+   *
+   * <p>The order of elements within the {@link List} returned
+   * by any invocation of this method must be deterministic.
+   * Undefined behavior will result if overrides do not adhere to this
+   * requirement.</p>
+   *
+   * <p>The default implementation of this method reflexively and
+   * transitively applies the direct supertype relation (represented
+   * by the {@link #directSupertypes()} method) to this {@link Type}
+   * and returns an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>List</code>} containing the result.</p>
+   *
+   * @return an {@linkplain Collections#unmodifiableList(List)
+   * unmodifiable <code>Collection</code>} containing all the
+   * supertypes of this {@link Type} (which includes this {@link
+   * Type}); never {@code null}; never {@linkplain
+   * Collection#isEmpty() empty}
    *
    * @nullability This method does not, and its overrides must not,
    * return {@code null}.
@@ -764,33 +899,14 @@ public abstract class Type<T> implements Owner<T> {
    * @threadsafety This method is, and its overrides must be, safe for
    * concurrent use by multiple threads.
    *
+   * @see #supertypes()
+   *
    * @see #directSupertypes()
+   *
+   * @see #computeDirectSupertypes()
    */
-  public final Collection<? extends Type<T>> supertypes() {
-    return this.supertypes(this, null);
-  }
-
-  @SuppressWarnings("unchecked")
-  private final <X> Collection<? extends Type<X>> supertypes(final Type<X> type, Predicate<? super Type<?>> unseen) {
-    if (unseen == null || unseen.test(type)) {
-      final Collection<? extends Type<X>> directSupertypes = type.directSupertypes();
-      if (directSupertypes.isEmpty()) {
-        return List.of(type); // the supertype relation is reflexive as well as transitive
-      }
-      if (unseen == null) {
-        unseen = new HashSet<>(11)::add;
-      }
-      final ArrayList<Type<X>> supertypes = new ArrayList<>(3 * directSupertypes.size() + 1);
-      supertypes.add(type); // the supertype relation is reflexive as well as transitive
-      for (final Type<X> directSupertype : directSupertypes) {
-        for (final Type<X> supertype : this.supertypes(directSupertype, unseen)) { // RECURSIVE CALL
-          supertypes.add(supertype);
-        }
-      }
-      supertypes.trimToSize();
-      return Collections.unmodifiableList(supertypes);
-    }
-    return List.of();
+  protected List<? extends Type<T>> computeSupertypes() {
+    return computeSupertypesBreadthFirst(this);
   }
 
   /**
@@ -808,21 +924,55 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @exception NullPointerException if {@code sub} is {@code null}
    *
-   * @idempotency This method is, and its overrides must be,
-   * idempotent and deterministic.
+   * @idempotency This method is idempotent and deterministic.
    *
-   * @threadsafety This method is, and its overrides must be, safe for
-   * concurrent use by multiple threads.
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
    *
    * @see #supertypes()
    *
    * @see #represents(Owner)
    */
+  @Convenience
   public final boolean supertypeOf(final Type<?> sub) {
     // Does this represent a supertype of sub?  Remember that the
     // supertype relation is reflexive.
-    for (final Type<?> supertype : this.supertypes(sub, null)) {
+    for (final Type<?> supertype : sub.supertypes()) {
       if (supertype.represents(this)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} if and only if this {@link Type} is a
+   * subtype of the supplied {@link Type}.
+   *
+   * <p>This method uses a combination of the {@link #supertypes()}
+   * method and the {@link #represents(Owner)} method in its
+   * implementation.</p>
+   *
+   * @param sup the purported supertype; must not be {@code null}
+   *
+   * @return {@code true} if and only if this {@link Type} is a
+   * subtype of the supplied {@link Type}
+   *
+   * @exception NullPointerException if {@code sup} is {@code null}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #supertypes()
+   *
+   * @see #represents(Owner)
+   */
+  @Convenience
+  public final boolean subtypeOf(final Type<?> sup) {
+    for (final Type<?> supertype : this.supertypes()) {
+      if (sup.represents(supertype)) {
         return true;
       }
     }
@@ -834,7 +984,318 @@ public abstract class Type<T> implements Owner<T> {
    * Static methods.
    */
 
-  
+
+  /**
+   * Returns a hashcode for the supplied {@link Type}, independent of
+   * its particular implementation of the {@link Object#hashCode()}
+   * method.
+   *
+   * @param type the {@link Type}; may be {@code null}
+   *
+   * @return a hashcode for the supplied {@link Type}
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #equals(Type, Type)
+   */
+  public static final int hashCode(final Type<?> type) {
+    if (type == null) {
+      return 0;
+    }
+
+    int hashCode = 1;
+
+    final List<? extends Type<?>> typeArguments = type.typeArguments();
+    if (typeArguments == null || typeArguments.isEmpty()) {
+      hashCode = 31 * hashCode;
+    } else {
+      for (final Type<?> arg : typeArguments) {
+        hashCode = 31 * hashCode + hashCode(arg);
+      }
+    }
+
+    final Type<?> componentType = type.componentType();
+    hashCode = 31 * hashCode + (componentType == null ? 0 : hashCode(componentType));
+
+    final List<? extends Type<?>> lowerBounds = type.lowerBounds();
+    if (lowerBounds == null || lowerBounds.isEmpty()) {
+      hashCode = 31 * hashCode;
+    } else {
+      for (final Type<?> b : lowerBounds) {
+        hashCode = 31 * hashCode + hashCode(b);
+      }
+    }
+
+    final List<? extends Type<?>> upperBounds = type.upperBounds();
+    if (upperBounds == null || upperBounds.isEmpty()) {
+      hashCode = 31 * hashCode;
+    } else {
+      for (final Type<?> b : upperBounds) {
+        hashCode = 31 * hashCode + hashCode(b);
+      }
+    }
+
+    final String name = type.name();
+    if (name == null) {
+      if (typeArguments == null && componentType == null && lowerBounds == null && upperBounds == null) {
+        // Just a supertype container
+        final List<? extends Type<?>> supertypes = type.supertypes();
+        if (supertypes == null) {
+          hashCode = 31 * hashCode;
+        } else {
+          for (final Type<?> supertype : supertypes) {
+            hashCode = 31 * hashCode + hashCode(supertype);
+          }
+        }
+      } else {
+        hashCode = 31 * hashCode;
+      }
+    } else {
+      hashCode = 31 * hashCode + name.hashCode();
+    }
+
+    final Type<?> typeType = type.type();
+    if (typeType != type) {
+      hashCode = 31 * hashCode + (typeType == null ? 0 : hashCode(typeType));
+    }
+
+    final Owner<?> owner = type.owner();
+    if (owner == null) {
+      hashCode = 31 * hashCode;
+    } else if (owner instanceof Type<?> ownerType) {
+      hashCode = 31 * hashCode + hashCode(ownerType);
+    } else {
+      for (final Type<?> p : owner.parameters()) {
+        hashCode = 31 * hashCode + hashCode(p);
+      }
+      hashCode = 31 * hashCode + hashCode(owner.type()); // return type
+      hashCode = 31 * hashCode + hashCode((Type<?>)owner.owner()); // declaring class
+    }
+
+    return hashCode;
+  }
+
+  /**
+   * Returns {@code true} if and only if the two supplied {@link
+   * Type}s are equal, based solely upon the properties publicly
+   * exposed by the {@link Type} abstract class.
+   *
+   * @param t1 the first {@link Type}; may be {@code null}
+   *
+   * @param t2 the second {@link Type}; may be {@code null}
+   *
+   * @return {@code true} if and only if the two supplied {@link
+   * Type}s are equal, based solely upon the properties publicly
+   * exposed by the {@link Type} abstract class
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #hashCode(Type)
+   */
+  @Experimental
+  public static final boolean equals(final Type<?> t1, final Type<?> t2) {
+    if (t1 == t2) {
+      return true;
+    } else if (t1 == null || t2 == null) {
+      return false;
+    } else if (Objects.equals(t1.object(), t2.object())) {
+      return true;
+    }
+
+    if (t1.hasTypeArguments()) {
+      if (!t2.hasTypeArguments()) {
+        return false;
+      }
+      return parameterizedTypeEqualsParameterizedType(t1, t2);
+    } else if (t2.hasTypeArguments()) {
+      return false;
+    }
+
+    final Type<?> t1ComponentType = t1.componentType();
+    final Type<?> t2ComponentType = t2.componentType();
+    if (t1ComponentType == null) {
+      if (t2ComponentType != null) {
+        return false;
+      } else if (t1.lowerBounded()) {
+        return lowerBoundedWildcardTypeEqualsType(t1, t2);
+      } else if (t2.lowerBounded()) {
+        return false;
+      } else if (t1.upperBounded()) {
+        return upperBoundedTypeEqualsType(t1, t2);
+      } else if (t2.upperBounded()) {
+        return false;
+      }
+
+      // Not parameterized type.
+      // Not array type.
+      // Not generic array type.
+      // Not type variable.
+      // Not wildcard.
+      final String t1Name = t1.name();
+      final String t2Name = t2.name();
+      if (t1Name == null) {
+        // The only way this can happen is if t1 is actually just a
+        // placeholder for its supertypes.
+        if (t2Name != null) {
+          return false;
+        }
+        final List<? extends Type<?>> t1Supertypes = t1.supertypes();
+        final List<? extends Type<?>> t2Supertypes = t2.supertypes();
+        final int size = t1Supertypes.size();
+        if (t2Supertypes.size() != size) {
+          return false;
+        }
+        for (int i = 0; i < size; i++) {
+          final Type<?> t1Supertype = t1Supertypes.get(i);
+          if (t1Supertype != t1 && t1Supertype != t2) {
+            final Type<?> t2Supertype = t2Supertypes.get(i);
+            if (t2Supertype != t1 && t2Supertype != t2 && !equals(t1Supertypes.get(i), t2Supertypes.get(i))) {
+              return false;
+            }
+          }
+        }
+        return true;
+      } else if (!t1Name.equals(t2Name)) {
+        return false;
+      } else {
+        return equals((Type<?>)t1.owner(), (Type<?>)t2.owner());
+      }
+    } else if (!equals(t1ComponentType, t2ComponentType)) {
+      return false;
+    }
+
+    // Non-null component types are equal; these are arrays
+    final Type<?> t1Type = t1.type();
+    final Type<?> t2Type = t2.type();
+    if (t1Type == t1) {
+      return t2Type == t2;
+    } else if (t2Type == t2) {
+      return false;
+    }
+    // Generic array types.
+    return equals(t1Type, t2Type);
+  }
+
+  private static final boolean parameterizedTypeEqualsParameterizedType(final Type<?> t1, final Type<?> t2) {
+    assert t1 != t2;
+    assert t1.hasTypeArguments();
+    assert t2.hasTypeArguments();
+
+    final List<? extends Type<?>> t1Args = t1.typeArguments();
+    final List<? extends Type<?>> t2Args = t2.typeArguments();
+    int size = t1Args.size();
+    if (t2Args.size() != size) {
+      return false;
+    }
+    for (int i = 0; i < size; i++) {
+      if (!equals(t1Args.get(i), t2Args.get(i))) {
+        return false;
+      }
+    }
+    assert t1.type() != t1;
+    assert t2.type() != t2;
+    return equals(t1.type(), t2.type());
+  }
+
+  private static final boolean lowerBoundedWildcardTypeEqualsType(final Type<?> t1, final Type<?> t2) {
+    assert t1 != t2;
+    assert t1.lowerBounded();
+
+    final List<? extends Type<?>> t1LowerBounds = t1.lowerBounds();
+    final List<? extends Type<?>> t2LowerBounds = t2.lowerBounds();
+    final int size = t1LowerBounds.size();
+    if (t2LowerBounds.size() != size) {
+      return false;
+    }
+    for (int i = 0; i < size; i++) {
+      if (!equals(t1LowerBounds.get(i), t2LowerBounds.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static final boolean upperBoundedTypeEqualsType(final Type<?> t1, final Type<?> t2) {
+    assert t1 != t2;
+    assert t1.upperBounded();
+
+    if (!t2.upperBounded()) {
+      return false;
+    }
+
+    final String t1Name = t1.name();
+    if (!Objects.equals(t1Name, t2.name())) {
+      return false;
+    }
+
+    final List<? extends Type<?>> t1UpperBounds = t1.upperBounds();
+    final List<? extends Type<?>> t2UpperBounds = t2.upperBounds();
+    final int size = t1UpperBounds.size();
+    if (t2UpperBounds.size() != size) {
+      return false;
+    }
+    for (int i = 0; i < size; i++) {
+      if (!equals(t1UpperBounds.get(i), t2UpperBounds.get(i))) {
+        return false;
+      }
+    }
+
+    if (t1Name != null) {
+      // Two identically-named but not identical type variables.
+      final Owner<?> t1Owner = t1.owner();
+      final Owner<?> t2Owner = t2.owner();
+      if (t1Owner == null || t2Owner == null) {
+        // Type variables have to be declared by *some* owner, whether
+        // it be a class or an executable.
+        throw new IllegalArgumentException();
+      } else if (t1Owner instanceof Type<?> t1OwnerType) {
+        return t2Owner instanceof Type<?> t2OwnerType && equals(t1OwnerType, t2OwnerType);
+      } else {
+        return executableEqualsExecutable(t1Owner, t2Owner);
+      }
+    }
+
+    // Two upper bounded (nameless) wildcards with the same bounds;
+    // they're equal.
+    return true;
+  }
+
+  private static final boolean executableEqualsExecutable(final Owner<?> o1, final Owner<?> o2) {
+    assert o1 != o2;
+    assert o1.hasTypeParameters();
+    assert o2.hasTypeParameters();
+    assert o1.named();
+    assert o2.named();
+    assert o1.hasParameters();
+    assert o2.hasParameters();
+    assert !(o1 instanceof Type);
+    assert !(o2 instanceof Type);
+
+    if (!Objects.equals(o1.name(), o2.name())) {
+      return false;
+    }
+    final List<? extends Type<?>> o1Parameters = o1.parameters();
+    final List<? extends Type<?>> o2Parameters = o2.parameters();
+    final int size = o1Parameters.size();
+    if (o2Parameters.size() != size) {
+      return false;
+    }
+    for (int i = 0; i < size; i++) {
+      if (!equals(o1Parameters.get(i), o2Parameters.get(i))) {
+        return false;
+      }
+    }
+    return
+      !equals(o1.type(), o2.type()) ||
+      !equals((Type<?>)o1.owner(), (Type<?>)o2.owner());
+  }
+
   /**
    * A utility method that maps the supplied {@link Collection} into
    * an unmodifiable {@link List} using the supplied mapping
@@ -858,7 +1319,7 @@ public abstract class Type<T> implements Owner<T> {
    * threads.  It does not synchronize on the supplied {@link
    * Collection} when iterating over it.
    */
-  public static <T, U> List<U> map(final Collection<? extends T> c, final Function<? super T, ? extends U> f) {
+  static final <T, U> List<U> map(final Collection<? extends T> c, final Function<? super T, ? extends U> f) {
     if (c == null || c.isEmpty()) {
       return List.of();
     }
@@ -952,7 +1413,7 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @param f the mapping {@link Function}
    *
-   * @return an unmodifiable mapped {@link Collection}
+   * @return an unmodifiable mapped {@link List}
    *
    * @nullability This method never returns {@code null}.
    *
@@ -962,7 +1423,7 @@ public abstract class Type<T> implements Owner<T> {
    * threads.  It does not synchronize on the supplied array when
    * accessing its elements.
    */
-  public static <T, U> List<U> map(final T[] c, final Function<? super T, ? extends U> f) {
+  static final <T, U> List<U> map(final T[] c, final Function<? super T, ? extends U> f) {
     if (c == null) {
       return List.of();
     }
@@ -1041,6 +1502,19 @@ public abstract class Type<T> implements Owner<T> {
       }
       return Collections.unmodifiableList(rv);
     }
+  }
+
+  private static final <X> List<? extends Type<X>> computeSupertypesBreadthFirst(final Type<X> type) {
+    final ArrayList<Type<X>> supertypes = new ArrayList<>(16);
+    final Queue<Type<X>> q = new ArrayDeque<>(8);
+    q.add(type);
+    while (!q.isEmpty()) {
+      final Type<X> head = q.remove();
+      supertypes.add(head);
+      q.addAll(head.directSupertypes());
+    }
+    supertypes.trimToSize();
+    return Collections.unmodifiableList(supertypes);
   }
 
 
@@ -1280,8 +1754,9 @@ public abstract class Type<T> implements Owner<T> {
      * receiverType}; often a {@link java.lang.reflect.Type
      * java.lang.reflect.Type}
      *
-     * @param <Y> the kind of type modeled by the {@code payloadType};
-     * often a {@link java.lang.reflect.Type java.lang.reflect.Type}
+     * @param <Y> the kind of type modeled by a {@code payloadTypes}
+     * element; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
      *
      * @param receiverType the receiver type as described above; must
      * not be {@code null}
@@ -1306,9 +1781,136 @@ public abstract class Type<T> implements Owner<T> {
      * for concurrent use by multiple threads.
      */
     @Convenience
-    public final <X, Y> boolean anyAssignable(final Type<X> receiverType, final Collection<? extends Type<Y>> payloadTypes) {
+    public final <X, Y> boolean anyAssignable(final Type<X> receiverType,
+                                              final Collection<? extends Type<Y>> payloadTypes) {
       for (final Type<Y> payloadType : payloadTypes) {
         if (this.assignable(receiverType, payloadType)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Returns {@code true} if and only if a {@link JavaType}
+     * representation of a {@link java.lang.reflect.Type} contained in
+     * the supplied {@code candidateRepresenterTypes} {@linkplain
+     * #represents(Owner) represents} a {@link JavaType}
+     * representation of the supplied supplied {@code
+     * representedType}.
+     *
+     * @param representedType a {@link java.lang.reflect.Type}; must
+     * not be {@code null}
+     *
+     * @param candidateRepresenterTypes a {@link Collection} of {@link
+     * java.lang.reflect.Type}s; must not be {@code null}
+     *
+     * @return {@code true} if and only if a {@link JavaType}
+     * representation of a {@link java.lang.reflect.Type} contained in
+     * the supplied {@code candidateRepresenterTypes} {@linkplain
+     * #represents(Owner) represents} a {@link JavaType}
+     * representation of the supplied supplied {@code
+     * representedType}; {@code false} in all other cases
+     *
+     * @exception NullPointerException if any argument is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #anyRepresents(java.lang.reflect.Type, Collection,
+     * boolean)
+     */
+    public final boolean anyRepresents(final java.lang.reflect.Type representedType,
+                                       final Collection<? extends java.lang.reflect.Type> candidateRepresenterTypes) {
+      return this.anyRepresents(representedType, candidateRepresenterTypes, false);
+    }
+
+    /**
+     * Returns {@code true} if and only if a {@link JavaType}
+     * representation of a {@link java.lang.reflect.Type} contained in
+     * the supplied {@code candidateRepresenterTypes} {@linkplain
+     * #represents(Owner) represents} a {@link JavaType}
+     * representation of the supplied supplied {@code
+     * representedType}.
+     *
+     * @param representedType a {@link java.lang.reflect.Type}; must
+     * not be {@code null}
+     *
+     * @param candidateRepresenterTypes a {@link Collection} of {@link
+     * java.lang.reflect.Type}s; must not be {@code null}
+     *
+     * @param box whether boxing is enabled
+     *
+     * @return {@code true} if and only if a {@link JavaType}
+     * representation of a {@link java.lang.reflect.Type} contained in
+     * the supplied {@code candidateRepresenterTypes} {@linkplain
+     * #represents(Owner) represents} a {@link JavaType}
+     * representation of the supplied supplied {@code
+     * representedType}; {@code false} in all other cases
+     *
+     * @exception NullPointerException if any argument is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see JavaType#represents(Owner)
+     */
+    public final boolean anyRepresents(final java.lang.reflect.Type representedType,
+                                       final Collection<? extends java.lang.reflect.Type> candidateRepresenterTypes,
+                                       final boolean box) {
+      final JavaType representedJavaType = JavaType.of(representedType, box);
+      for (final java.lang.reflect.Type candidateRepresenterType : candidateRepresenterTypes) {
+        if (JavaType.of(candidateRepresenterType, box).represents(representedJavaType)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /**
+     * Returns {@code true} if and only if a {@link Type} contained in
+     * the supplied {@code candidateRepresenterTypes} {@linkplain
+     * #represents(Owner) represents} the supplied {@code
+     * representedType}.
+     *
+     * @param <X> the kind of type modeled by the {@code
+     * representedType}; often a {@link java.lang.reflect.Type
+     * java.lang.reflect.Type}
+     *
+     * @param <Y> the kind of type modeled by a {@code
+     * candidateRepresenterTypes} element; often a {@link
+     * java.lang.reflect.Type java.lang.reflect.Type}
+     *
+     * @param representedType a {@link Type}; must not be {@code null}
+     *
+     * @param candidateRepresenterTypes a {@link Collection} of {@link
+     * Type}s; must not be {@code null}
+     *
+     * @return {@code true} if and only if a {@link Type} contained in
+     * the supplied {@code candidateRepresenterTypes} {@linkplain
+     * #represents(Owner) represents} the supplied {@code
+     * representedType}; {@code false} in all other cases
+     *
+     * @exception NullPointerException if any argument is {@code null}
+     *
+     * @idempotency This method is, and its overrides must be,
+     * idempotent and deterministic.
+     *
+     * @threadsafety This method is, and its overrides must be, safe
+     * for concurrent use by multiple threads.
+     *
+     * @see #represents(Owner)
+     */
+    public final <X, Y> boolean anyRepresents(final Type<X> representedType,
+                                              final Collection<? extends Type<Y>> candidateRepresenterTypes) {
+      for (final Type<Y> candidateRepresenterType : candidateRepresenterTypes) {
+        if (candidateRepresenterType.represents(representedType)) {
           return true;
         }
       }
@@ -3198,12 +3800,12 @@ public abstract class Type<T> implements Owner<T> {
       if (receiverClass.represents(payloadParameterizedType.type())) {
         for (final Type<Y> payloadTypeTypeArgument : payloadParameterizedType.typeArguments()) {
           if (payloadTypeTypeArgument.top()) {
-            // OK
+            // OK; it's Object.class or similar
           } else if (payloadTypeTypeArgument.typeVariable()) {
             final List<? extends Type<Y>> bounds = payloadTypeTypeArgument.upperBounds();
             switch (bounds.size()) {
             case 0:
-              // OK
+              // OK; it's effectively "extends Object"
               break;
             case 1:
               if (!bounds.get(0).top()) {

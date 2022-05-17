@@ -178,7 +178,7 @@ public interface Owner<T> {
   @OverridingEncouraged
   public default boolean hasParameters() {
     final Collection<?> p = this.parameters();
-    return p != null && !p.isEmpty();
+    return p != null;
   }
 
   /**
@@ -233,8 +233,7 @@ public interface Owner<T> {
    */
   @OverridingEncouraged
   public default boolean hasTypeParameters() {
-    final Collection<?> tps = this.typeParameters();
-    return tps != null && !tps.isEmpty();
+    return !this.typeParameters().isEmpty();
   }
 
   /**
@@ -275,12 +274,11 @@ public interface Owner<T> {
    * exactly, but may not be {@linkplain Object#equals(Object) equal to}
    * it.</p>
    *
-   * <p>Equality is <em>subordinate</em> to type representation.  That
-   * is, in determining whether a given {@link Owner} represents
-   * another {@link Owner}, their {@link Object#equals(Object)
-   * equals(Object)} methods may be called, but an {@link Owner}'s
-   * {@link Object#equals(Object) equals(Object)} method must not call
-   * {@link #represents(Owner)}.</p>
+   * <p>Overrides of this method may call {@link #equals(Object)}, but
+   * it is not recommended.</p>
+   *
+   * <p>Overrides of {@link #equals(Object)} must not call this
+   * method.</p>
    *
    * @param other the {@link Owner} to test; may be {@code null} in
    * which case {@code false} will be returned
@@ -293,19 +291,47 @@ public interface Owner<T> {
    *
    * @threadsafety Implementations of this method must be safe for
    * concurrent use by multiple threads.
+   *
+   * @see #object()
+   *
+   * @see #objectEquals(Object)
+   *
+   * @see #equals(Object)
    */
   @OverridingEncouraged
   public default boolean represents(final Owner<?> other) {
-    return this == other || other != null && this.objectEquals(other.object());
+    if (this == other) {
+      return true;
+    } else if (other != null) {
+      final Object otherObject = other.object();
+      return otherObject != null && this.objectEquals(otherObject);
+    } else {
+      return false;
+    }
   }
+
+  /**
+   * Returns {@code true} if this {@link Owner} implementation is
+   * equal to the supplied {@link Object}.
+   *
+   * <p><strong>Overrides of this method must not call {@link
+   * #represents(Owner)}.</strong></p>
+   *
+   * @param other the {@link Object} to test; may be {@code null} in
+   * which case {@code false} will be returned
+   *
+   * @return {@code true} if this {@link Owner} implementation is
+   * equal to the supplied {@link Object}
+   */
+  @Override // Object
+  public boolean equals(final Object other);
 
   /**
    * Returns {@code true} if and only if the supplied {@link Object}
    * is equal in some way to this {@link Owner}'s {@linkplain
    * #object() object}.
    *
-   * @param other the object to test; may be {@code null} in which
-   * case {@code false} will be returned
+   * @param other the object to test; may be {@code null}
    *
    * @return {@code true} if and only if the supplied {@link Object}
    * is equal in some way to this {@link Owner}'s {@linkplain
