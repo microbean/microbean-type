@@ -16,6 +16,13 @@
  */
 package org.microbean.type;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DynamicConstantDesc;
+import java.lang.constant.MethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.VarHandle;
@@ -37,11 +44,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import java.util.function.Function;
 
+import org.microbean.constant.Constables;
+
 import org.microbean.development.annotation.Convenience;
 import org.microbean.development.annotation.Experimental;
+
+import static java.lang.constant.ConstantDescs.BSM_INVOKE;
+import static java.lang.constant.ConstantDescs.CD_boolean;
+import static java.lang.constant.ConstantDescs.CD_List;
+import static java.lang.constant.ConstantDescs.FALSE;
+import static java.lang.constant.ConstantDescs.TRUE;
+
+import static java.lang.constant.DirectMethodHandleDesc.Kind.STATIC;
+
+import static org.microbean.type.ConstantDescs.CD_JavaType;
+import static org.microbean.type.ConstantDescs.CD_Type;
 
 /**
  * A {@link org.microbean.type.Type} that models a {@link
@@ -54,7 +75,7 @@ import org.microbean.development.annotation.Experimental;
  * @see org.microbean.type.Type.Semantics
  */
 @Experimental
-public class JavaType extends org.microbean.type.Type<Type> {
+public class JavaType extends org.microbean.type.Type<Type> implements Constable {
 
 
   /*
@@ -160,7 +181,9 @@ public class JavaType extends org.microbean.type.Type<Type> {
   @Override // org.microbean.type.Type<Type>
   public final String name() {
     final Object type = this.object();
-    if (type instanceof Class<?> c) {
+    if (type == null) {
+      return null;
+    } else if (type instanceof Class<?> c) {
       return c.getName();
     } else if (type instanceof TypeVariable<?> tv) {
       return tv.getName();
@@ -420,10 +443,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   @Override // org.microbean.type.Type<Type>
   public final List<? extends JavaType> typeArguments() {
-    if (this.object() instanceof ParameterizedType p) {
-      return map(p.getActualTypeArguments(), this::withObject);
-    }
-    return List.of();
+    return this.object() instanceof ParameterizedType p ? map(p.getActualTypeArguments(), this::withObject) : List.of();
   }
 
   /**
@@ -449,10 +469,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   @Override // org.microbean.type.Type<Type>
   public final List<? extends JavaType> typeParameters() {
-    if (this.object() instanceof Class<?> c) {
-      return map(c.getTypeParameters(), this::withObject);
-    }
-    return List.of();
+    return this.object() instanceof Class<?> c ? map(c.getTypeParameters(), this::withObject) : List.of();
   }
 
   /**
@@ -578,10 +595,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    */
   @Override // org.microbean.type.Type<Type>
   public final List<? extends JavaType> lowerBounds() {
-    if (this.object() instanceof WildcardType w) {
-      return map(w.getLowerBounds(), this::withObject);
-    }
-    return List.of();
+    return this.object() instanceof WildcardType w ? map(w.getLowerBounds(), this::withObject) : List.of();
   }
 
   /**
@@ -625,7 +639,42 @@ public class JavaType extends org.microbean.type.Type<Type> {
 
   @Override // Owner<Type>
   public final boolean objectEquals(final Object other) {
-    return this.object() == other || other instanceof Type && JavaTypes.equals(this.object(), this.box ? JavaTypes.box((Type)other) : (Type)other);
+    return
+      this.object() == other ||
+      other instanceof Type && JavaTypes.equals(this.object(), this.box ? JavaTypes.box((Type)other) : (Type)other);
+  }
+
+  @Override // Constable
+  public final Optional<? extends ConstantDesc> describeConstable() {
+    final ConstantDesc boxCd = this.box ? TRUE : FALSE;
+    if (this.customSupertyped()) {
+      final ConstantDesc supertypesCd = Constables.describeConstable(this.supertypes()).orElse(null);
+      if (supertypesCd != null) {
+        return
+          Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
+                                             MethodHandleDesc.ofMethod(STATIC,
+                                                                       CD_JavaType,
+                                                                       "ofExactly",
+                                                                       MethodTypeDesc.of(CD_JavaType, CD_boolean, CD_List)),
+                                             boxCd,
+                                             supertypesCd));
+      }
+    } else {
+      final Type object = this.object();
+      if (object != null) {
+        final ConstantDesc objectCd = JavaTypes.describeConstable(object).orElse(null);
+        if (objectCd != null) {
+          return
+            Optional.of(DynamicConstantDesc.of(BSM_INVOKE,
+                                               MethodHandleDesc.ofMethod(STATIC,
+                                                                         CD_JavaType,
+                                                                         "of",
+                                                                         MethodTypeDesc.of(CD_JavaType, CD_Type)),
+                                               objectCd));
+        }
+      }
+    }
+    return Optional.empty();
   }
 
 
@@ -823,6 +872,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    */
+  // This method is used by describeConstable().
   public static final JavaType of(final boolean box, final Type type) {
     return new JavaType(box, type);
   }
@@ -954,6 +1004,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
    *
    * @see #of(boolean, org.microbean.type.Type)
    */
+  // This method is used by describeConstable().
   public static final JavaType ofExactly(final boolean box, final List<?> supertypes) {
     return new JavaType(box, supertypes);
   }
@@ -1017,7 +1068,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   public static final JavaType ofExactly(final Token<?> type) {
     return ofExactly(false, List.of(type.type()));
   }
-  
+
   /**
    * Returns a {@linkplain #customSupertyped() custom supertyped}
    * {@link JavaType} suitable for the supplied arguments.
@@ -1110,7 +1161,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   public static final JavaType ofExactly(final Object... supertypes) {
     return ofExactly(false, List.of(supertypes));
   }
-  
+
   /**
    * Returns a {@linkplain #customSupertyped() custom supertyped}
    * {@link JavaType} suitable for the supplied arguments.
@@ -1141,7 +1192,7 @@ public class JavaType extends org.microbean.type.Type<Type> {
   public static final JavaType ofExactly(final boolean box, final Object... supertypes) {
     return ofExactly(box, List.of(supertypes));
   }
-  
+
   /**
    * Returns a boxed version of the supplied {@link
    * org.microbean.type.Type}, if appropriate.

@@ -703,7 +703,7 @@ public abstract class Type<T> implements Owner<T> {
       !this.lowerBounded() &&
       !this.upperBounded();
   }
-  
+
   /**
    * Returns {@code true} if and only if this {@link Type} models a
    * class or interface.
@@ -1057,12 +1057,12 @@ public abstract class Type<T> implements Owner<T> {
     }
     return candidate;
   }
-  
+
   @Override // Object
   public int hashCode() {
     return hashCode(this);
   }
-  
+
   @Override // Owner
   public boolean equals(final Object other) {
     if (other == this) {
