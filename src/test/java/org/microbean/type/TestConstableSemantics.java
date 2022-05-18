@@ -61,6 +61,18 @@ final class TestConstableSemantics {
   }
 
   @Test
+  final void testConstableJavaType() throws ReflectiveOperationException {
+    JavaType jt1 = JavaType.ofExactly(Number.class);
+    JavaType jt2 = (JavaType)jt1.describeConstable().orElseThrow().resolveConstantDesc(MethodHandles.publicLookup().in(JavaType.class));
+    assertNotSame(jt1, jt2);
+    assertEquals(jt1, jt2);
+    jt1 = JavaType.of(Number.class);
+    jt2 =  (JavaType)jt1.describeConstable().orElseThrow().resolveConstantDesc(MethodHandles.publicLookup().in(JavaType.class));
+    assertNotSame(jt1, jt2);
+    assertEquals(jt1, jt2);
+  }
+
+  @Test
   final void testConstableParameterizedType() throws ReflectiveOperationException {
     final ParameterizedType p0 = (ParameterizedType)new Token<List<String>>() {}.type();
     assertNotNull(p0);

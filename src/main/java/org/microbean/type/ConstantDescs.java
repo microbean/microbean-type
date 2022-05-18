@@ -42,6 +42,14 @@ public final class ConstantDescs {
 
 
   /**
+   * A {@link ClassDesc} representing {@link JavaType
+   * org.microbean.type.JavaType}.
+   *
+   * @nullability This field is never {@code null}.
+   */
+  public static final ClassDesc CD_JavaType = ClassDesc.of("org.microbean.type.JavaType");
+
+  /**
    * A {@link ClassDesc} representing {@link java.lang.reflect.Type
    * java.lang.reflect.Type}.
    *
@@ -81,7 +89,7 @@ public final class ConstantDescs {
    * @nullability This field is never {@code null}.
    */
   public static final ClassDesc CD_GenericArrayType = ClassDesc.of("java.lang.reflect.GenericArrayType");
-  
+
   /**
    * A {@link ClassDesc} representing {@link
    * java.lang.reflect.GenericDeclaration
@@ -124,7 +132,7 @@ public final class ConstantDescs {
    */
   public static final ClassDesc CD_ParameterizedType = ClassDesc.of("java.lang.reflect.ParameterizedType");
 
-  
+
   /**
    * A {@link ClassDesc} representing {@link
    * java.lang.reflect.TypeVariable java.lang.reflect.TypeVariable}.
