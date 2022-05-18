@@ -25,7 +25,6 @@ module org.microbean.type {
 
   requires org.microbean.constant;
   requires transitive org.microbean.development.annotation;
-  requires org.microbean.invoke;
 
   exports org.microbean.type;
 
