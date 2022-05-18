@@ -884,10 +884,6 @@ public abstract class Type<T> implements Owner<T> {
    * {@link Type} (which normally includes this {@link Type}); never
    * {@code null}; never {@linkplain Collection#isEmpty() empty}
    *
-   * @exception IllegalStateException if the return value of an
-   * invocation of {@link #computeSupertypes()} is {@linkplain
-   * Collection#isEmpty() empty}
-   *
    * @nullability This method does not return {@code null}.
    *
    * @idempotency This method is idempotent and deterministic.
@@ -901,9 +897,6 @@ public abstract class Type<T> implements Owner<T> {
     List<? extends Type<T>> c = this.supertypes; // volatile read
     if (c == null) {
       c = List.copyOf(this.computeSupertypes());
-      if (c.isEmpty()) {
-        throw new IllegalStateException();
-      }
       if (!SUPERTYPES.compareAndSet(this, null, c)) { // volatile write
         return this.supertypes; // volatile read
       }
@@ -1026,6 +1019,45 @@ public abstract class Type<T> implements Owner<T> {
     return false;
   }
 
+  /**
+   * Returns a {@link Type}, selected from this {@link Type}'s
+   * {@linkplain #supertypes() supertypes}, that is the most
+   * specialized of those {@linkplain #supertypes() supertypes} and
+   * that passes the test represented by the supplied {@link
+   * Predicate}.
+   *
+   * <p>Often this method will return this {@link Type} itself, since
+   * normally the set of supertypes of a type include the type
+   * itself.</p>
+   *
+   * @param p the {@link Predicate} imposing additional restructions;
+   * must not be {@code null}
+   *
+   * @return the most specialized {@link Type} meeting the conditions
+   * above; often this {@link Type} itself
+   *
+   * @nullability This method may return {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic provided
+   * that the supplied {@link Predicate} is deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see #supertypes()
+   *
+   * @see #customSupertyped()
+   */
+  public final Type<T> mostSpecialized(final Predicate<? super Type<T>> p) {
+    Type<T> candidate = null;
+    for (final Type<T> supertype : this.supertypes()) {
+      if (supertype != candidate && p.test(supertype) && candidate == null || candidate.supertypeOf(supertype)) {
+        candidate = supertype;
+      }
+    }
+    return candidate;
+  }
+  
   @Override // Object
   public int hashCode() {
     return hashCode(this);
@@ -1649,7 +1681,7 @@ public abstract class Type<T> implements Owner<T> {
      * this {@link Semantics} instance, and using no autoboxing.
      *
      * <p>This is a convenience method that {@linkplain
-     * JavaType#of(java.lang.reflect.Type, boolean) creates
+     * JavaType#of(boolean, java.lang.reflect.Type) creates
      * <code>JavaType</code>s} to represent the supplied {@link
      * java.lang.reflect.Type}s before calling the (canonical) {@link
      * #assignable(Type, Type)} method.</p>
@@ -1678,7 +1710,7 @@ public abstract class Type<T> implements Owner<T> {
      *
      * @see #assignable(Type, Type)
      *
-     * @see JavaType#of(java.lang.reflect.Type, boolean)
+     * @see JavaType#of(boolean, java.lang.reflect.Type)
      */
     @Convenience
     public boolean assignable(final java.lang.reflect.Type receiverType,
@@ -1695,7 +1727,7 @@ public abstract class Type<T> implements Owner<T> {
      * autoboxing semantics.
      *
      * <p>This is a convenience method that {@linkplain
-     * JavaType#of(java.lang.reflect.Type, boolean) creates
+     * JavaType#of(boolean, java.lang.reflect.Type) creates
      * <code>JavaType</code>s} to represent the supplied {@link
      * java.lang.reflect.Type}s before calling the (canonical) {@link
      * #assignable(Type, Type)} method.</p>
@@ -1726,13 +1758,13 @@ public abstract class Type<T> implements Owner<T> {
      *
      * @see #assignable(Type, Type)
      *
-     * @see JavaType#of(java.lang.reflect.Type, boolean)
+     * @see JavaType#of(boolean, java.lang.reflect.Type)
      */
     @Convenience
     public boolean assignable(final java.lang.reflect.Type receiverType,
                               final java.lang.reflect.Type payloadType,
                               final boolean box) {
-      return this.assignable(JavaType.of(receiverType, box), JavaType.of(payloadType, box));
+      return this.assignable(JavaType.of(box, receiverType), JavaType.of(box, payloadType));
     }
 
     /**
@@ -1810,9 +1842,9 @@ public abstract class Type<T> implements Owner<T> {
     public final boolean anyAssignable(final java.lang.reflect.Type receiverType,
                                        final Collection<? extends java.lang.reflect.Type> payloadTypes,
                                        final boolean box) {
-      final JavaType receiverJavaType = JavaType.of(receiverType, box);
+      final JavaType receiverJavaType = JavaType.of(box, receiverType);
       for (final java.lang.reflect.Type payloadType : payloadTypes) {
-        if (this.assignable(receiverJavaType, JavaType.of(payloadType, box))) {
+        if (this.assignable(receiverJavaType, JavaType.of(box, payloadType))) {
           return true;
         }
       }
@@ -3741,7 +3773,7 @@ public abstract class Type<T> implements Owner<T> {
                                     final java.lang.reflect.Type payloadType,
                                     final boolean ignoredBox) {
       // Boxing is always required in CDI.
-      return this.assignable(JavaType.of(receiverType, true), JavaType.of(payloadType, true));
+      return this.assignable(JavaType.of(true, receiverType), JavaType.of(true, payloadType));
     }
 
     @Override

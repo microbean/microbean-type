@@ -49,13 +49,28 @@ import static java.util.Spliterator.SIZED;
 import static java.util.Spliterator.SUBSIZED;
 
 /**
- * An immutable {@link AbstractSet} of {@link Type}s that ensures that
- * {@link Type} implementations from different vendors use the same
- * equality semantics.
+ * An immutable {@link AbstractSet} of {@link Type
+ * java.lang.reflect.Type}s that ensures that {@link Type
+ * java.lang.reflect.Type} implementations from different vendors use
+ * the same equality semantics.
+ *
+ * <p><strong>This is not a set of {@link JavaType}
+ * instances.</strong> See the {@link #javaTypeList()} and {@link
+ * #javaTypeSet()} methods.</p>
  *
  * @author <a href="https://about.me/lairdnelson"
  * target="_parent">Laird Nelson</a>
+ *
+ * @see #javaTypeList()
+ *
+ * @see #javaTypeSet()
+ *
+ * @deprecated Now that {@link org.microbean.type.Type} instances can
+ * {@linkplain org.microbean.type.Type#equals(org.microbean.type.Type,
+ * org.microbean.type.Type) can be compared for equality}, there is
+ * not much call for this class.
  */
+@Deprecated
 public final class JavaTypeSet extends AbstractSet<Type> {
 
 
@@ -86,7 +101,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    */
 
 
-  private final Set<? extends JavaType> set;
+  private final Set<JavaType> set;
 
   private volatile Type mostSpecializedNonInterfaceType;
 
@@ -115,9 +130,11 @@ public final class JavaTypeSet extends AbstractSet<Type> {
   private JavaTypeSet(final Collection<?> types) {
     super();
     final int size = types == null || types.isEmpty() ? 0 : types.size();
-    if (size <= 0) {
+    switch (size) {
+    case 0:
       this.set = Set.of();
-    } else if (size == 1) {
+      break;
+    case 1:
       final Object o = types instanceof List<?> list ? list.get(0) : types.iterator().next();
       if (o instanceof JavaType jt) {
         this.set = Set.of(jt);
@@ -133,7 +150,8 @@ public final class JavaTypeSet extends AbstractSet<Type> {
       } else {
         this.set = Set.of();
       }
-    } else {
+      break;
+    default:
       final Set<JavaType> set = new LinkedHashSet<>(8); // LinkedHashSet is critical for ordering
       for (final Object type : types) {
         if (type instanceof JavaType jt) {
@@ -148,6 +166,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
         }
       }
       this.set = Collections.unmodifiableSet(set);
+      break;
     }
   }
 
@@ -156,6 +175,102 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * Instance methods.
    */
 
+
+  /**
+   * Returns a {@link List} of {@link JavaType}s representing the
+   * elements logically stored by this {@link JavaTypeSet}.
+   *
+   * <p>The returned {@link List} is unmodifiable and does not contain
+   * {@code null} or duplicate elements.  Its iteration order is the
+   * same as that of this {@link JavaTypeSet}.</p>
+   *
+   * @return a {@link List} of {@link JavaType}s representing the
+   * elements logically stored by this {@link JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public final List<JavaType> javaTypeList() {
+    return List.copyOf(this.set);
+  }
+
+  /**
+   * Returns a {@link Set} of {@link JavaType}s representing the
+   * elements logically stored by this {@link JavaTypeSet}.
+   *
+   * <p>The returned {@link Set} is unmodifiable and does not contain
+   * {@code null} elements.  Its iteration order is the same as that
+   * of this {@link JavaTypeSet}.</p>
+   *
+   * @return a {@link Set} of {@link JavaType}s representing the
+   * elements logically stored by this {@link JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public final Set<JavaType> javaTypeSet() {
+    return this.set;
+  }
+
+  /**
+   * Returns a {@linkplain org.microbean.type.Type#customSupertyped()
+   * custom supertyped} {@link JavaType} representing this {@link
+   * JavaTypeSet}.
+   *
+   * @return a {@linkplain org.microbean.type.Type#customSupertyped()
+   * custom supertyped} {@link JavaType} representing this {@link
+   * JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see org.microbean.type.Type#customSupertyped()
+   *
+   * @see #javaType(boolean)
+   */
+  public final JavaType javaType() {
+    return this.javaType(false);
+  }
+
+  /**
+   * Returns a {@linkplain org.microbean.type.Type#customSupertyped()
+   * custom supertyped} {@link JavaType} representing this {@link
+   * JavaTypeSet}.
+   *
+   * @param box whether autoboxing is in effect
+   *
+   * @return a {@linkplain org.microbean.type.Type#customSupertyped()
+   * custom supertyped} {@link JavaType} representing this {@link
+   * JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   *
+   * @see org.microbean.type.Type#customSupertyped()
+   *
+   * @see #javaTypeList()
+   *
+   * @see JavaType#ofExactly(boolean, List)
+   */
+  public final JavaType javaType(final boolean box) {
+    return JavaType.ofExactly(box, this.javaTypeList());
+  }
 
   /**
    * Returns a new {@link JavaTypeSet} containing only the {@link
@@ -342,7 +457,11 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * threads.
    *
    * @see #mostSpecializedInterfaceType()
+   *
+   * @deprecated See {@link
+   * org.microbean.type.Type#mostSpecialized(Predicate)}
    */
+  @Deprecated
   public final Type mostSpecializedNonInterfaceType() {
     Type mostSpecializedNonInterfaceType = this.mostSpecializedNonInterfaceType; // volatile read
     if (mostSpecializedNonInterfaceType == null) {
@@ -392,7 +511,11 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * threads.
    *
    * @see #mostSpecializedNonInterfaceType()
+   *
+   * @deprecated See {@link
+   * org.microbean.type.Type#mostSpecialized(Predicate)}
    */
+  @Deprecated
   public final Type mostSpecializedInterfaceType() {
     Type mostSpecializedInterfaceType = this.mostSpecializedInterfaceType; // volatile read
     if (mostSpecializedInterfaceType == null) {
@@ -440,16 +563,48 @@ public final class JavaTypeSet extends AbstractSet<Type> {
 
   @Override // Set<Type>
   public final Iterator<Type> iterator() {
-    if (this.set.isEmpty()) {
-      return Collections.emptyIterator();
-    } else {
-      return new TypeIterator(this.set.iterator());
-    }
+    return this.set.isEmpty() ? Collections.emptyIterator() : new TypeIterator(this.set.iterator());
+  }
+
+  /**
+   * Returns an {@link Iterator} of {@link JavaType} instances
+   * representing the elements stored by this {@link JavaTypeSet}.
+   *
+   * @return an {@link Iterator} of {@link JavaType} instances
+   * representing the elements stored by this {@link JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public final Iterator<JavaType> javaTypeIterator() {
+    return this.set.iterator();
   }
 
   @Override // Set<Type>
   public final Stream<Type> stream() {
     return this.set.stream().map(JavaType::object);
+  }
+
+  /**
+   * Returns a {@link Stream} of {@link JavaType} instances
+   * representing the elements stored by this {@link JavaTypeSet}.
+   *
+   * @return a {@link Stream} of {@link JavaType} instances
+   * representing the elements stored by this {@link JavaTypeSet}
+   *
+   * @nullability This method never returns {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public final Stream<JavaType> javaTypeStream() {
+    return this.set.stream();
   }
 
   @Override // Set<Type>
@@ -465,55 +620,11 @@ public final class JavaTypeSet extends AbstractSet<Type> {
   }
 
   /**
-   * Returns a hashcode for this {@link JavaTypeSet}.
+   * Returns a {@link Spliterator} of {@link JavaType} instances
+   * representing the elements stored by this {@link JavaTypeSet}.
    *
-   * @return a hashcode for this {@link JavaTypeSet}
-   *
-   * @idempotency This method is idempotent and deterministic.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  @Override // Object
-  public final int hashCode() {
-    return this.set.hashCode();
-  }
-
-  /**
-   * Returns {@code true} if this {@link JavaTypeSet} is equal to the
-   * supplied {@link Object}.
-   *
-   * @param other the {@link Object} to test; may be {@code null}
-   *
-   * @return {@code true} if this {@link JavaTypeSet} is equal to the
-   * supplied {@link Object}; {@code false} otherwise
-   *
-   * @idempotency This method is idempotent and deterministic.
-   *
-   * @threadsafety This method is safe for concurrent use by multiple
-   * threads.
-   */
-  @Override // Object
-  public final boolean equals(final Object other) {
-    if (other == this) {
-      return true;
-    } else if (other != null && this.getClass() == other.getClass()) {
-      return this.set.equals(((JavaTypeSet)other).set);
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * Returns a {@link String} representation of this {@link
-   * JavaTypeSet}.
-   *
-   * <p>The format of the returned {@link String} is deliberately
-   * undefined and is subject to change without prior notice between
-   * versions of this class.</p>
-   *
-   * @return a {@link String} representation of this {@link
-   * JavaTypeSet}
+   * @return a {@link Spliterator} of {@link JavaType} instances
+   * representing the elements stored by this {@link JavaTypeSet}
    *
    * @nullability This method never returns {@code null}.
    *
@@ -522,9 +633,8 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @threadsafety This method is safe for concurrent use by multiple
    * threads.
    */
-  @Override // Object
-  public final String toString() {
-    return this.set.toString();
+  public final Spliterator<JavaType> javaTypeSpliterator() {
+    return this.set.spliterator();
   }
 
 
@@ -660,7 +770,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * threads.
    */
   public static final JavaTypeSet of(final org.microbean.type.Type<? extends Type> t) {
-    return new JavaTypeSet(t.object());
+    return new JavaTypeSet(t);
   }
 
   /**
@@ -690,7 +800,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
   @Convenience
   public static final JavaTypeSet of(final org.microbean.type.Type<? extends Type> t0,
                                      final org.microbean.type.Type<? extends Type> t1) {
-    return of(List.of(t0.object(), t1.object()));
+    return of(List.of(t0, t1));
   }
 
   /**
@@ -816,7 +926,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
                                                final Predicate<? super Type> acceptancePredicate) {
     return ofSupertypes(t.object(), acceptancePredicate);
   }
-  
+
   /**
    * Returns a {@link JavaTypeSet} whose elements are the {@linkplain
    * JavaTypes#supertypes(Type) supertypes of the supplied
@@ -878,8 +988,7 @@ public final class JavaTypeSet extends AbstractSet<Type> {
    * @see JavaTypes#supertypes(Type)
    */
   @Convenience
-  public static final JavaTypeSet ofSupertypes(final Type t,
-                                               final Predicate<? super Type> acceptancePredicate) {
+  public static final JavaTypeSet ofSupertypes(final Type t, final Predicate<? super Type> acceptancePredicate) {
     return of(JavaTypes.supertypes(t, acceptancePredicate));
   }
 
