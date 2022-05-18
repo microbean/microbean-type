@@ -45,7 +45,7 @@ final class JavaExecutable implements Owner<Type> {
     if (genericParameterTypes.length > 0) {
       final List<JavaType> parameters = new ArrayList<>(genericParameterTypes.length);
       for (final Type genericParameterType : genericParameterTypes) {
-        parameters.add(JavaType.of(genericParameterType, box));
+        parameters.add(JavaType.of(box, genericParameterType));
       }
       this.parameters = Collections.unmodifiableList(parameters);
     } else {
@@ -56,7 +56,7 @@ final class JavaExecutable implements Owner<Type> {
     if (typeParameters.length > 0) {
       final List<JavaType> javaTypeParameters = new ArrayList<>(typeParameters.length);
       for (final TypeVariable<?> typeParameter : typeParameters) {
-        javaTypeParameters.add(JavaType.of(typeParameter, box));
+        javaTypeParameters.add(JavaType.of(box, typeParameter));
       }
       this.typeParameters = Collections.unmodifiableList(javaTypeParameters);
     } else {
@@ -64,9 +64,9 @@ final class JavaExecutable implements Owner<Type> {
     }
     
     if (e instanceof Constructor<?> constructor) {
-      this.returnType = JavaType.of(void.class, box);
+      this.returnType = JavaType.of(box, void.class);
     } else if (e instanceof Method m) {
-      this.returnType = JavaType.of(m.getGenericReturnType(), box);
+      this.returnType = JavaType.of(box, m.getGenericReturnType());
     } else {
       throw new AssertionError("e: " + e);
     }

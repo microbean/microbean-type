@@ -833,6 +833,9 @@ public final class JavaTypes {
    * WildcardType#getUpperBounds() first upper bound}</strong> is
    * returned.  <strong>Any other bounds are ignored.</strong></li>
    *
+   * <li>If any other {@link Type} implementation is supplied, {@code
+   * null} is returned.</li>
+   *
    * </ul>
    *
    * @param type the {@link Type} for which the corresponding type

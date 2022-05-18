@@ -43,8 +43,8 @@ final class TestTypeEquals {
   }
 
   @Test
-  final void testSupertypeContainers() {
-    Type<?> t1 = JavaType.ofExact(List.of(Number.class, new DefaultParameterizedType(null, Comparable.class, Integer.class)), true);
+  final void testCustomSupertyped() {
+    Type<?> t1 = JavaType.ofExactly(true, List.of(Number.class, new DefaultParameterizedType(null, Comparable.class, Integer.class)));
     Type<?> t2 = JavaType.of(Number.class);
     assertFalse(Type.equals(t1, t2));
     final List<?> t1Supertypes = t1.supertypes();
@@ -53,19 +53,19 @@ final class TestTypeEquals {
     assertEquals(Number.class, numberClass.object());
     final JavaType comparableIntegerType = (JavaType)t1Supertypes.get(1);
     assertEquals(new DefaultParameterizedType(null, Comparable.class, Integer.class), comparableIntegerType.object());
-    t2 = JavaType.ofExact(List.of(Number.class, new DefaultParameterizedType(null, Comparable.class, Integer.class)), true);
+    t2 = JavaType.ofExactly(true, List.of(Number.class, new DefaultParameterizedType(null, Comparable.class, Integer.class)));
     assertNotSame(t1, t2);
     assertTrue(Type.equals(t1, t2));
-    t1 = JavaType.ofExact(Number.class, true);
-    t2 = JavaType.ofExact(Number.class, true);
+    t1 = JavaType.ofExactly(true, Number.class);
+    t2 = JavaType.ofExactly(true, Number.class);
     assertNotSame(t1, t2);
     assertTrue(Type.equals(t1, t2));
   }
 
   @Test
-  final void testSupertypeContainerAssignability() {
+  final void testCustomSupertypedAssignability() {
     Type<?> t1 = JavaType.of(Number.class);
-    Type<?> t2 = JavaType.ofExact(List.of(Number.class, new DefaultParameterizedType(null, Comparable.class, Integer.class)), true);
+    Type<?> t2 = JavaType.ofExactly(true, List.of(Number.class, new DefaultParameterizedType(null, Comparable.class, Integer.class)));
     assertTrue(CovariantSemantics.INSTANCE.assignable(t1, t2));
     t1 = JavaType.of(Object.class);
     assertFalse(CovariantSemantics.INSTANCE.assignable(t1, t2));
