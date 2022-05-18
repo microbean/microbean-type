@@ -63,902 +63,1011 @@
 <span class="source-line-no">049</span><span id="line-49">import static java.util.Spliterator.SUBSIZED;</span>
 <span class="source-line-no">050</span><span id="line-50"></span>
 <span class="source-line-no">051</span><span id="line-51">/**</span>
-<span class="source-line-no">052</span><span id="line-52"> * An immutable {@link AbstractSet} of {@link Type}s that ensures that</span>
-<span class="source-line-no">053</span><span id="line-53"> * {@link Type} implementations from different vendors use the same</span>
-<span class="source-line-no">054</span><span id="line-54"> * equality semantics.</span>
-<span class="source-line-no">055</span><span id="line-55"> *</span>
-<span class="source-line-no">056</span><span id="line-56"> * @author &lt;a href="https://about.me/lairdnelson"</span>
-<span class="source-line-no">057</span><span id="line-57"> * target="_parent"&gt;Laird Nelson&lt;/a&gt;</span>
-<span class="source-line-no">058</span><span id="line-58"> */</span>
-<span class="source-line-no">059</span><span id="line-59">public final class JavaTypeSet extends AbstractSet&lt;Type&gt; {</span>
-<span class="source-line-no">060</span><span id="line-60"></span>
-<span class="source-line-no">061</span><span id="line-61"></span>
-<span class="source-line-no">062</span><span id="line-62">  /*</span>
-<span class="source-line-no">063</span><span id="line-63">   * Static fields.</span>
-<span class="source-line-no">064</span><span id="line-64">   */</span>
-<span class="source-line-no">065</span><span id="line-65"></span>
-<span class="source-line-no">066</span><span id="line-66"></span>
-<span class="source-line-no">067</span><span id="line-67">  private static final JavaTypeSet EMPTY_JAVA_TYPE_SET = new JavaTypeSet();</span>
-<span class="source-line-no">068</span><span id="line-68"></span>
-<span class="source-line-no">069</span><span id="line-69">  private static final VarHandle MOST_SPECIALIZED_INTERFACE_TYPE;</span>
-<span class="source-line-no">070</span><span id="line-70"></span>
-<span class="source-line-no">071</span><span id="line-71">  private static final VarHandle MOST_SPECIALIZED_NON_INTERFACE_TYPE;</span>
-<span class="source-line-no">072</span><span id="line-72"></span>
-<span class="source-line-no">073</span><span id="line-73">  static {</span>
-<span class="source-line-no">074</span><span id="line-74">    final Lookup lookup = MethodHandles.lookup();</span>
-<span class="source-line-no">075</span><span id="line-75">    try {</span>
-<span class="source-line-no">076</span><span id="line-76">      MOST_SPECIALIZED_INTERFACE_TYPE = lookup.findVarHandle(JavaTypeSet.class, "mostSpecializedInterfaceType", Type.class);</span>
-<span class="source-line-no">077</span><span id="line-77">      MOST_SPECIALIZED_NON_INTERFACE_TYPE = lookup.findVarHandle(JavaTypeSet.class, "mostSpecializedNonInterfaceType", Type.class);</span>
-<span class="source-line-no">078</span><span id="line-78">    } catch (final NoSuchFieldException | IllegalAccessException reflectiveOperationException) {</span>
-<span class="source-line-no">079</span><span id="line-79">      throw (Error)new ExceptionInInitializerError(reflectiveOperationException.getMessage()).initCause(reflectiveOperationException);</span>
-<span class="source-line-no">080</span><span id="line-80">    }</span>
-<span class="source-line-no">081</span><span id="line-81">  }</span>
-<span class="source-line-no">082</span><span id="line-82"></span>
+<span class="source-line-no">052</span><span id="line-52"> * An immutable {@link AbstractSet} of {@link Type</span>
+<span class="source-line-no">053</span><span id="line-53"> * java.lang.reflect.Type}s that ensures that {@link Type</span>
+<span class="source-line-no">054</span><span id="line-54"> * java.lang.reflect.Type} implementations from different vendors use</span>
+<span class="source-line-no">055</span><span id="line-55"> * the same equality semantics.</span>
+<span class="source-line-no">056</span><span id="line-56"> *</span>
+<span class="source-line-no">057</span><span id="line-57"> * &lt;p&gt;&lt;strong&gt;This is not a set of {@link JavaType}</span>
+<span class="source-line-no">058</span><span id="line-58"> * instances.&lt;/strong&gt; See the {@link #javaTypeList()} and {@link</span>
+<span class="source-line-no">059</span><span id="line-59"> * #javaTypeSet()} methods.&lt;/p&gt;</span>
+<span class="source-line-no">060</span><span id="line-60"> *</span>
+<span class="source-line-no">061</span><span id="line-61"> * @author &lt;a href="https://about.me/lairdnelson"</span>
+<span class="source-line-no">062</span><span id="line-62"> * target="_parent"&gt;Laird Nelson&lt;/a&gt;</span>
+<span class="source-line-no">063</span><span id="line-63"> *</span>
+<span class="source-line-no">064</span><span id="line-64"> * @see #javaTypeList()</span>
+<span class="source-line-no">065</span><span id="line-65"> *</span>
+<span class="source-line-no">066</span><span id="line-66"> * @see #javaTypeSet()</span>
+<span class="source-line-no">067</span><span id="line-67"> *</span>
+<span class="source-line-no">068</span><span id="line-68"> * @deprecated Now that {@link org.microbean.type.Type} instances can</span>
+<span class="source-line-no">069</span><span id="line-69"> * {@linkplain org.microbean.type.Type#equals(org.microbean.type.Type,</span>
+<span class="source-line-no">070</span><span id="line-70"> * org.microbean.type.Type) can be compared for equality}, there is</span>
+<span class="source-line-no">071</span><span id="line-71"> * not much call for this class.</span>
+<span class="source-line-no">072</span><span id="line-72"> */</span>
+<span class="source-line-no">073</span><span id="line-73">@Deprecated</span>
+<span class="source-line-no">074</span><span id="line-74">public final class JavaTypeSet extends AbstractSet&lt;Type&gt; {</span>
+<span class="source-line-no">075</span><span id="line-75"></span>
+<span class="source-line-no">076</span><span id="line-76"></span>
+<span class="source-line-no">077</span><span id="line-77">  /*</span>
+<span class="source-line-no">078</span><span id="line-78">   * Static fields.</span>
+<span class="source-line-no">079</span><span id="line-79">   */</span>
+<span class="source-line-no">080</span><span id="line-80"></span>
+<span class="source-line-no">081</span><span id="line-81"></span>
+<span class="source-line-no">082</span><span id="line-82">  private static final JavaTypeSet EMPTY_JAVA_TYPE_SET = new JavaTypeSet();</span>
 <span class="source-line-no">083</span><span id="line-83"></span>
-<span class="source-line-no">084</span><span id="line-84">  /*</span>
-<span class="source-line-no">085</span><span id="line-85">   * Instance fields.</span>
-<span class="source-line-no">086</span><span id="line-86">   */</span>
+<span class="source-line-no">084</span><span id="line-84">  private static final VarHandle MOST_SPECIALIZED_INTERFACE_TYPE;</span>
+<span class="source-line-no">085</span><span id="line-85"></span>
+<span class="source-line-no">086</span><span id="line-86">  private static final VarHandle MOST_SPECIALIZED_NON_INTERFACE_TYPE;</span>
 <span class="source-line-no">087</span><span id="line-87"></span>
-<span class="source-line-no">088</span><span id="line-88"></span>
-<span class="source-line-no">089</span><span id="line-89">  private final Set&lt;? extends JavaType&gt; set;</span>
-<span class="source-line-no">090</span><span id="line-90"></span>
-<span class="source-line-no">091</span><span id="line-91">  private volatile Type mostSpecializedNonInterfaceType;</span>
-<span class="source-line-no">092</span><span id="line-92"></span>
-<span class="source-line-no">093</span><span id="line-93">  private volatile Type mostSpecializedInterfaceType;</span>
-<span class="source-line-no">094</span><span id="line-94"></span>
-<span class="source-line-no">095</span><span id="line-95"></span>
-<span class="source-line-no">096</span><span id="line-96">  /*</span>
-<span class="source-line-no">097</span><span id="line-97">   * Constructors.</span>
-<span class="source-line-no">098</span><span id="line-98">   */</span>
-<span class="source-line-no">099</span><span id="line-99"></span>
-<span class="source-line-no">100</span><span id="line-100"></span>
-<span class="source-line-no">101</span><span id="line-101">  private JavaTypeSet() {</span>
-<span class="source-line-no">102</span><span id="line-102">    super();</span>
-<span class="source-line-no">103</span><span id="line-103">    this.set = Set.of();</span>
-<span class="source-line-no">104</span><span id="line-104">  }</span>
+<span class="source-line-no">088</span><span id="line-88">  static {</span>
+<span class="source-line-no">089</span><span id="line-89">    final Lookup lookup = MethodHandles.lookup();</span>
+<span class="source-line-no">090</span><span id="line-90">    try {</span>
+<span class="source-line-no">091</span><span id="line-91">      MOST_SPECIALIZED_INTERFACE_TYPE = lookup.findVarHandle(JavaTypeSet.class, "mostSpecializedInterfaceType", Type.class);</span>
+<span class="source-line-no">092</span><span id="line-92">      MOST_SPECIALIZED_NON_INTERFACE_TYPE = lookup.findVarHandle(JavaTypeSet.class, "mostSpecializedNonInterfaceType", Type.class);</span>
+<span class="source-line-no">093</span><span id="line-93">    } catch (final NoSuchFieldException | IllegalAccessException reflectiveOperationException) {</span>
+<span class="source-line-no">094</span><span id="line-94">      throw (Error)new ExceptionInInitializerError(reflectiveOperationException.getMessage()).initCause(reflectiveOperationException);</span>
+<span class="source-line-no">095</span><span id="line-95">    }</span>
+<span class="source-line-no">096</span><span id="line-96">  }</span>
+<span class="source-line-no">097</span><span id="line-97"></span>
+<span class="source-line-no">098</span><span id="line-98"></span>
+<span class="source-line-no">099</span><span id="line-99">  /*</span>
+<span class="source-line-no">100</span><span id="line-100">   * Instance fields.</span>
+<span class="source-line-no">101</span><span id="line-101">   */</span>
+<span class="source-line-no">102</span><span id="line-102"></span>
+<span class="source-line-no">103</span><span id="line-103"></span>
+<span class="source-line-no">104</span><span id="line-104">  private final Set&lt;JavaType&gt; set;</span>
 <span class="source-line-no">105</span><span id="line-105"></span>
-<span class="source-line-no">106</span><span id="line-106">  private JavaTypeSet(final Type type) {</span>
-<span class="source-line-no">107</span><span id="line-107">    this(JavaType.of(type));</span>
-<span class="source-line-no">108</span><span id="line-108">  }</span>
+<span class="source-line-no">106</span><span id="line-106">  private volatile Type mostSpecializedNonInterfaceType;</span>
+<span class="source-line-no">107</span><span id="line-107"></span>
+<span class="source-line-no">108</span><span id="line-108">  private volatile Type mostSpecializedInterfaceType;</span>
 <span class="source-line-no">109</span><span id="line-109"></span>
-<span class="source-line-no">110</span><span id="line-110">  private JavaTypeSet(final org.microbean.type.Type&lt;? extends Type&gt; t) {</span>
-<span class="source-line-no">111</span><span id="line-111">    super();</span>
-<span class="source-line-no">112</span><span id="line-112">    this.set = Set.of(t instanceof JavaType jt ? jt : JavaType.of(t.object()));</span>
-<span class="source-line-no">113</span><span id="line-113">  }</span>
+<span class="source-line-no">110</span><span id="line-110"></span>
+<span class="source-line-no">111</span><span id="line-111">  /*</span>
+<span class="source-line-no">112</span><span id="line-112">   * Constructors.</span>
+<span class="source-line-no">113</span><span id="line-113">   */</span>
 <span class="source-line-no">114</span><span id="line-114"></span>
-<span class="source-line-no">115</span><span id="line-115">  private JavaTypeSet(final Collection&lt;?&gt; types) {</span>
-<span class="source-line-no">116</span><span id="line-116">    super();</span>
-<span class="source-line-no">117</span><span id="line-117">    final int size = types == null || types.isEmpty() ? 0 : types.size();</span>
-<span class="source-line-no">118</span><span id="line-118">    if (size &lt;= 0) {</span>
-<span class="source-line-no">119</span><span id="line-119">      this.set = Set.of();</span>
-<span class="source-line-no">120</span><span id="line-120">    } else if (size == 1) {</span>
-<span class="source-line-no">121</span><span id="line-121">      final Object o = types instanceof List&lt;?&gt; list ? list.get(0) : types.iterator().next();</span>
-<span class="source-line-no">122</span><span id="line-122">      if (o instanceof JavaType jt) {</span>
-<span class="source-line-no">123</span><span id="line-123">        this.set = Set.of(jt);</span>
-<span class="source-line-no">124</span><span id="line-124">      } else if (o instanceof Type t) {</span>
-<span class="source-line-no">125</span><span id="line-125">        this.set = Set.of(JavaType.of(t));</span>
-<span class="source-line-no">126</span><span id="line-126">      } else if (o instanceof org.microbean.type.Type&lt;?&gt; t) {</span>
-<span class="source-line-no">127</span><span id="line-127">        final Object modeledType = t.object();</span>
-<span class="source-line-no">128</span><span id="line-128">        if (modeledType instanceof Type) {</span>
-<span class="source-line-no">129</span><span id="line-129">          this.set = Set.of(JavaType.of((Type)modeledType));</span>
-<span class="source-line-no">130</span><span id="line-130">        } else {</span>
-<span class="source-line-no">131</span><span id="line-131">          this.set = Set.of();</span>
-<span class="source-line-no">132</span><span id="line-132">        }</span>
-<span class="source-line-no">133</span><span id="line-133">      } else {</span>
-<span class="source-line-no">134</span><span id="line-134">        this.set = Set.of();</span>
-<span class="source-line-no">135</span><span id="line-135">      }</span>
-<span class="source-line-no">136</span><span id="line-136">    } else {</span>
-<span class="source-line-no">137</span><span id="line-137">      final Set&lt;JavaType&gt; set = new LinkedHashSet&lt;&gt;(8); // LinkedHashSet is critical for ordering</span>
-<span class="source-line-no">138</span><span id="line-138">      for (final Object type : types) {</span>
-<span class="source-line-no">139</span><span id="line-139">        if (type instanceof JavaType jt) {</span>
-<span class="source-line-no">140</span><span id="line-140">          set.add(jt);</span>
-<span class="source-line-no">141</span><span id="line-141">        } else if (type instanceof Type t) {</span>
-<span class="source-line-no">142</span><span id="line-142">          set.add(JavaType.of(t));</span>
-<span class="source-line-no">143</span><span id="line-143">        } else if (type instanceof org.microbean.type.Type&lt;?&gt; t) {</span>
-<span class="source-line-no">144</span><span id="line-144">          final Object modeledType = t.object();</span>
-<span class="source-line-no">145</span><span id="line-145">          if (modeledType instanceof Type) {</span>
-<span class="source-line-no">146</span><span id="line-146">            set.add(JavaType.of((Type)modeledType));</span>
-<span class="source-line-no">147</span><span id="line-147">          }</span>
-<span class="source-line-no">148</span><span id="line-148">        }</span>
-<span class="source-line-no">149</span><span id="line-149">      }</span>
-<span class="source-line-no">150</span><span id="line-150">      this.set = Collections.unmodifiableSet(set);</span>
-<span class="source-line-no">151</span><span id="line-151">    }</span>
-<span class="source-line-no">152</span><span id="line-152">  }</span>
-<span class="source-line-no">153</span><span id="line-153"></span>
-<span class="source-line-no">154</span><span id="line-154"></span>
-<span class="source-line-no">155</span><span id="line-155">  /*</span>
-<span class="source-line-no">156</span><span id="line-156">   * Instance methods.</span>
-<span class="source-line-no">157</span><span id="line-157">   */</span>
-<span class="source-line-no">158</span><span id="line-158"></span>
-<span class="source-line-no">159</span><span id="line-159"></span>
-<span class="source-line-no">160</span><span id="line-160">  /**</span>
-<span class="source-line-no">161</span><span id="line-161">   * Returns a new {@link JavaTypeSet} containing only the {@link</span>
-<span class="source-line-no">162</span><span id="line-162">   * Type}s that are not {@linkplain Class#isInterface() interface</span>
-<span class="source-line-no">163</span><span id="line-163">   * types} from this {@link JavaTypeSet}.</span>
-<span class="source-line-no">164</span><span id="line-164">   *</span>
-<span class="source-line-no">165</span><span id="line-165">   * @return a new {@link JavaTypeSet} containing only the {@link</span>
-<span class="source-line-no">166</span><span id="line-166">   * Type}s that are not {@linkplain Class#isInterface() interface</span>
-<span class="source-line-no">167</span><span id="line-167">   * types} from this {@link JavaTypeSet}</span>
-<span class="source-line-no">168</span><span id="line-168">   *</span>
-<span class="source-line-no">169</span><span id="line-169">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">170</span><span id="line-170">   *</span>
-<span class="source-line-no">171</span><span id="line-171">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">172</span><span id="line-172">   *</span>
-<span class="source-line-no">173</span><span id="line-173">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">174</span><span id="line-174">   * threads.</span>
-<span class="source-line-no">175</span><span id="line-175">   */</span>
-<span class="source-line-no">176</span><span id="line-176">  public final JavaTypeSet nonInterfaceTypes() {</span>
-<span class="source-line-no">177</span><span id="line-177">    return new JavaTypeSet(this.set.stream()</span>
-<span class="source-line-no">178</span><span id="line-178">                           .filter(JavaTypeSet::nonInterfaceType)</span>
-<span class="source-line-no">179</span><span id="line-179">                           .toList());</span>
-<span class="source-line-no">180</span><span id="line-180">  }</span>
-<span class="source-line-no">181</span><span id="line-181"></span>
-<span class="source-line-no">182</span><span id="line-182">  /**</span>
-<span class="source-line-no">183</span><span id="line-183">   * Returns a new {@link JavaTypeSet} containing only the {@linkplain</span>
-<span class="source-line-no">184</span><span id="line-184">   * Class#isInterface() interface types} from this {@link</span>
-<span class="source-line-no">185</span><span id="line-185">   * JavaTypeSet}.</span>
+<span class="source-line-no">115</span><span id="line-115"></span>
+<span class="source-line-no">116</span><span id="line-116">  private JavaTypeSet() {</span>
+<span class="source-line-no">117</span><span id="line-117">    super();</span>
+<span class="source-line-no">118</span><span id="line-118">    this.set = Set.of();</span>
+<span class="source-line-no">119</span><span id="line-119">  }</span>
+<span class="source-line-no">120</span><span id="line-120"></span>
+<span class="source-line-no">121</span><span id="line-121">  private JavaTypeSet(final Type type) {</span>
+<span class="source-line-no">122</span><span id="line-122">    this(JavaType.of(type));</span>
+<span class="source-line-no">123</span><span id="line-123">  }</span>
+<span class="source-line-no">124</span><span id="line-124"></span>
+<span class="source-line-no">125</span><span id="line-125">  private JavaTypeSet(final org.microbean.type.Type&lt;? extends Type&gt; t) {</span>
+<span class="source-line-no">126</span><span id="line-126">    super();</span>
+<span class="source-line-no">127</span><span id="line-127">    this.set = Set.of(t instanceof JavaType jt ? jt : JavaType.of(t.object()));</span>
+<span class="source-line-no">128</span><span id="line-128">  }</span>
+<span class="source-line-no">129</span><span id="line-129"></span>
+<span class="source-line-no">130</span><span id="line-130">  private JavaTypeSet(final Collection&lt;?&gt; types) {</span>
+<span class="source-line-no">131</span><span id="line-131">    super();</span>
+<span class="source-line-no">132</span><span id="line-132">    final int size = types == null || types.isEmpty() ? 0 : types.size();</span>
+<span class="source-line-no">133</span><span id="line-133">    switch (size) {</span>
+<span class="source-line-no">134</span><span id="line-134">    case 0:</span>
+<span class="source-line-no">135</span><span id="line-135">      this.set = Set.of();</span>
+<span class="source-line-no">136</span><span id="line-136">      break;</span>
+<span class="source-line-no">137</span><span id="line-137">    case 1:</span>
+<span class="source-line-no">138</span><span id="line-138">      final Object o = types instanceof List&lt;?&gt; list ? list.get(0) : types.iterator().next();</span>
+<span class="source-line-no">139</span><span id="line-139">      if (o instanceof JavaType jt) {</span>
+<span class="source-line-no">140</span><span id="line-140">        this.set = Set.of(jt);</span>
+<span class="source-line-no">141</span><span id="line-141">      } else if (o instanceof Type t) {</span>
+<span class="source-line-no">142</span><span id="line-142">        this.set = Set.of(JavaType.of(t));</span>
+<span class="source-line-no">143</span><span id="line-143">      } else if (o instanceof org.microbean.type.Type&lt;?&gt; t) {</span>
+<span class="source-line-no">144</span><span id="line-144">        final Object modeledType = t.object();</span>
+<span class="source-line-no">145</span><span id="line-145">        if (modeledType instanceof Type) {</span>
+<span class="source-line-no">146</span><span id="line-146">          this.set = Set.of(JavaType.of((Type)modeledType));</span>
+<span class="source-line-no">147</span><span id="line-147">        } else {</span>
+<span class="source-line-no">148</span><span id="line-148">          this.set = Set.of();</span>
+<span class="source-line-no">149</span><span id="line-149">        }</span>
+<span class="source-line-no">150</span><span id="line-150">      } else {</span>
+<span class="source-line-no">151</span><span id="line-151">        this.set = Set.of();</span>
+<span class="source-line-no">152</span><span id="line-152">      }</span>
+<span class="source-line-no">153</span><span id="line-153">      break;</span>
+<span class="source-line-no">154</span><span id="line-154">    default:</span>
+<span class="source-line-no">155</span><span id="line-155">      final Set&lt;JavaType&gt; set = new LinkedHashSet&lt;&gt;(8); // LinkedHashSet is critical for ordering</span>
+<span class="source-line-no">156</span><span id="line-156">      for (final Object type : types) {</span>
+<span class="source-line-no">157</span><span id="line-157">        if (type instanceof JavaType jt) {</span>
+<span class="source-line-no">158</span><span id="line-158">          set.add(jt);</span>
+<span class="source-line-no">159</span><span id="line-159">        } else if (type instanceof Type t) {</span>
+<span class="source-line-no">160</span><span id="line-160">          set.add(JavaType.of(t));</span>
+<span class="source-line-no">161</span><span id="line-161">        } else if (type instanceof org.microbean.type.Type&lt;?&gt; t) {</span>
+<span class="source-line-no">162</span><span id="line-162">          final Object modeledType = t.object();</span>
+<span class="source-line-no">163</span><span id="line-163">          if (modeledType instanceof Type) {</span>
+<span class="source-line-no">164</span><span id="line-164">            set.add(JavaType.of((Type)modeledType));</span>
+<span class="source-line-no">165</span><span id="line-165">          }</span>
+<span class="source-line-no">166</span><span id="line-166">        }</span>
+<span class="source-line-no">167</span><span id="line-167">      }</span>
+<span class="source-line-no">168</span><span id="line-168">      this.set = Collections.unmodifiableSet(set);</span>
+<span class="source-line-no">169</span><span id="line-169">      break;</span>
+<span class="source-line-no">170</span><span id="line-170">    }</span>
+<span class="source-line-no">171</span><span id="line-171">  }</span>
+<span class="source-line-no">172</span><span id="line-172"></span>
+<span class="source-line-no">173</span><span id="line-173"></span>
+<span class="source-line-no">174</span><span id="line-174">  /*</span>
+<span class="source-line-no">175</span><span id="line-175">   * Instance methods.</span>
+<span class="source-line-no">176</span><span id="line-176">   */</span>
+<span class="source-line-no">177</span><span id="line-177"></span>
+<span class="source-line-no">178</span><span id="line-178"></span>
+<span class="source-line-no">179</span><span id="line-179">  /**</span>
+<span class="source-line-no">180</span><span id="line-180">   * Returns a {@link List} of {@link JavaType}s representing the</span>
+<span class="source-line-no">181</span><span id="line-181">   * elements logically stored by this {@link JavaTypeSet}.</span>
+<span class="source-line-no">182</span><span id="line-182">   *</span>
+<span class="source-line-no">183</span><span id="line-183">   * &lt;p&gt;The returned {@link List} is unmodifiable and does not contain</span>
+<span class="source-line-no">184</span><span id="line-184">   * {@code null} or duplicate elements.  Its iteration order is the</span>
+<span class="source-line-no">185</span><span id="line-185">   * same as that of this {@link JavaTypeSet}.&lt;/p&gt;</span>
 <span class="source-line-no">186</span><span id="line-186">   *</span>
-<span class="source-line-no">187</span><span id="line-187">   * @return a new {@link JavaTypeSet} containing only the {@linkplain</span>
-<span class="source-line-no">188</span><span id="line-188">   * Class#isInterface() interface types} from this {@link</span>
-<span class="source-line-no">189</span><span id="line-189">   * JavaTypeSet}.</span>
-<span class="source-line-no">190</span><span id="line-190">   *</span>
-<span class="source-line-no">191</span><span id="line-191">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">192</span><span id="line-192">   *</span>
-<span class="source-line-no">193</span><span id="line-193">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">194</span><span id="line-194">   *</span>
-<span class="source-line-no">195</span><span id="line-195">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">196</span><span id="line-196">   * threads.</span>
-<span class="source-line-no">197</span><span id="line-197">   */</span>
-<span class="source-line-no">198</span><span id="line-198">  public final JavaTypeSet interfaceTypes() {</span>
-<span class="source-line-no">199</span><span id="line-199">    return new JavaTypeSet(this.set.stream()</span>
-<span class="source-line-no">200</span><span id="line-200">                           .filter(JavaTypeSet::interfaceType)</span>
-<span class="source-line-no">201</span><span id="line-201">                           .toList());</span>
-<span class="source-line-no">202</span><span id="line-202">  }</span>
-<span class="source-line-no">203</span><span id="line-203"></span>
-<span class="source-line-no">204</span><span id="line-204">  /**</span>
-<span class="source-line-no">205</span><span id="line-205">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
-<span class="source-line-no">206</span><span id="line-206">   *</span>
-<span class="source-line-no">207</span><span id="line-207">   * @param type ignored</span>
+<span class="source-line-no">187</span><span id="line-187">   * @return a {@link List} of {@link JavaType}s representing the</span>
+<span class="source-line-no">188</span><span id="line-188">   * elements logically stored by this {@link JavaTypeSet}</span>
+<span class="source-line-no">189</span><span id="line-189">   *</span>
+<span class="source-line-no">190</span><span id="line-190">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">191</span><span id="line-191">   *</span>
+<span class="source-line-no">192</span><span id="line-192">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">193</span><span id="line-193">   *</span>
+<span class="source-line-no">194</span><span id="line-194">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">195</span><span id="line-195">   * threads.</span>
+<span class="source-line-no">196</span><span id="line-196">   */</span>
+<span class="source-line-no">197</span><span id="line-197">  public final List&lt;JavaType&gt; javaTypeList() {</span>
+<span class="source-line-no">198</span><span id="line-198">    return List.copyOf(this.set);</span>
+<span class="source-line-no">199</span><span id="line-199">  }</span>
+<span class="source-line-no">200</span><span id="line-200"></span>
+<span class="source-line-no">201</span><span id="line-201">  /**</span>
+<span class="source-line-no">202</span><span id="line-202">   * Returns a {@link Set} of {@link JavaType}s representing the</span>
+<span class="source-line-no">203</span><span id="line-203">   * elements logically stored by this {@link JavaTypeSet}.</span>
+<span class="source-line-no">204</span><span id="line-204">   *</span>
+<span class="source-line-no">205</span><span id="line-205">   * &lt;p&gt;The returned {@link Set} is unmodifiable and does not contain</span>
+<span class="source-line-no">206</span><span id="line-206">   * {@code null} elements.  Its iteration order is the same as that</span>
+<span class="source-line-no">207</span><span id="line-207">   * of this {@link JavaTypeSet}.&lt;/p&gt;</span>
 <span class="source-line-no">208</span><span id="line-208">   *</span>
-<span class="source-line-no">209</span><span id="line-209">   * @return false in all cases</span>
-<span class="source-line-no">210</span><span id="line-210">   *</span>
-<span class="source-line-no">211</span><span id="line-211">   * @exception UnsupportedOperationException when invoked</span>
-<span class="source-line-no">212</span><span id="line-212">   *</span>
-<span class="source-line-no">213</span><span id="line-213">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">214</span><span id="line-214">   *</span>
-<span class="source-line-no">215</span><span id="line-215">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">216</span><span id="line-216">   * threads.</span>
-<span class="source-line-no">217</span><span id="line-217">   */</span>
-<span class="source-line-no">218</span><span id="line-218">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">219</span><span id="line-219">  public final boolean add(final Type type) {</span>
-<span class="source-line-no">220</span><span id="line-220">    throw new UnsupportedOperationException();</span>
+<span class="source-line-no">209</span><span id="line-209">   * @return a {@link Set} of {@link JavaType}s representing the</span>
+<span class="source-line-no">210</span><span id="line-210">   * elements logically stored by this {@link JavaTypeSet}</span>
+<span class="source-line-no">211</span><span id="line-211">   *</span>
+<span class="source-line-no">212</span><span id="line-212">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">213</span><span id="line-213">   *</span>
+<span class="source-line-no">214</span><span id="line-214">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">215</span><span id="line-215">   *</span>
+<span class="source-line-no">216</span><span id="line-216">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">217</span><span id="line-217">   * threads.</span>
+<span class="source-line-no">218</span><span id="line-218">   */</span>
+<span class="source-line-no">219</span><span id="line-219">  public final Set&lt;JavaType&gt; javaTypeSet() {</span>
+<span class="source-line-no">220</span><span id="line-220">    return this.set;</span>
 <span class="source-line-no">221</span><span id="line-221">  }</span>
 <span class="source-line-no">222</span><span id="line-222"></span>
 <span class="source-line-no">223</span><span id="line-223">  /**</span>
-<span class="source-line-no">224</span><span id="line-224">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
-<span class="source-line-no">225</span><span id="line-225">   *</span>
-<span class="source-line-no">226</span><span id="line-226">   * @param c ignored</span>
+<span class="source-line-no">224</span><span id="line-224">   * Returns a {@linkplain org.microbean.type.Type#customSupertyped()</span>
+<span class="source-line-no">225</span><span id="line-225">   * custom supertyped} {@link JavaType} representing this {@link</span>
+<span class="source-line-no">226</span><span id="line-226">   * JavaTypeSet}.</span>
 <span class="source-line-no">227</span><span id="line-227">   *</span>
-<span class="source-line-no">228</span><span id="line-228">   * @return false in all cases</span>
-<span class="source-line-no">229</span><span id="line-229">   *</span>
-<span class="source-line-no">230</span><span id="line-230">   * @exception UnsupportedOperationException when invoked</span>
+<span class="source-line-no">228</span><span id="line-228">   * @return a {@linkplain org.microbean.type.Type#customSupertyped()</span>
+<span class="source-line-no">229</span><span id="line-229">   * custom supertyped} {@link JavaType} representing this {@link</span>
+<span class="source-line-no">230</span><span id="line-230">   * JavaTypeSet}</span>
 <span class="source-line-no">231</span><span id="line-231">   *</span>
-<span class="source-line-no">232</span><span id="line-232">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">232</span><span id="line-232">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">233</span><span id="line-233">   *</span>
-<span class="source-line-no">234</span><span id="line-234">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">235</span><span id="line-235">   * threads.</span>
-<span class="source-line-no">236</span><span id="line-236">   */</span>
-<span class="source-line-no">237</span><span id="line-237">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">238</span><span id="line-238">  public final boolean addAll(final Collection&lt;? extends Type&gt; c) {</span>
-<span class="source-line-no">239</span><span id="line-239">    throw new UnsupportedOperationException();</span>
-<span class="source-line-no">240</span><span id="line-240">  }</span>
-<span class="source-line-no">241</span><span id="line-241"></span>
-<span class="source-line-no">242</span><span id="line-242">  /**</span>
-<span class="source-line-no">243</span><span id="line-243">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
-<span class="source-line-no">244</span><span id="line-244">   *</span>
-<span class="source-line-no">245</span><span id="line-245">   * @exception UnsupportedOperationException when invoked</span>
-<span class="source-line-no">246</span><span id="line-246">   *</span>
-<span class="source-line-no">247</span><span id="line-247">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">248</span><span id="line-248">   *</span>
-<span class="source-line-no">249</span><span id="line-249">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">250</span><span id="line-250">   * threads.</span>
-<span class="source-line-no">251</span><span id="line-251">   */</span>
-<span class="source-line-no">252</span><span id="line-252">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">253</span><span id="line-253">  public final void clear() {</span>
-<span class="source-line-no">254</span><span id="line-254">    throw new UnsupportedOperationException();</span>
-<span class="source-line-no">255</span><span id="line-255">  }</span>
-<span class="source-line-no">256</span><span id="line-256"></span>
-<span class="source-line-no">257</span><span id="line-257">  /**</span>
-<span class="source-line-no">258</span><span id="line-258">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
+<span class="source-line-no">234</span><span id="line-234">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">235</span><span id="line-235">   *</span>
+<span class="source-line-no">236</span><span id="line-236">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">237</span><span id="line-237">   * threads.</span>
+<span class="source-line-no">238</span><span id="line-238">   *</span>
+<span class="source-line-no">239</span><span id="line-239">   * @see org.microbean.type.Type#customSupertyped()</span>
+<span class="source-line-no">240</span><span id="line-240">   *</span>
+<span class="source-line-no">241</span><span id="line-241">   * @see #javaType(boolean)</span>
+<span class="source-line-no">242</span><span id="line-242">   */</span>
+<span class="source-line-no">243</span><span id="line-243">  public final JavaType javaType() {</span>
+<span class="source-line-no">244</span><span id="line-244">    return this.javaType(false);</span>
+<span class="source-line-no">245</span><span id="line-245">  }</span>
+<span class="source-line-no">246</span><span id="line-246"></span>
+<span class="source-line-no">247</span><span id="line-247">  /**</span>
+<span class="source-line-no">248</span><span id="line-248">   * Returns a {@linkplain org.microbean.type.Type#customSupertyped()</span>
+<span class="source-line-no">249</span><span id="line-249">   * custom supertyped} {@link JavaType} representing this {@link</span>
+<span class="source-line-no">250</span><span id="line-250">   * JavaTypeSet}.</span>
+<span class="source-line-no">251</span><span id="line-251">   *</span>
+<span class="source-line-no">252</span><span id="line-252">   * @param box whether autoboxing is in effect</span>
+<span class="source-line-no">253</span><span id="line-253">   *</span>
+<span class="source-line-no">254</span><span id="line-254">   * @return a {@linkplain org.microbean.type.Type#customSupertyped()</span>
+<span class="source-line-no">255</span><span id="line-255">   * custom supertyped} {@link JavaType} representing this {@link</span>
+<span class="source-line-no">256</span><span id="line-256">   * JavaTypeSet}</span>
+<span class="source-line-no">257</span><span id="line-257">   *</span>
+<span class="source-line-no">258</span><span id="line-258">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">259</span><span id="line-259">   *</span>
-<span class="source-line-no">260</span><span id="line-260">   * @param o ignored</span>
+<span class="source-line-no">260</span><span id="line-260">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">261</span><span id="line-261">   *</span>
-<span class="source-line-no">262</span><span id="line-262">   * @return false in all cases</span>
-<span class="source-line-no">263</span><span id="line-263">   *</span>
-<span class="source-line-no">264</span><span id="line-264">   * @exception UnsupportedOperationException when invoked</span>
-<span class="source-line-no">265</span><span id="line-265">   *</span>
-<span class="source-line-no">266</span><span id="line-266">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">267</span><span id="line-267">   *</span>
-<span class="source-line-no">268</span><span id="line-268">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">269</span><span id="line-269">   * threads.</span>
+<span class="source-line-no">262</span><span id="line-262">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">263</span><span id="line-263">   * threads.</span>
+<span class="source-line-no">264</span><span id="line-264">   *</span>
+<span class="source-line-no">265</span><span id="line-265">   * @see org.microbean.type.Type#customSupertyped()</span>
+<span class="source-line-no">266</span><span id="line-266">   *</span>
+<span class="source-line-no">267</span><span id="line-267">   * @see #javaTypeList()</span>
+<span class="source-line-no">268</span><span id="line-268">   *</span>
+<span class="source-line-no">269</span><span id="line-269">   * @see JavaType#ofExactly(boolean, List)</span>
 <span class="source-line-no">270</span><span id="line-270">   */</span>
-<span class="source-line-no">271</span><span id="line-271">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">272</span><span id="line-272">  public final boolean remove(final Object o) {</span>
-<span class="source-line-no">273</span><span id="line-273">    throw new UnsupportedOperationException();</span>
-<span class="source-line-no">274</span><span id="line-274">  }</span>
-<span class="source-line-no">275</span><span id="line-275"></span>
-<span class="source-line-no">276</span><span id="line-276">  /**</span>
-<span class="source-line-no">277</span><span id="line-277">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
-<span class="source-line-no">278</span><span id="line-278">   *</span>
-<span class="source-line-no">279</span><span id="line-279">   * @param c ignored</span>
-<span class="source-line-no">280</span><span id="line-280">   *</span>
-<span class="source-line-no">281</span><span id="line-281">   * @return false in all cases</span>
-<span class="source-line-no">282</span><span id="line-282">   *</span>
-<span class="source-line-no">283</span><span id="line-283">   * @exception UnsupportedOperationException when invoked</span>
-<span class="source-line-no">284</span><span id="line-284">   *</span>
-<span class="source-line-no">285</span><span id="line-285">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">286</span><span id="line-286">   *</span>
-<span class="source-line-no">287</span><span id="line-287">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">288</span><span id="line-288">   * threads.</span>
-<span class="source-line-no">289</span><span id="line-289">   */</span>
-<span class="source-line-no">290</span><span id="line-290">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">291</span><span id="line-291">  public final boolean removeAll(final Collection&lt;?&gt; c) {</span>
-<span class="source-line-no">292</span><span id="line-292">    throw new UnsupportedOperationException();</span>
-<span class="source-line-no">293</span><span id="line-293">  }</span>
-<span class="source-line-no">294</span><span id="line-294"></span>
-<span class="source-line-no">295</span><span id="line-295">  /**</span>
-<span class="source-line-no">296</span><span id="line-296">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
-<span class="source-line-no">297</span><span id="line-297">   *</span>
-<span class="source-line-no">298</span><span id="line-298">   * @param c ignored</span>
-<span class="source-line-no">299</span><span id="line-299">   *</span>
-<span class="source-line-no">300</span><span id="line-300">   * @return false in all cases</span>
+<span class="source-line-no">271</span><span id="line-271">  public final JavaType javaType(final boolean box) {</span>
+<span class="source-line-no">272</span><span id="line-272">    return JavaType.ofExactly(box, this.javaTypeList());</span>
+<span class="source-line-no">273</span><span id="line-273">  }</span>
+<span class="source-line-no">274</span><span id="line-274"></span>
+<span class="source-line-no">275</span><span id="line-275">  /**</span>
+<span class="source-line-no">276</span><span id="line-276">   * Returns a new {@link JavaTypeSet} containing only the {@link</span>
+<span class="source-line-no">277</span><span id="line-277">   * Type}s that are not {@linkplain Class#isInterface() interface</span>
+<span class="source-line-no">278</span><span id="line-278">   * types} from this {@link JavaTypeSet}.</span>
+<span class="source-line-no">279</span><span id="line-279">   *</span>
+<span class="source-line-no">280</span><span id="line-280">   * @return a new {@link JavaTypeSet} containing only the {@link</span>
+<span class="source-line-no">281</span><span id="line-281">   * Type}s that are not {@linkplain Class#isInterface() interface</span>
+<span class="source-line-no">282</span><span id="line-282">   * types} from this {@link JavaTypeSet}</span>
+<span class="source-line-no">283</span><span id="line-283">   *</span>
+<span class="source-line-no">284</span><span id="line-284">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">285</span><span id="line-285">   *</span>
+<span class="source-line-no">286</span><span id="line-286">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">287</span><span id="line-287">   *</span>
+<span class="source-line-no">288</span><span id="line-288">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">289</span><span id="line-289">   * threads.</span>
+<span class="source-line-no">290</span><span id="line-290">   */</span>
+<span class="source-line-no">291</span><span id="line-291">  public final JavaTypeSet nonInterfaceTypes() {</span>
+<span class="source-line-no">292</span><span id="line-292">    return new JavaTypeSet(this.set.stream()</span>
+<span class="source-line-no">293</span><span id="line-293">                           .filter(JavaTypeSet::nonInterfaceType)</span>
+<span class="source-line-no">294</span><span id="line-294">                           .toList());</span>
+<span class="source-line-no">295</span><span id="line-295">  }</span>
+<span class="source-line-no">296</span><span id="line-296"></span>
+<span class="source-line-no">297</span><span id="line-297">  /**</span>
+<span class="source-line-no">298</span><span id="line-298">   * Returns a new {@link JavaTypeSet} containing only the {@linkplain</span>
+<span class="source-line-no">299</span><span id="line-299">   * Class#isInterface() interface types} from this {@link</span>
+<span class="source-line-no">300</span><span id="line-300">   * JavaTypeSet}.</span>
 <span class="source-line-no">301</span><span id="line-301">   *</span>
-<span class="source-line-no">302</span><span id="line-302">   * @exception UnsupportedOperationException when invoked</span>
-<span class="source-line-no">303</span><span id="line-303">   *</span>
-<span class="source-line-no">304</span><span id="line-304">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">302</span><span id="line-302">   * @return a new {@link JavaTypeSet} containing only the {@linkplain</span>
+<span class="source-line-no">303</span><span id="line-303">   * Class#isInterface() interface types} from this {@link</span>
+<span class="source-line-no">304</span><span id="line-304">   * JavaTypeSet}.</span>
 <span class="source-line-no">305</span><span id="line-305">   *</span>
-<span class="source-line-no">306</span><span id="line-306">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">307</span><span id="line-307">   * threads.</span>
-<span class="source-line-no">308</span><span id="line-308">   */</span>
-<span class="source-line-no">309</span><span id="line-309">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">310</span><span id="line-310">  public final boolean retainAll(final Collection&lt;?&gt; c) {</span>
-<span class="source-line-no">311</span><span id="line-311">    throw new UnsupportedOperationException();</span>
-<span class="source-line-no">312</span><span id="line-312">  }</span>
-<span class="source-line-no">313</span><span id="line-313"></span>
-<span class="source-line-no">314</span><span id="line-314">  /**</span>
-<span class="source-line-no">315</span><span id="line-315">   * Returns an arbitrarily selected {@link Type} that is guaranteed</span>
-<span class="source-line-no">316</span><span id="line-316">   * to represent the most specialized subclass drawn from the types</span>
-<span class="source-line-no">317</span><span id="line-317">   * in this {@link JavaTypeSet}.</span>
-<span class="source-line-no">318</span><span id="line-318">   *</span>
-<span class="source-line-no">319</span><span id="line-319">   * &lt;p&gt;For example, if a {@link JavaTypeSet} contains {@link</span>
-<span class="source-line-no">320</span><span id="line-320">   * Integer Integer.class}, {@link Number Number.class} and {@link</span>
-<span class="source-line-no">321</span><span id="line-321">   * Object Object.class}, then this method will return {@link Integer</span>
-<span class="source-line-no">322</span><span id="line-322">   * Integer.class}.  If a {@link JavaTypeSet} contains {@link</span>
-<span class="source-line-no">323</span><span id="line-323">   * Integer Integer.class} and {@link String String.class}, then</span>
-<span class="source-line-no">324</span><span id="line-324">   * either {@link Integer Integer.class} or {@link String</span>
-<span class="source-line-no">325</span><span id="line-325">   * String.class} will be returned.&lt;/p&gt;</span>
-<span class="source-line-no">326</span><span id="line-326">   *</span>
-<span class="source-line-no">327</span><span id="line-327">   * &lt;p&gt;In practice, most {@link JavaTypeSet}s in normal use</span>
-<span class="source-line-no">328</span><span id="line-328">   * contain classes from a single inheritance hierarchy.&lt;/p&gt;</span>
+<span class="source-line-no">306</span><span id="line-306">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">307</span><span id="line-307">   *</span>
+<span class="source-line-no">308</span><span id="line-308">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">309</span><span id="line-309">   *</span>
+<span class="source-line-no">310</span><span id="line-310">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">311</span><span id="line-311">   * threads.</span>
+<span class="source-line-no">312</span><span id="line-312">   */</span>
+<span class="source-line-no">313</span><span id="line-313">  public final JavaTypeSet interfaceTypes() {</span>
+<span class="source-line-no">314</span><span id="line-314">    return new JavaTypeSet(this.set.stream()</span>
+<span class="source-line-no">315</span><span id="line-315">                           .filter(JavaTypeSet::interfaceType)</span>
+<span class="source-line-no">316</span><span id="line-316">                           .toList());</span>
+<span class="source-line-no">317</span><span id="line-317">  }</span>
+<span class="source-line-no">318</span><span id="line-318"></span>
+<span class="source-line-no">319</span><span id="line-319">  /**</span>
+<span class="source-line-no">320</span><span id="line-320">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
+<span class="source-line-no">321</span><span id="line-321">   *</span>
+<span class="source-line-no">322</span><span id="line-322">   * @param type ignored</span>
+<span class="source-line-no">323</span><span id="line-323">   *</span>
+<span class="source-line-no">324</span><span id="line-324">   * @return false in all cases</span>
+<span class="source-line-no">325</span><span id="line-325">   *</span>
+<span class="source-line-no">326</span><span id="line-326">   * @exception UnsupportedOperationException when invoked</span>
+<span class="source-line-no">327</span><span id="line-327">   *</span>
+<span class="source-line-no">328</span><span id="line-328">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">329</span><span id="line-329">   *</span>
-<span class="source-line-no">330</span><span id="line-330">   * @return an arbitrarily selected {@link Type} that is guaranteed</span>
-<span class="source-line-no">331</span><span id="line-331">   * to represent the most specialized subclass in its type hierarchy</span>
-<span class="source-line-no">332</span><span id="line-332">   * drawn from the types in this {@link JavaTypeSet}; never {@code</span>
-<span class="source-line-no">333</span><span id="line-333">   * null}; the {@link Type} returned is guaranteed to be either a</span>
-<span class="source-line-no">334</span><span id="line-334">   * {@link Class} or a {@link java.lang.reflect.ParameterizedType}</span>
-<span class="source-line-no">335</span><span id="line-335">   *</span>
-<span class="source-line-no">336</span><span id="line-336">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">337</span><span id="line-337">   *</span>
-<span class="source-line-no">338</span><span id="line-338">   * @idempotency This method is idempotent but deterministic only in</span>
-<span class="source-line-no">339</span><span id="line-339">   * certain cases.</span>
+<span class="source-line-no">330</span><span id="line-330">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">331</span><span id="line-331">   * threads.</span>
+<span class="source-line-no">332</span><span id="line-332">   */</span>
+<span class="source-line-no">333</span><span id="line-333">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">334</span><span id="line-334">  public final boolean add(final Type type) {</span>
+<span class="source-line-no">335</span><span id="line-335">    throw new UnsupportedOperationException();</span>
+<span class="source-line-no">336</span><span id="line-336">  }</span>
+<span class="source-line-no">337</span><span id="line-337"></span>
+<span class="source-line-no">338</span><span id="line-338">  /**</span>
+<span class="source-line-no">339</span><span id="line-339">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
 <span class="source-line-no">340</span><span id="line-340">   *</span>
-<span class="source-line-no">341</span><span id="line-341">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">342</span><span id="line-342">   * threads.</span>
-<span class="source-line-no">343</span><span id="line-343">   *</span>
-<span class="source-line-no">344</span><span id="line-344">   * @see #mostSpecializedInterfaceType()</span>
-<span class="source-line-no">345</span><span id="line-345">   */</span>
-<span class="source-line-no">346</span><span id="line-346">  public final Type mostSpecializedNonInterfaceType() {</span>
-<span class="source-line-no">347</span><span id="line-347">    Type mostSpecializedNonInterfaceType = this.mostSpecializedNonInterfaceType; // volatile read</span>
-<span class="source-line-no">348</span><span id="line-348">    if (mostSpecializedNonInterfaceType == null) {</span>
-<span class="source-line-no">349</span><span id="line-349">      mostSpecializedNonInterfaceType = this.mostSpecialized(JavaTypeSet::nonInterfaceType);</span>
-<span class="source-line-no">350</span><span id="line-350">      if (!MOST_SPECIALIZED_NON_INTERFACE_TYPE.compareAndSet(this, null, mostSpecializedNonInterfaceType)) { // volatile write</span>
-<span class="source-line-no">351</span><span id="line-351">        return this.mostSpecializedNonInterfaceType; // volatile read</span>
-<span class="source-line-no">352</span><span id="line-352">      }</span>
-<span class="source-line-no">353</span><span id="line-353">    }</span>
-<span class="source-line-no">354</span><span id="line-354">    return mostSpecializedNonInterfaceType == NullType.INSTANCE ? null : mostSpecializedNonInterfaceType;</span>
+<span class="source-line-no">341</span><span id="line-341">   * @param c ignored</span>
+<span class="source-line-no">342</span><span id="line-342">   *</span>
+<span class="source-line-no">343</span><span id="line-343">   * @return false in all cases</span>
+<span class="source-line-no">344</span><span id="line-344">   *</span>
+<span class="source-line-no">345</span><span id="line-345">   * @exception UnsupportedOperationException when invoked</span>
+<span class="source-line-no">346</span><span id="line-346">   *</span>
+<span class="source-line-no">347</span><span id="line-347">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">348</span><span id="line-348">   *</span>
+<span class="source-line-no">349</span><span id="line-349">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">350</span><span id="line-350">   * threads.</span>
+<span class="source-line-no">351</span><span id="line-351">   */</span>
+<span class="source-line-no">352</span><span id="line-352">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">353</span><span id="line-353">  public final boolean addAll(final Collection&lt;? extends Type&gt; c) {</span>
+<span class="source-line-no">354</span><span id="line-354">    throw new UnsupportedOperationException();</span>
 <span class="source-line-no">355</span><span id="line-355">  }</span>
 <span class="source-line-no">356</span><span id="line-356"></span>
 <span class="source-line-no">357</span><span id="line-357">  /**</span>
-<span class="source-line-no">358</span><span id="line-358">   * Returns an arbitrarily selected {@link Type} that is guaranteed</span>
-<span class="source-line-no">359</span><span id="line-359">   * to be a {@link Type} representing the most specialized interface</span>
-<span class="source-line-no">360</span><span id="line-360">   * drawn from types representing interfaces in this {@link</span>
-<span class="source-line-no">361</span><span id="line-361">   * JavaTypeSet}, or {@code null} if this {@link JavaTypeSet}</span>
-<span class="source-line-no">362</span><span id="line-362">   * contains no interfaces.</span>
+<span class="source-line-no">358</span><span id="line-358">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
+<span class="source-line-no">359</span><span id="line-359">   *</span>
+<span class="source-line-no">360</span><span id="line-360">   * @exception UnsupportedOperationException when invoked</span>
+<span class="source-line-no">361</span><span id="line-361">   *</span>
+<span class="source-line-no">362</span><span id="line-362">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">363</span><span id="line-363">   *</span>
-<span class="source-line-no">364</span><span id="line-364">   * &lt;p&gt;The {@link Class} that is represented indirectly by the return</span>
-<span class="source-line-no">365</span><span id="line-365">   * value, if any, is guaranteed to return {@code true} from its</span>
-<span class="source-line-no">366</span><span id="line-366">   * {@link Class#isInterface()} method.&lt;/p&gt;</span>
-<span class="source-line-no">367</span><span id="line-367">   *</span>
-<span class="source-line-no">368</span><span id="line-368">   * &lt;p&gt;For example, if a {@link JavaTypeSet} {@linkplain</span>
-<span class="source-line-no">369</span><span id="line-369">   * #contains(Type) contains} {@link java.io.Closeable</span>
-<span class="source-line-no">370</span><span id="line-370">   * Closeable.class} and {@link AutoCloseable AutoCloseable.class},</span>
-<span class="source-line-no">371</span><span id="line-371">   * then this method will return {@link java.io.Closeable</span>
-<span class="source-line-no">372</span><span id="line-372">   * Closeable.class}.  If a {@link JavaTypeSet} {@linkplain</span>
-<span class="source-line-no">373</span><span id="line-373">   * #contains(Type) contains} {@link AutoCloseable</span>
-<span class="source-line-no">374</span><span id="line-374">   * AutoCloseable.class} and {@link java.io.Serializable</span>
-<span class="source-line-no">375</span><span id="line-375">   * Serializable.class}, then either {@link AutoCloseable</span>
-<span class="source-line-no">376</span><span id="line-376">   * AutoCloseable.class} or {@link java.io.Serializable</span>
-<span class="source-line-no">377</span><span id="line-377">   * Serializable.class} will be returned.&lt;/p&gt;</span>
+<span class="source-line-no">364</span><span id="line-364">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">365</span><span id="line-365">   * threads.</span>
+<span class="source-line-no">366</span><span id="line-366">   */</span>
+<span class="source-line-no">367</span><span id="line-367">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">368</span><span id="line-368">  public final void clear() {</span>
+<span class="source-line-no">369</span><span id="line-369">    throw new UnsupportedOperationException();</span>
+<span class="source-line-no">370</span><span id="line-370">  }</span>
+<span class="source-line-no">371</span><span id="line-371"></span>
+<span class="source-line-no">372</span><span id="line-372">  /**</span>
+<span class="source-line-no">373</span><span id="line-373">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
+<span class="source-line-no">374</span><span id="line-374">   *</span>
+<span class="source-line-no">375</span><span id="line-375">   * @param o ignored</span>
+<span class="source-line-no">376</span><span id="line-376">   *</span>
+<span class="source-line-no">377</span><span id="line-377">   * @return false in all cases</span>
 <span class="source-line-no">378</span><span id="line-378">   *</span>
-<span class="source-line-no">379</span><span id="line-379">   * @return an arbitrarily selected {@link Type} that is guaranteed</span>
-<span class="source-line-no">380</span><span id="line-380">   * to be a {@link Type} representing the most specialized interface</span>
-<span class="source-line-no">381</span><span id="line-381">   * drawn from types representing interfaces in this {@link</span>
-<span class="source-line-no">382</span><span id="line-382">   * JavaTypeSet}, or {@code null}; the {@link Type} returned is</span>
-<span class="source-line-no">383</span><span id="line-383">   * guaranteed to be either a {@link Class} or a {@link</span>
-<span class="source-line-no">384</span><span id="line-384">   * java.lang.reflect.ParameterizedType}</span>
-<span class="source-line-no">385</span><span id="line-385">   *</span>
-<span class="source-line-no">386</span><span id="line-386">   * @nullability This method may return {@code null}.</span>
-<span class="source-line-no">387</span><span id="line-387">   *</span>
-<span class="source-line-no">388</span><span id="line-388">   * @idempotency This method is idempotent but deterministic only in</span>
-<span class="source-line-no">389</span><span id="line-389">   * certain cases.</span>
-<span class="source-line-no">390</span><span id="line-390">   *</span>
-<span class="source-line-no">391</span><span id="line-391">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">392</span><span id="line-392">   * threads.</span>
+<span class="source-line-no">379</span><span id="line-379">   * @exception UnsupportedOperationException when invoked</span>
+<span class="source-line-no">380</span><span id="line-380">   *</span>
+<span class="source-line-no">381</span><span id="line-381">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">382</span><span id="line-382">   *</span>
+<span class="source-line-no">383</span><span id="line-383">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">384</span><span id="line-384">   * threads.</span>
+<span class="source-line-no">385</span><span id="line-385">   */</span>
+<span class="source-line-no">386</span><span id="line-386">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">387</span><span id="line-387">  public final boolean remove(final Object o) {</span>
+<span class="source-line-no">388</span><span id="line-388">    throw new UnsupportedOperationException();</span>
+<span class="source-line-no">389</span><span id="line-389">  }</span>
+<span class="source-line-no">390</span><span id="line-390"></span>
+<span class="source-line-no">391</span><span id="line-391">  /**</span>
+<span class="source-line-no">392</span><span id="line-392">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
 <span class="source-line-no">393</span><span id="line-393">   *</span>
-<span class="source-line-no">394</span><span id="line-394">   * @see #mostSpecializedNonInterfaceType()</span>
-<span class="source-line-no">395</span><span id="line-395">   */</span>
-<span class="source-line-no">396</span><span id="line-396">  public final Type mostSpecializedInterfaceType() {</span>
-<span class="source-line-no">397</span><span id="line-397">    Type mostSpecializedInterfaceType = this.mostSpecializedInterfaceType; // volatile read</span>
-<span class="source-line-no">398</span><span id="line-398">    if (mostSpecializedInterfaceType == null) {</span>
-<span class="source-line-no">399</span><span id="line-399">      mostSpecializedInterfaceType = this.mostSpecialized(JavaTypeSet::interfaceType);</span>
-<span class="source-line-no">400</span><span id="line-400">      if (!MOST_SPECIALIZED_INTERFACE_TYPE.compareAndSet(this, null, mostSpecializedInterfaceType)) { // volatile write</span>
-<span class="source-line-no">401</span><span id="line-401">        return this.mostSpecializedInterfaceType; // volatile read</span>
-<span class="source-line-no">402</span><span id="line-402">      }</span>
-<span class="source-line-no">403</span><span id="line-403">    }</span>
-<span class="source-line-no">404</span><span id="line-404">    return mostSpecializedInterfaceType == NullType.INSTANCE ? null : mostSpecializedInterfaceType;</span>
-<span class="source-line-no">405</span><span id="line-405">  }</span>
-<span class="source-line-no">406</span><span id="line-406"></span>
-<span class="source-line-no">407</span><span id="line-407">  private final Type mostSpecialized(final Predicate&lt;? super Type&gt; p) {</span>
-<span class="source-line-no">408</span><span id="line-408">    Type candidate = null;</span>
-<span class="source-line-no">409</span><span id="line-409">    for (final JavaType javaType : this.set) {</span>
-<span class="source-line-no">410</span><span id="line-410">      final Type type = javaType.object();</span>
-<span class="source-line-no">411</span><span id="line-411">      if (candidate == null) {</span>
-<span class="source-line-no">412</span><span id="line-412">        if (p.test(type)) {</span>
-<span class="source-line-no">413</span><span id="line-413">          candidate = type;</span>
-<span class="source-line-no">414</span><span id="line-414">        }</span>
-<span class="source-line-no">415</span><span id="line-415">      } else {</span>
-<span class="source-line-no">416</span><span id="line-416">        for (final Type supertype : JavaTypes.supertypes(type)) {</span>
-<span class="source-line-no">417</span><span id="line-417">          if (p.test(supertype) &amp;&amp; this.set.contains(JavaType.of(supertype)) &amp;&amp; JavaTypes.supertype(candidate, supertype)) {</span>
-<span class="source-line-no">418</span><span id="line-418">            candidate = supertype;</span>
-<span class="source-line-no">419</span><span id="line-419">          }</span>
-<span class="source-line-no">420</span><span id="line-420">        }</span>
-<span class="source-line-no">421</span><span id="line-421">      }</span>
-<span class="source-line-no">422</span><span id="line-422">    }</span>
-<span class="source-line-no">423</span><span id="line-423">    return candidate;</span>
-<span class="source-line-no">424</span><span id="line-424">  }</span>
-<span class="source-line-no">425</span><span id="line-425"></span>
-<span class="source-line-no">426</span><span id="line-426">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">427</span><span id="line-427">  public final boolean contains(final Object o) {</span>
-<span class="source-line-no">428</span><span id="line-428">    return o instanceof Type t ? this.set.contains(JavaType.of(t)) : this.set.contains(o);</span>
-<span class="source-line-no">429</span><span id="line-429">  }</span>
-<span class="source-line-no">430</span><span id="line-430"></span>
-<span class="source-line-no">431</span><span id="line-431">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">432</span><span id="line-432">  public final boolean isEmpty() {</span>
-<span class="source-line-no">433</span><span id="line-433">    return this.set.isEmpty();</span>
-<span class="source-line-no">434</span><span id="line-434">  }</span>
-<span class="source-line-no">435</span><span id="line-435"></span>
-<span class="source-line-no">436</span><span id="line-436">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">437</span><span id="line-437">  public final int size() {</span>
-<span class="source-line-no">438</span><span id="line-438">    return this.set.size();</span>
-<span class="source-line-no">439</span><span id="line-439">  }</span>
-<span class="source-line-no">440</span><span id="line-440"></span>
-<span class="source-line-no">441</span><span id="line-441">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">442</span><span id="line-442">  public final Iterator&lt;Type&gt; iterator() {</span>
-<span class="source-line-no">443</span><span id="line-443">    if (this.set.isEmpty()) {</span>
-<span class="source-line-no">444</span><span id="line-444">      return Collections.emptyIterator();</span>
-<span class="source-line-no">445</span><span id="line-445">    } else {</span>
-<span class="source-line-no">446</span><span id="line-446">      return new TypeIterator(this.set.iterator());</span>
-<span class="source-line-no">447</span><span id="line-447">    }</span>
-<span class="source-line-no">448</span><span id="line-448">  }</span>
-<span class="source-line-no">449</span><span id="line-449"></span>
-<span class="source-line-no">450</span><span id="line-450">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">451</span><span id="line-451">  public final Stream&lt;Type&gt; stream() {</span>
-<span class="source-line-no">452</span><span id="line-452">    return this.set.stream().map(JavaType::object);</span>
-<span class="source-line-no">453</span><span id="line-453">  }</span>
-<span class="source-line-no">454</span><span id="line-454"></span>
-<span class="source-line-no">455</span><span id="line-455">  @Override // Set&lt;Type&gt;</span>
-<span class="source-line-no">456</span><span id="line-456">  public final Spliterator&lt;Type&gt; spliterator() {</span>
-<span class="source-line-no">457</span><span id="line-457">    if (this.set.isEmpty()) {</span>
-<span class="source-line-no">458</span><span id="line-458">      return Spliterators.emptySpliterator();</span>
-<span class="source-line-no">459</span><span id="line-459">    } else {</span>
-<span class="source-line-no">460</span><span id="line-460">      return</span>
-<span class="source-line-no">461</span><span id="line-461">        Spliterators.spliterator(this.iterator(),</span>
-<span class="source-line-no">462</span><span id="line-462">                                 this.size(),</span>
-<span class="source-line-no">463</span><span id="line-463">                                 DISTINCT | IMMUTABLE | NONNULL | ORDERED | SIZED | SUBSIZED);</span>
-<span class="source-line-no">464</span><span id="line-464">    }</span>
-<span class="source-line-no">465</span><span id="line-465">  }</span>
-<span class="source-line-no">466</span><span id="line-466"></span>
-<span class="source-line-no">467</span><span id="line-467">  /**</span>
-<span class="source-line-no">468</span><span id="line-468">   * Returns a hashcode for this {@link JavaTypeSet}.</span>
-<span class="source-line-no">469</span><span id="line-469">   *</span>
-<span class="source-line-no">470</span><span id="line-470">   * @return a hashcode for this {@link JavaTypeSet}</span>
-<span class="source-line-no">471</span><span id="line-471">   *</span>
-<span class="source-line-no">472</span><span id="line-472">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">473</span><span id="line-473">   *</span>
-<span class="source-line-no">474</span><span id="line-474">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">475</span><span id="line-475">   * threads.</span>
-<span class="source-line-no">476</span><span id="line-476">   */</span>
-<span class="source-line-no">477</span><span id="line-477">  @Override // Object</span>
-<span class="source-line-no">478</span><span id="line-478">  public final int hashCode() {</span>
-<span class="source-line-no">479</span><span id="line-479">    return this.set.hashCode();</span>
-<span class="source-line-no">480</span><span id="line-480">  }</span>
-<span class="source-line-no">481</span><span id="line-481"></span>
-<span class="source-line-no">482</span><span id="line-482">  /**</span>
-<span class="source-line-no">483</span><span id="line-483">   * Returns {@code true} if this {@link JavaTypeSet} is equal to the</span>
-<span class="source-line-no">484</span><span id="line-484">   * supplied {@link Object}.</span>
-<span class="source-line-no">485</span><span id="line-485">   *</span>
-<span class="source-line-no">486</span><span id="line-486">   * @param other the {@link Object} to test; may be {@code null}</span>
-<span class="source-line-no">487</span><span id="line-487">   *</span>
-<span class="source-line-no">488</span><span id="line-488">   * @return {@code true} if this {@link JavaTypeSet} is equal to the</span>
-<span class="source-line-no">489</span><span id="line-489">   * supplied {@link Object}; {@code false} otherwise</span>
-<span class="source-line-no">490</span><span id="line-490">   *</span>
-<span class="source-line-no">491</span><span id="line-491">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">492</span><span id="line-492">   *</span>
-<span class="source-line-no">493</span><span id="line-493">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">494</span><span id="line-494">   * threads.</span>
-<span class="source-line-no">495</span><span id="line-495">   */</span>
-<span class="source-line-no">496</span><span id="line-496">  @Override // Object</span>
-<span class="source-line-no">497</span><span id="line-497">  public final boolean equals(final Object other) {</span>
-<span class="source-line-no">498</span><span id="line-498">    if (other == this) {</span>
-<span class="source-line-no">499</span><span id="line-499">      return true;</span>
-<span class="source-line-no">500</span><span id="line-500">    } else if (other != null &amp;&amp; this.getClass() == other.getClass()) {</span>
-<span class="source-line-no">501</span><span id="line-501">      return this.set.equals(((JavaTypeSet)other).set);</span>
-<span class="source-line-no">502</span><span id="line-502">    } else {</span>
-<span class="source-line-no">503</span><span id="line-503">      return false;</span>
-<span class="source-line-no">504</span><span id="line-504">    }</span>
-<span class="source-line-no">505</span><span id="line-505">  }</span>
-<span class="source-line-no">506</span><span id="line-506"></span>
-<span class="source-line-no">507</span><span id="line-507">  /**</span>
-<span class="source-line-no">508</span><span id="line-508">   * Returns a {@link String} representation of this {@link</span>
-<span class="source-line-no">509</span><span id="line-509">   * JavaTypeSet}.</span>
-<span class="source-line-no">510</span><span id="line-510">   *</span>
-<span class="source-line-no">511</span><span id="line-511">   * &lt;p&gt;The format of the returned {@link String} is deliberately</span>
-<span class="source-line-no">512</span><span id="line-512">   * undefined and is subject to change without prior notice between</span>
-<span class="source-line-no">513</span><span id="line-513">   * versions of this class.&lt;/p&gt;</span>
+<span class="source-line-no">394</span><span id="line-394">   * @param c ignored</span>
+<span class="source-line-no">395</span><span id="line-395">   *</span>
+<span class="source-line-no">396</span><span id="line-396">   * @return false in all cases</span>
+<span class="source-line-no">397</span><span id="line-397">   *</span>
+<span class="source-line-no">398</span><span id="line-398">   * @exception UnsupportedOperationException when invoked</span>
+<span class="source-line-no">399</span><span id="line-399">   *</span>
+<span class="source-line-no">400</span><span id="line-400">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">401</span><span id="line-401">   *</span>
+<span class="source-line-no">402</span><span id="line-402">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">403</span><span id="line-403">   * threads.</span>
+<span class="source-line-no">404</span><span id="line-404">   */</span>
+<span class="source-line-no">405</span><span id="line-405">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">406</span><span id="line-406">  public final boolean removeAll(final Collection&lt;?&gt; c) {</span>
+<span class="source-line-no">407</span><span id="line-407">    throw new UnsupportedOperationException();</span>
+<span class="source-line-no">408</span><span id="line-408">  }</span>
+<span class="source-line-no">409</span><span id="line-409"></span>
+<span class="source-line-no">410</span><span id="line-410">  /**</span>
+<span class="source-line-no">411</span><span id="line-411">   * Throws an {@link UnsupportedOperationException} when invoked.</span>
+<span class="source-line-no">412</span><span id="line-412">   *</span>
+<span class="source-line-no">413</span><span id="line-413">   * @param c ignored</span>
+<span class="source-line-no">414</span><span id="line-414">   *</span>
+<span class="source-line-no">415</span><span id="line-415">   * @return false in all cases</span>
+<span class="source-line-no">416</span><span id="line-416">   *</span>
+<span class="source-line-no">417</span><span id="line-417">   * @exception UnsupportedOperationException when invoked</span>
+<span class="source-line-no">418</span><span id="line-418">   *</span>
+<span class="source-line-no">419</span><span id="line-419">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">420</span><span id="line-420">   *</span>
+<span class="source-line-no">421</span><span id="line-421">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">422</span><span id="line-422">   * threads.</span>
+<span class="source-line-no">423</span><span id="line-423">   */</span>
+<span class="source-line-no">424</span><span id="line-424">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">425</span><span id="line-425">  public final boolean retainAll(final Collection&lt;?&gt; c) {</span>
+<span class="source-line-no">426</span><span id="line-426">    throw new UnsupportedOperationException();</span>
+<span class="source-line-no">427</span><span id="line-427">  }</span>
+<span class="source-line-no">428</span><span id="line-428"></span>
+<span class="source-line-no">429</span><span id="line-429">  /**</span>
+<span class="source-line-no">430</span><span id="line-430">   * Returns an arbitrarily selected {@link Type} that is guaranteed</span>
+<span class="source-line-no">431</span><span id="line-431">   * to represent the most specialized subclass drawn from the types</span>
+<span class="source-line-no">432</span><span id="line-432">   * in this {@link JavaTypeSet}.</span>
+<span class="source-line-no">433</span><span id="line-433">   *</span>
+<span class="source-line-no">434</span><span id="line-434">   * &lt;p&gt;For example, if a {@link JavaTypeSet} contains {@link</span>
+<span class="source-line-no">435</span><span id="line-435">   * Integer Integer.class}, {@link Number Number.class} and {@link</span>
+<span class="source-line-no">436</span><span id="line-436">   * Object Object.class}, then this method will return {@link Integer</span>
+<span class="source-line-no">437</span><span id="line-437">   * Integer.class}.  If a {@link JavaTypeSet} contains {@link</span>
+<span class="source-line-no">438</span><span id="line-438">   * Integer Integer.class} and {@link String String.class}, then</span>
+<span class="source-line-no">439</span><span id="line-439">   * either {@link Integer Integer.class} or {@link String</span>
+<span class="source-line-no">440</span><span id="line-440">   * String.class} will be returned.&lt;/p&gt;</span>
+<span class="source-line-no">441</span><span id="line-441">   *</span>
+<span class="source-line-no">442</span><span id="line-442">   * &lt;p&gt;In practice, most {@link JavaTypeSet}s in normal use</span>
+<span class="source-line-no">443</span><span id="line-443">   * contain classes from a single inheritance hierarchy.&lt;/p&gt;</span>
+<span class="source-line-no">444</span><span id="line-444">   *</span>
+<span class="source-line-no">445</span><span id="line-445">   * @return an arbitrarily selected {@link Type} that is guaranteed</span>
+<span class="source-line-no">446</span><span id="line-446">   * to represent the most specialized subclass in its type hierarchy</span>
+<span class="source-line-no">447</span><span id="line-447">   * drawn from the types in this {@link JavaTypeSet}; never {@code</span>
+<span class="source-line-no">448</span><span id="line-448">   * null}; the {@link Type} returned is guaranteed to be either a</span>
+<span class="source-line-no">449</span><span id="line-449">   * {@link Class} or a {@link java.lang.reflect.ParameterizedType}</span>
+<span class="source-line-no">450</span><span id="line-450">   *</span>
+<span class="source-line-no">451</span><span id="line-451">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">452</span><span id="line-452">   *</span>
+<span class="source-line-no">453</span><span id="line-453">   * @idempotency This method is idempotent but deterministic only in</span>
+<span class="source-line-no">454</span><span id="line-454">   * certain cases.</span>
+<span class="source-line-no">455</span><span id="line-455">   *</span>
+<span class="source-line-no">456</span><span id="line-456">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">457</span><span id="line-457">   * threads.</span>
+<span class="source-line-no">458</span><span id="line-458">   *</span>
+<span class="source-line-no">459</span><span id="line-459">   * @see #mostSpecializedInterfaceType()</span>
+<span class="source-line-no">460</span><span id="line-460">   *</span>
+<span class="source-line-no">461</span><span id="line-461">   * @deprecated See {@link</span>
+<span class="source-line-no">462</span><span id="line-462">   * org.microbean.type.Type#mostSpecialized(Predicate)}</span>
+<span class="source-line-no">463</span><span id="line-463">   */</span>
+<span class="source-line-no">464</span><span id="line-464">  @Deprecated</span>
+<span class="source-line-no">465</span><span id="line-465">  public final Type mostSpecializedNonInterfaceType() {</span>
+<span class="source-line-no">466</span><span id="line-466">    Type mostSpecializedNonInterfaceType = this.mostSpecializedNonInterfaceType; // volatile read</span>
+<span class="source-line-no">467</span><span id="line-467">    if (mostSpecializedNonInterfaceType == null) {</span>
+<span class="source-line-no">468</span><span id="line-468">      mostSpecializedNonInterfaceType = this.mostSpecialized(JavaTypeSet::nonInterfaceType);</span>
+<span class="source-line-no">469</span><span id="line-469">      if (!MOST_SPECIALIZED_NON_INTERFACE_TYPE.compareAndSet(this, null, mostSpecializedNonInterfaceType)) { // volatile write</span>
+<span class="source-line-no">470</span><span id="line-470">        return this.mostSpecializedNonInterfaceType; // volatile read</span>
+<span class="source-line-no">471</span><span id="line-471">      }</span>
+<span class="source-line-no">472</span><span id="line-472">    }</span>
+<span class="source-line-no">473</span><span id="line-473">    return mostSpecializedNonInterfaceType == NullType.INSTANCE ? null : mostSpecializedNonInterfaceType;</span>
+<span class="source-line-no">474</span><span id="line-474">  }</span>
+<span class="source-line-no">475</span><span id="line-475"></span>
+<span class="source-line-no">476</span><span id="line-476">  /**</span>
+<span class="source-line-no">477</span><span id="line-477">   * Returns an arbitrarily selected {@link Type} that is guaranteed</span>
+<span class="source-line-no">478</span><span id="line-478">   * to be a {@link Type} representing the most specialized interface</span>
+<span class="source-line-no">479</span><span id="line-479">   * drawn from types representing interfaces in this {@link</span>
+<span class="source-line-no">480</span><span id="line-480">   * JavaTypeSet}, or {@code null} if this {@link JavaTypeSet}</span>
+<span class="source-line-no">481</span><span id="line-481">   * contains no interfaces.</span>
+<span class="source-line-no">482</span><span id="line-482">   *</span>
+<span class="source-line-no">483</span><span id="line-483">   * &lt;p&gt;The {@link Class} that is represented indirectly by the return</span>
+<span class="source-line-no">484</span><span id="line-484">   * value, if any, is guaranteed to return {@code true} from its</span>
+<span class="source-line-no">485</span><span id="line-485">   * {@link Class#isInterface()} method.&lt;/p&gt;</span>
+<span class="source-line-no">486</span><span id="line-486">   *</span>
+<span class="source-line-no">487</span><span id="line-487">   * &lt;p&gt;For example, if a {@link JavaTypeSet} {@linkplain</span>
+<span class="source-line-no">488</span><span id="line-488">   * #contains(Type) contains} {@link java.io.Closeable</span>
+<span class="source-line-no">489</span><span id="line-489">   * Closeable.class} and {@link AutoCloseable AutoCloseable.class},</span>
+<span class="source-line-no">490</span><span id="line-490">   * then this method will return {@link java.io.Closeable</span>
+<span class="source-line-no">491</span><span id="line-491">   * Closeable.class}.  If a {@link JavaTypeSet} {@linkplain</span>
+<span class="source-line-no">492</span><span id="line-492">   * #contains(Type) contains} {@link AutoCloseable</span>
+<span class="source-line-no">493</span><span id="line-493">   * AutoCloseable.class} and {@link java.io.Serializable</span>
+<span class="source-line-no">494</span><span id="line-494">   * Serializable.class}, then either {@link AutoCloseable</span>
+<span class="source-line-no">495</span><span id="line-495">   * AutoCloseable.class} or {@link java.io.Serializable</span>
+<span class="source-line-no">496</span><span id="line-496">   * Serializable.class} will be returned.&lt;/p&gt;</span>
+<span class="source-line-no">497</span><span id="line-497">   *</span>
+<span class="source-line-no">498</span><span id="line-498">   * @return an arbitrarily selected {@link Type} that is guaranteed</span>
+<span class="source-line-no">499</span><span id="line-499">   * to be a {@link Type} representing the most specialized interface</span>
+<span class="source-line-no">500</span><span id="line-500">   * drawn from types representing interfaces in this {@link</span>
+<span class="source-line-no">501</span><span id="line-501">   * JavaTypeSet}, or {@code null}; the {@link Type} returned is</span>
+<span class="source-line-no">502</span><span id="line-502">   * guaranteed to be either a {@link Class} or a {@link</span>
+<span class="source-line-no">503</span><span id="line-503">   * java.lang.reflect.ParameterizedType}</span>
+<span class="source-line-no">504</span><span id="line-504">   *</span>
+<span class="source-line-no">505</span><span id="line-505">   * @nullability This method may return {@code null}.</span>
+<span class="source-line-no">506</span><span id="line-506">   *</span>
+<span class="source-line-no">507</span><span id="line-507">   * @idempotency This method is idempotent but deterministic only in</span>
+<span class="source-line-no">508</span><span id="line-508">   * certain cases.</span>
+<span class="source-line-no">509</span><span id="line-509">   *</span>
+<span class="source-line-no">510</span><span id="line-510">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">511</span><span id="line-511">   * threads.</span>
+<span class="source-line-no">512</span><span id="line-512">   *</span>
+<span class="source-line-no">513</span><span id="line-513">   * @see #mostSpecializedNonInterfaceType()</span>
 <span class="source-line-no">514</span><span id="line-514">   *</span>
-<span class="source-line-no">515</span><span id="line-515">   * @return a {@link String} representation of this {@link</span>
-<span class="source-line-no">516</span><span id="line-516">   * JavaTypeSet}</span>
-<span class="source-line-no">517</span><span id="line-517">   *</span>
-<span class="source-line-no">518</span><span id="line-518">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">519</span><span id="line-519">   *</span>
-<span class="source-line-no">520</span><span id="line-520">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">521</span><span id="line-521">   *</span>
-<span class="source-line-no">522</span><span id="line-522">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">523</span><span id="line-523">   * threads.</span>
-<span class="source-line-no">524</span><span id="line-524">   */</span>
-<span class="source-line-no">525</span><span id="line-525">  @Override // Object</span>
-<span class="source-line-no">526</span><span id="line-526">  public final String toString() {</span>
-<span class="source-line-no">527</span><span id="line-527">    return this.set.toString();</span>
+<span class="source-line-no">515</span><span id="line-515">   * @deprecated See {@link</span>
+<span class="source-line-no">516</span><span id="line-516">   * org.microbean.type.Type#mostSpecialized(Predicate)}</span>
+<span class="source-line-no">517</span><span id="line-517">   */</span>
+<span class="source-line-no">518</span><span id="line-518">  @Deprecated</span>
+<span class="source-line-no">519</span><span id="line-519">  public final Type mostSpecializedInterfaceType() {</span>
+<span class="source-line-no">520</span><span id="line-520">    Type mostSpecializedInterfaceType = this.mostSpecializedInterfaceType; // volatile read</span>
+<span class="source-line-no">521</span><span id="line-521">    if (mostSpecializedInterfaceType == null) {</span>
+<span class="source-line-no">522</span><span id="line-522">      mostSpecializedInterfaceType = this.mostSpecialized(JavaTypeSet::interfaceType);</span>
+<span class="source-line-no">523</span><span id="line-523">      if (!MOST_SPECIALIZED_INTERFACE_TYPE.compareAndSet(this, null, mostSpecializedInterfaceType)) { // volatile write</span>
+<span class="source-line-no">524</span><span id="line-524">        return this.mostSpecializedInterfaceType; // volatile read</span>
+<span class="source-line-no">525</span><span id="line-525">      }</span>
+<span class="source-line-no">526</span><span id="line-526">    }</span>
+<span class="source-line-no">527</span><span id="line-527">    return mostSpecializedInterfaceType == NullType.INSTANCE ? null : mostSpecializedInterfaceType;</span>
 <span class="source-line-no">528</span><span id="line-528">  }</span>
 <span class="source-line-no">529</span><span id="line-529"></span>
-<span class="source-line-no">530</span><span id="line-530"></span>
-<span class="source-line-no">531</span><span id="line-531">  /*</span>
-<span class="source-line-no">532</span><span id="line-532">   * Static methods.</span>
-<span class="source-line-no">533</span><span id="line-533">   */</span>
-<span class="source-line-no">534</span><span id="line-534"></span>
-<span class="source-line-no">535</span><span id="line-535"></span>
-<span class="source-line-no">536</span><span id="line-536">  /**</span>
-<span class="source-line-no">537</span><span id="line-537">   * Returns an {@linkplain #isEmpty() empty} {@link JavaTypeSet}.</span>
-<span class="source-line-no">538</span><span id="line-538">   *</span>
-<span class="source-line-no">539</span><span id="line-539">   * @return an {@linkplain #isEmpty() empty} {@link JavaTypeSet}</span>
-<span class="source-line-no">540</span><span id="line-540">   *</span>
-<span class="source-line-no">541</span><span id="line-541">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">542</span><span id="line-542">   *</span>
-<span class="source-line-no">543</span><span id="line-543">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">544</span><span id="line-544">   *</span>
-<span class="source-line-no">545</span><span id="line-545">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">546</span><span id="line-546">   * threads.</span>
-<span class="source-line-no">547</span><span id="line-547">   */</span>
-<span class="source-line-no">548</span><span id="line-548">  @Convenience</span>
-<span class="source-line-no">549</span><span id="line-549">  public static final JavaTypeSet of() {</span>
-<span class="source-line-no">550</span><span id="line-550">    return EMPTY_JAVA_TYPE_SET;</span>
-<span class="source-line-no">551</span><span id="line-551">  }</span>
-<span class="source-line-no">552</span><span id="line-552"></span>
-<span class="source-line-no">553</span><span id="line-553">  /**</span>
-<span class="source-line-no">554</span><span id="line-554">   * Returns a {@link JavaTypeSet} whose sole element models the</span>
-<span class="source-line-no">555</span><span id="line-555">   * supplied {@link Type}.</span>
-<span class="source-line-no">556</span><span id="line-556">   *</span>
-<span class="source-line-no">557</span><span id="line-557">   * @param t the {@link Type} in question; must not be {@code</span>
-<span class="source-line-no">558</span><span id="line-558">   * null}</span>
-<span class="source-line-no">559</span><span id="line-559">   *</span>
-<span class="source-line-no">560</span><span id="line-560">   * @return a {@link JavaTypeSet} whose sole element models the</span>
-<span class="source-line-no">561</span><span id="line-561">   * supplied {@link Type}; never {@code null}</span>
-<span class="source-line-no">562</span><span id="line-562">   *</span>
-<span class="source-line-no">563</span><span id="line-563">   * @exception NullPointerException if {@code t} is {@code null}</span>
-<span class="source-line-no">564</span><span id="line-564">   *</span>
-<span class="source-line-no">565</span><span id="line-565">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">566</span><span id="line-566">   *</span>
-<span class="source-line-no">567</span><span id="line-567">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">568</span><span id="line-568">   *</span>
-<span class="source-line-no">569</span><span id="line-569">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">570</span><span id="line-570">   * threads.</span>
-<span class="source-line-no">571</span><span id="line-571">   *</span>
-<span class="source-line-no">572</span><span id="line-572">   * @see #of(JavaType)</span>
-<span class="source-line-no">573</span><span id="line-573">   *</span>
-<span class="source-line-no">574</span><span id="line-574">   * @see JavaType#of(Type)</span>
-<span class="source-line-no">575</span><span id="line-575">   */</span>
-<span class="source-line-no">576</span><span id="line-576">  @Convenience</span>
-<span class="source-line-no">577</span><span id="line-577">  public static final JavaTypeSet of(final Type t) {</span>
-<span class="source-line-no">578</span><span id="line-578">    return of(JavaType.of(t));</span>
-<span class="source-line-no">579</span><span id="line-579">  }</span>
-<span class="source-line-no">580</span><span id="line-580"></span>
-<span class="source-line-no">581</span><span id="line-581">  /**</span>
-<span class="source-line-no">582</span><span id="line-582">   * Returns a {@link JavaTypeSet} whose elements are modeled by the</span>
-<span class="source-line-no">583</span><span id="line-583">   * supplied {@link Type}s.</span>
-<span class="source-line-no">584</span><span id="line-584">   *</span>
-<span class="source-line-no">585</span><span id="line-585">   * @param t0 one of the {@link Type}s in question; must not be</span>
-<span class="source-line-no">586</span><span id="line-586">   * {@code null}</span>
-<span class="source-line-no">587</span><span id="line-587">   *</span>
-<span class="source-line-no">588</span><span id="line-588">   * @param t1 one of the {@link Type}s in question; must not be</span>
-<span class="source-line-no">589</span><span id="line-589">   * {@code null}</span>
-<span class="source-line-no">590</span><span id="line-590">   *</span>
-<span class="source-line-no">591</span><span id="line-591">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
-<span class="source-line-no">592</span><span id="line-592">   * supplied {@link Type}s; never {@code null}</span>
-<span class="source-line-no">593</span><span id="line-593">   *</span>
-<span class="source-line-no">594</span><span id="line-594">   * @exception NullPointerException if any argument is {@code null}</span>
+<span class="source-line-no">530</span><span id="line-530">  private final Type mostSpecialized(final Predicate&lt;? super Type&gt; p) {</span>
+<span class="source-line-no">531</span><span id="line-531">    Type candidate = null;</span>
+<span class="source-line-no">532</span><span id="line-532">    for (final JavaType javaType : this.set) {</span>
+<span class="source-line-no">533</span><span id="line-533">      final Type type = javaType.object();</span>
+<span class="source-line-no">534</span><span id="line-534">      if (candidate == null) {</span>
+<span class="source-line-no">535</span><span id="line-535">        if (p.test(type)) {</span>
+<span class="source-line-no">536</span><span id="line-536">          candidate = type;</span>
+<span class="source-line-no">537</span><span id="line-537">        }</span>
+<span class="source-line-no">538</span><span id="line-538">      } else {</span>
+<span class="source-line-no">539</span><span id="line-539">        for (final Type supertype : JavaTypes.supertypes(type)) {</span>
+<span class="source-line-no">540</span><span id="line-540">          if (p.test(supertype) &amp;&amp; this.set.contains(JavaType.of(supertype)) &amp;&amp; JavaTypes.supertype(candidate, supertype)) {</span>
+<span class="source-line-no">541</span><span id="line-541">            candidate = supertype;</span>
+<span class="source-line-no">542</span><span id="line-542">          }</span>
+<span class="source-line-no">543</span><span id="line-543">        }</span>
+<span class="source-line-no">544</span><span id="line-544">      }</span>
+<span class="source-line-no">545</span><span id="line-545">    }</span>
+<span class="source-line-no">546</span><span id="line-546">    return candidate;</span>
+<span class="source-line-no">547</span><span id="line-547">  }</span>
+<span class="source-line-no">548</span><span id="line-548"></span>
+<span class="source-line-no">549</span><span id="line-549">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">550</span><span id="line-550">  public final boolean contains(final Object o) {</span>
+<span class="source-line-no">551</span><span id="line-551">    return o instanceof Type t ? this.set.contains(JavaType.of(t)) : this.set.contains(o);</span>
+<span class="source-line-no">552</span><span id="line-552">  }</span>
+<span class="source-line-no">553</span><span id="line-553"></span>
+<span class="source-line-no">554</span><span id="line-554">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">555</span><span id="line-555">  public final boolean isEmpty() {</span>
+<span class="source-line-no">556</span><span id="line-556">    return this.set.isEmpty();</span>
+<span class="source-line-no">557</span><span id="line-557">  }</span>
+<span class="source-line-no">558</span><span id="line-558"></span>
+<span class="source-line-no">559</span><span id="line-559">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">560</span><span id="line-560">  public final int size() {</span>
+<span class="source-line-no">561</span><span id="line-561">    return this.set.size();</span>
+<span class="source-line-no">562</span><span id="line-562">  }</span>
+<span class="source-line-no">563</span><span id="line-563"></span>
+<span class="source-line-no">564</span><span id="line-564">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">565</span><span id="line-565">  public final Iterator&lt;Type&gt; iterator() {</span>
+<span class="source-line-no">566</span><span id="line-566">    return this.set.isEmpty() ? Collections.emptyIterator() : new TypeIterator(this.set.iterator());</span>
+<span class="source-line-no">567</span><span id="line-567">  }</span>
+<span class="source-line-no">568</span><span id="line-568"></span>
+<span class="source-line-no">569</span><span id="line-569">  /**</span>
+<span class="source-line-no">570</span><span id="line-570">   * Returns an {@link Iterator} of {@link JavaType} instances</span>
+<span class="source-line-no">571</span><span id="line-571">   * representing the elements stored by this {@link JavaTypeSet}.</span>
+<span class="source-line-no">572</span><span id="line-572">   *</span>
+<span class="source-line-no">573</span><span id="line-573">   * @return an {@link Iterator} of {@link JavaType} instances</span>
+<span class="source-line-no">574</span><span id="line-574">   * representing the elements stored by this {@link JavaTypeSet}</span>
+<span class="source-line-no">575</span><span id="line-575">   *</span>
+<span class="source-line-no">576</span><span id="line-576">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">577</span><span id="line-577">   *</span>
+<span class="source-line-no">578</span><span id="line-578">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">579</span><span id="line-579">   *</span>
+<span class="source-line-no">580</span><span id="line-580">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">581</span><span id="line-581">   * threads.</span>
+<span class="source-line-no">582</span><span id="line-582">   */</span>
+<span class="source-line-no">583</span><span id="line-583">  public final Iterator&lt;JavaType&gt; javaTypeIterator() {</span>
+<span class="source-line-no">584</span><span id="line-584">    return this.set.iterator();</span>
+<span class="source-line-no">585</span><span id="line-585">  }</span>
+<span class="source-line-no">586</span><span id="line-586"></span>
+<span class="source-line-no">587</span><span id="line-587">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">588</span><span id="line-588">  public final Stream&lt;Type&gt; stream() {</span>
+<span class="source-line-no">589</span><span id="line-589">    return this.set.stream().map(JavaType::object);</span>
+<span class="source-line-no">590</span><span id="line-590">  }</span>
+<span class="source-line-no">591</span><span id="line-591"></span>
+<span class="source-line-no">592</span><span id="line-592">  /**</span>
+<span class="source-line-no">593</span><span id="line-593">   * Returns a {@link Stream} of {@link JavaType} instances</span>
+<span class="source-line-no">594</span><span id="line-594">   * representing the elements stored by this {@link JavaTypeSet}.</span>
 <span class="source-line-no">595</span><span id="line-595">   *</span>
-<span class="source-line-no">596</span><span id="line-596">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">597</span><span id="line-597">   *</span>
-<span class="source-line-no">598</span><span id="line-598">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">599</span><span id="line-599">   *</span>
-<span class="source-line-no">600</span><span id="line-600">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">601</span><span id="line-601">   * threads.</span>
+<span class="source-line-no">596</span><span id="line-596">   * @return a {@link Stream} of {@link JavaType} instances</span>
+<span class="source-line-no">597</span><span id="line-597">   * representing the elements stored by this {@link JavaTypeSet}</span>
+<span class="source-line-no">598</span><span id="line-598">   *</span>
+<span class="source-line-no">599</span><span id="line-599">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">600</span><span id="line-600">   *</span>
+<span class="source-line-no">601</span><span id="line-601">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">602</span><span id="line-602">   *</span>
-<span class="source-line-no">603</span><span id="line-603">   * @see #of(Collection)</span>
-<span class="source-line-no">604</span><span id="line-604">   *</span>
-<span class="source-line-no">605</span><span id="line-605">   * @see JavaType#of(Type)</span>
-<span class="source-line-no">606</span><span id="line-606">   */</span>
-<span class="source-line-no">607</span><span id="line-607">  @Convenience</span>
-<span class="source-line-no">608</span><span id="line-608">  public static final JavaTypeSet of(final Type t0, final Type t1) {</span>
-<span class="source-line-no">609</span><span id="line-609">    return of(List.of(JavaType.of(t0), JavaType.of(t1)));</span>
-<span class="source-line-no">610</span><span id="line-610">  }</span>
-<span class="source-line-no">611</span><span id="line-611"></span>
-<span class="source-line-no">612</span><span id="line-612">  /**</span>
-<span class="source-line-no">613</span><span id="line-613">   * Returns a {@link JavaTypeSet} whose elements are modeled by the</span>
-<span class="source-line-no">614</span><span id="line-614">   * supplied {@link Type}s.</span>
-<span class="source-line-no">615</span><span id="line-615">   *</span>
-<span class="source-line-no">616</span><span id="line-616">   * @param types the {@link Type}s in question; must not be {@code</span>
-<span class="source-line-no">617</span><span id="line-617">   * null}</span>
-<span class="source-line-no">618</span><span id="line-618">   *</span>
-<span class="source-line-no">619</span><span id="line-619">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
-<span class="source-line-no">620</span><span id="line-620">   * supplied {@link Type}s; never {@code null}</span>
-<span class="source-line-no">621</span><span id="line-621">   *</span>
-<span class="source-line-no">622</span><span id="line-622">   * @exception NullPointerException if any argument is {@code null}</span>
-<span class="source-line-no">623</span><span id="line-623">   *</span>
-<span class="source-line-no">624</span><span id="line-624">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">603</span><span id="line-603">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">604</span><span id="line-604">   * threads.</span>
+<span class="source-line-no">605</span><span id="line-605">   */</span>
+<span class="source-line-no">606</span><span id="line-606">  public final Stream&lt;JavaType&gt; javaTypeStream() {</span>
+<span class="source-line-no">607</span><span id="line-607">    return this.set.stream();</span>
+<span class="source-line-no">608</span><span id="line-608">  }</span>
+<span class="source-line-no">609</span><span id="line-609"></span>
+<span class="source-line-no">610</span><span id="line-610">  @Override // Set&lt;Type&gt;</span>
+<span class="source-line-no">611</span><span id="line-611">  public final Spliterator&lt;Type&gt; spliterator() {</span>
+<span class="source-line-no">612</span><span id="line-612">    if (this.set.isEmpty()) {</span>
+<span class="source-line-no">613</span><span id="line-613">      return Spliterators.emptySpliterator();</span>
+<span class="source-line-no">614</span><span id="line-614">    } else {</span>
+<span class="source-line-no">615</span><span id="line-615">      return</span>
+<span class="source-line-no">616</span><span id="line-616">        Spliterators.spliterator(this.iterator(),</span>
+<span class="source-line-no">617</span><span id="line-617">                                 this.size(),</span>
+<span class="source-line-no">618</span><span id="line-618">                                 DISTINCT | IMMUTABLE | NONNULL | ORDERED | SIZED | SUBSIZED);</span>
+<span class="source-line-no">619</span><span id="line-619">    }</span>
+<span class="source-line-no">620</span><span id="line-620">  }</span>
+<span class="source-line-no">621</span><span id="line-621"></span>
+<span class="source-line-no">622</span><span id="line-622">  /**</span>
+<span class="source-line-no">623</span><span id="line-623">   * Returns a {@link Spliterator} of {@link JavaType} instances</span>
+<span class="source-line-no">624</span><span id="line-624">   * representing the elements stored by this {@link JavaTypeSet}.</span>
 <span class="source-line-no">625</span><span id="line-625">   *</span>
-<span class="source-line-no">626</span><span id="line-626">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">627</span><span id="line-627">   *</span>
-<span class="source-line-no">628</span><span id="line-628">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">629</span><span id="line-629">   * threads.</span>
+<span class="source-line-no">626</span><span id="line-626">   * @return a {@link Spliterator} of {@link JavaType} instances</span>
+<span class="source-line-no">627</span><span id="line-627">   * representing the elements stored by this {@link JavaTypeSet}</span>
+<span class="source-line-no">628</span><span id="line-628">   *</span>
+<span class="source-line-no">629</span><span id="line-629">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">630</span><span id="line-630">   *</span>
-<span class="source-line-no">631</span><span id="line-631">   * @see #of(Collection)</span>
+<span class="source-line-no">631</span><span id="line-631">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">632</span><span id="line-632">   *</span>
-<span class="source-line-no">633</span><span id="line-633">   * @see JavaType#of(Type)</span>
-<span class="source-line-no">634</span><span id="line-634">   */</span>
-<span class="source-line-no">635</span><span id="line-635">  @Convenience</span>
-<span class="source-line-no">636</span><span id="line-636">  public static final JavaTypeSet of(final Type... types) {</span>
-<span class="source-line-no">637</span><span id="line-637">    if (types.length == 0) {</span>
-<span class="source-line-no">638</span><span id="line-638">      return of();</span>
-<span class="source-line-no">639</span><span id="line-639">    }</span>
-<span class="source-line-no">640</span><span id="line-640">    return of(Arrays.asList(types));</span>
-<span class="source-line-no">641</span><span id="line-641">  }</span>
-<span class="source-line-no">642</span><span id="line-642"></span>
-<span class="source-line-no">643</span><span id="line-643">  /**</span>
-<span class="source-line-no">644</span><span id="line-644">   * Returns a {@link JavaTypeSet} whose sole element is the supplied</span>
-<span class="source-line-no">645</span><span id="line-645">   * {@link org.microbean.type.Type}.</span>
-<span class="source-line-no">646</span><span id="line-646">   *</span>
-<span class="source-line-no">647</span><span id="line-647">   * @param t the {@link org.microbean.type.Type} in question; must</span>
-<span class="source-line-no">648</span><span id="line-648">   * not be {@code null}</span>
-<span class="source-line-no">649</span><span id="line-649">   *</span>
-<span class="source-line-no">650</span><span id="line-650">   * @return a {@link JavaTypeSet} whose sole element is the supplied</span>
-<span class="source-line-no">651</span><span id="line-651">   * {@link JavaType}; never {@code null}</span>
+<span class="source-line-no">633</span><span id="line-633">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">634</span><span id="line-634">   * threads.</span>
+<span class="source-line-no">635</span><span id="line-635">   */</span>
+<span class="source-line-no">636</span><span id="line-636">  public final Spliterator&lt;JavaType&gt; javaTypeSpliterator() {</span>
+<span class="source-line-no">637</span><span id="line-637">    return this.set.spliterator();</span>
+<span class="source-line-no">638</span><span id="line-638">  }</span>
+<span class="source-line-no">639</span><span id="line-639"></span>
+<span class="source-line-no">640</span><span id="line-640"></span>
+<span class="source-line-no">641</span><span id="line-641">  /*</span>
+<span class="source-line-no">642</span><span id="line-642">   * Static methods.</span>
+<span class="source-line-no">643</span><span id="line-643">   */</span>
+<span class="source-line-no">644</span><span id="line-644"></span>
+<span class="source-line-no">645</span><span id="line-645"></span>
+<span class="source-line-no">646</span><span id="line-646">  /**</span>
+<span class="source-line-no">647</span><span id="line-647">   * Returns an {@linkplain #isEmpty() empty} {@link JavaTypeSet}.</span>
+<span class="source-line-no">648</span><span id="line-648">   *</span>
+<span class="source-line-no">649</span><span id="line-649">   * @return an {@linkplain #isEmpty() empty} {@link JavaTypeSet}</span>
+<span class="source-line-no">650</span><span id="line-650">   *</span>
+<span class="source-line-no">651</span><span id="line-651">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">652</span><span id="line-652">   *</span>
-<span class="source-line-no">653</span><span id="line-653">   * @exception NullPointerException if {@code t} is {@code null}</span>
+<span class="source-line-no">653</span><span id="line-653">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">654</span><span id="line-654">   *</span>
-<span class="source-line-no">655</span><span id="line-655">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">656</span><span id="line-656">   *</span>
-<span class="source-line-no">657</span><span id="line-657">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">658</span><span id="line-658">   *</span>
-<span class="source-line-no">659</span><span id="line-659">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">660</span><span id="line-660">   * threads.</span>
-<span class="source-line-no">661</span><span id="line-661">   */</span>
-<span class="source-line-no">662</span><span id="line-662">  public static final JavaTypeSet of(final org.microbean.type.Type&lt;? extends Type&gt; t) {</span>
-<span class="source-line-no">663</span><span id="line-663">    return new JavaTypeSet(t.object());</span>
-<span class="source-line-no">664</span><span id="line-664">  }</span>
-<span class="source-line-no">665</span><span id="line-665"></span>
-<span class="source-line-no">666</span><span id="line-666">  /**</span>
-<span class="source-line-no">667</span><span id="line-667">   * Returns a {@link JavaTypeSet} whose elements are the supplied</span>
-<span class="source-line-no">668</span><span id="line-668">   * {@link org.microbean.type.Type}s.</span>
+<span class="source-line-no">655</span><span id="line-655">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">656</span><span id="line-656">   * threads.</span>
+<span class="source-line-no">657</span><span id="line-657">   */</span>
+<span class="source-line-no">658</span><span id="line-658">  @Convenience</span>
+<span class="source-line-no">659</span><span id="line-659">  public static final JavaTypeSet of() {</span>
+<span class="source-line-no">660</span><span id="line-660">    return EMPTY_JAVA_TYPE_SET;</span>
+<span class="source-line-no">661</span><span id="line-661">  }</span>
+<span class="source-line-no">662</span><span id="line-662"></span>
+<span class="source-line-no">663</span><span id="line-663">  /**</span>
+<span class="source-line-no">664</span><span id="line-664">   * Returns a {@link JavaTypeSet} whose sole element models the</span>
+<span class="source-line-no">665</span><span id="line-665">   * supplied {@link Type}.</span>
+<span class="source-line-no">666</span><span id="line-666">   *</span>
+<span class="source-line-no">667</span><span id="line-667">   * @param t the {@link Type} in question; must not be {@code</span>
+<span class="source-line-no">668</span><span id="line-668">   * null}</span>
 <span class="source-line-no">669</span><span id="line-669">   *</span>
-<span class="source-line-no">670</span><span id="line-670">   * @param t0 one of the {@link org.microbean.type.Type}s in</span>
-<span class="source-line-no">671</span><span id="line-671">   * question; must not be {@code null}</span>
+<span class="source-line-no">670</span><span id="line-670">   * @return a {@link JavaTypeSet} whose sole element models the</span>
+<span class="source-line-no">671</span><span id="line-671">   * supplied {@link Type}; never {@code null}</span>
 <span class="source-line-no">672</span><span id="line-672">   *</span>
-<span class="source-line-no">673</span><span id="line-673">   * @param t1 one of the {@link org.microbean.type.Type}s in</span>
-<span class="source-line-no">674</span><span id="line-674">   * question; must not be {@code null}</span>
-<span class="source-line-no">675</span><span id="line-675">   *</span>
-<span class="source-line-no">676</span><span id="line-676">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
-<span class="source-line-no">677</span><span id="line-677">   * supplied {@link org.microbean.type.Type}s; never {@code null}</span>
+<span class="source-line-no">673</span><span id="line-673">   * @exception NullPointerException if {@code t} is {@code null}</span>
+<span class="source-line-no">674</span><span id="line-674">   *</span>
+<span class="source-line-no">675</span><span id="line-675">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">676</span><span id="line-676">   *</span>
+<span class="source-line-no">677</span><span id="line-677">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">678</span><span id="line-678">   *</span>
-<span class="source-line-no">679</span><span id="line-679">   * @exception NullPointerException if any argument is {@code null}</span>
-<span class="source-line-no">680</span><span id="line-680">   *</span>
-<span class="source-line-no">681</span><span id="line-681">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">682</span><span id="line-682">   *</span>
-<span class="source-line-no">683</span><span id="line-683">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">684</span><span id="line-684">   *</span>
-<span class="source-line-no">685</span><span id="line-685">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">686</span><span id="line-686">   * threads.</span>
-<span class="source-line-no">687</span><span id="line-687">   *</span>
-<span class="source-line-no">688</span><span id="line-688">   * @see #of(Collection)</span>
-<span class="source-line-no">689</span><span id="line-689">   */</span>
-<span class="source-line-no">690</span><span id="line-690">  @Convenience</span>
-<span class="source-line-no">691</span><span id="line-691">  public static final JavaTypeSet of(final org.microbean.type.Type&lt;? extends Type&gt; t0,</span>
-<span class="source-line-no">692</span><span id="line-692">                                     final org.microbean.type.Type&lt;? extends Type&gt; t1) {</span>
-<span class="source-line-no">693</span><span id="line-693">    return of(List.of(t0.object(), t1.object()));</span>
-<span class="source-line-no">694</span><span id="line-694">  }</span>
-<span class="source-line-no">695</span><span id="line-695"></span>
-<span class="source-line-no">696</span><span id="line-696">  /**</span>
-<span class="source-line-no">697</span><span id="line-697">   * Returns a {@link JavaTypeSet} whose elements are modeled by the</span>
-<span class="source-line-no">698</span><span id="line-698">   * supplied {@link org.microbean.type.Type}s.</span>
-<span class="source-line-no">699</span><span id="line-699">   *</span>
-<span class="source-line-no">700</span><span id="line-700">   * @param types the {@link org.microbean.type.Type}s in question;</span>
-<span class="source-line-no">701</span><span id="line-701">   * must not be {@code null}</span>
-<span class="source-line-no">702</span><span id="line-702">   *</span>
-<span class="source-line-no">703</span><span id="line-703">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
-<span class="source-line-no">704</span><span id="line-704">   * supplied {@link org.microbean.type.Type}s; never {@code null}</span>
+<span class="source-line-no">679</span><span id="line-679">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">680</span><span id="line-680">   * threads.</span>
+<span class="source-line-no">681</span><span id="line-681">   *</span>
+<span class="source-line-no">682</span><span id="line-682">   * @see #of(JavaType)</span>
+<span class="source-line-no">683</span><span id="line-683">   *</span>
+<span class="source-line-no">684</span><span id="line-684">   * @see JavaType#of(Type)</span>
+<span class="source-line-no">685</span><span id="line-685">   */</span>
+<span class="source-line-no">686</span><span id="line-686">  @Convenience</span>
+<span class="source-line-no">687</span><span id="line-687">  public static final JavaTypeSet of(final Type t) {</span>
+<span class="source-line-no">688</span><span id="line-688">    return of(JavaType.of(t));</span>
+<span class="source-line-no">689</span><span id="line-689">  }</span>
+<span class="source-line-no">690</span><span id="line-690"></span>
+<span class="source-line-no">691</span><span id="line-691">  /**</span>
+<span class="source-line-no">692</span><span id="line-692">   * Returns a {@link JavaTypeSet} whose elements are modeled by the</span>
+<span class="source-line-no">693</span><span id="line-693">   * supplied {@link Type}s.</span>
+<span class="source-line-no">694</span><span id="line-694">   *</span>
+<span class="source-line-no">695</span><span id="line-695">   * @param t0 one of the {@link Type}s in question; must not be</span>
+<span class="source-line-no">696</span><span id="line-696">   * {@code null}</span>
+<span class="source-line-no">697</span><span id="line-697">   *</span>
+<span class="source-line-no">698</span><span id="line-698">   * @param t1 one of the {@link Type}s in question; must not be</span>
+<span class="source-line-no">699</span><span id="line-699">   * {@code null}</span>
+<span class="source-line-no">700</span><span id="line-700">   *</span>
+<span class="source-line-no">701</span><span id="line-701">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
+<span class="source-line-no">702</span><span id="line-702">   * supplied {@link Type}s; never {@code null}</span>
+<span class="source-line-no">703</span><span id="line-703">   *</span>
+<span class="source-line-no">704</span><span id="line-704">   * @exception NullPointerException if any argument is {@code null}</span>
 <span class="source-line-no">705</span><span id="line-705">   *</span>
-<span class="source-line-no">706</span><span id="line-706">   * @exception NullPointerException if any argument is {@code null}</span>
+<span class="source-line-no">706</span><span id="line-706">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">707</span><span id="line-707">   *</span>
-<span class="source-line-no">708</span><span id="line-708">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">708</span><span id="line-708">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">709</span><span id="line-709">   *</span>
-<span class="source-line-no">710</span><span id="line-710">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">711</span><span id="line-711">   *</span>
-<span class="source-line-no">712</span><span id="line-712">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">713</span><span id="line-713">   * threads.</span>
+<span class="source-line-no">710</span><span id="line-710">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">711</span><span id="line-711">   * threads.</span>
+<span class="source-line-no">712</span><span id="line-712">   *</span>
+<span class="source-line-no">713</span><span id="line-713">   * @see #of(Collection)</span>
 <span class="source-line-no">714</span><span id="line-714">   *</span>
-<span class="source-line-no">715</span><span id="line-715">   * @see #of(Collection)</span>
+<span class="source-line-no">715</span><span id="line-715">   * @see JavaType#of(Type)</span>
 <span class="source-line-no">716</span><span id="line-716">   */</span>
 <span class="source-line-no">717</span><span id="line-717">  @Convenience</span>
-<span class="source-line-no">718</span><span id="line-718">  @SafeVarargs</span>
-<span class="source-line-no">719</span><span id="line-719">  @SuppressWarnings("varargs")</span>
-<span class="source-line-no">720</span><span id="line-720">  public static final JavaTypeSet of(final org.microbean.type.Type&lt;? extends Type&gt;... types) {</span>
-<span class="source-line-no">721</span><span id="line-721">    if (types.length == 0) {</span>
-<span class="source-line-no">722</span><span id="line-722">      return of();</span>
-<span class="source-line-no">723</span><span id="line-723">    }</span>
-<span class="source-line-no">724</span><span id="line-724">    return of(Arrays.asList(types));</span>
-<span class="source-line-no">725</span><span id="line-725">  }</span>
-<span class="source-line-no">726</span><span id="line-726"></span>
-<span class="source-line-no">727</span><span id="line-727">  /**</span>
-<span class="source-line-no">728</span><span id="line-728">   * Returns a {@link JavaTypeSet} whose elements are drawn from the</span>
-<span class="source-line-no">729</span><span id="line-729">   * supplied {@link Collection}, in its {@linkplain</span>
-<span class="source-line-no">730</span><span id="line-730">   * Collection#iterator() iteration order}.</span>
+<span class="source-line-no">718</span><span id="line-718">  public static final JavaTypeSet of(final Type t0, final Type t1) {</span>
+<span class="source-line-no">719</span><span id="line-719">    return of(List.of(JavaType.of(t0), JavaType.of(t1)));</span>
+<span class="source-line-no">720</span><span id="line-720">  }</span>
+<span class="source-line-no">721</span><span id="line-721"></span>
+<span class="source-line-no">722</span><span id="line-722">  /**</span>
+<span class="source-line-no">723</span><span id="line-723">   * Returns a {@link JavaTypeSet} whose elements are modeled by the</span>
+<span class="source-line-no">724</span><span id="line-724">   * supplied {@link Type}s.</span>
+<span class="source-line-no">725</span><span id="line-725">   *</span>
+<span class="source-line-no">726</span><span id="line-726">   * @param types the {@link Type}s in question; must not be {@code</span>
+<span class="source-line-no">727</span><span id="line-727">   * null}</span>
+<span class="source-line-no">728</span><span id="line-728">   *</span>
+<span class="source-line-no">729</span><span id="line-729">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
+<span class="source-line-no">730</span><span id="line-730">   * supplied {@link Type}s; never {@code null}</span>
 <span class="source-line-no">731</span><span id="line-731">   *</span>
-<span class="source-line-no">732</span><span id="line-732">   * @param types the {@link Collection} in question; must not be</span>
-<span class="source-line-no">733</span><span id="line-733">   * {@code null}; only its elements that are instances of either</span>
-<span class="source-line-no">734</span><span id="line-734">   * {@link Type} or {@link JavaType} or {@link</span>
-<span class="source-line-no">735</span><span id="line-735">   * org.microbean.type.Type org.microbean.type.Type&amp;lt;? extends</span>
-<span class="source-line-no">736</span><span id="line-736">   * Type&amp;gt;} will be considered</span>
+<span class="source-line-no">732</span><span id="line-732">   * @exception NullPointerException if any argument is {@code null}</span>
+<span class="source-line-no">733</span><span id="line-733">   *</span>
+<span class="source-line-no">734</span><span id="line-734">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">735</span><span id="line-735">   *</span>
+<span class="source-line-no">736</span><span id="line-736">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">737</span><span id="line-737">   *</span>
-<span class="source-line-no">738</span><span id="line-738">   * @return a {@link JavaTypeSet} whose elements are drawn from the</span>
-<span class="source-line-no">739</span><span id="line-739">   * supplied {@link Collection}, in its {@linkplain</span>
-<span class="source-line-no">740</span><span id="line-740">   * Collection#iterator() iteration order}; never {@code null}</span>
-<span class="source-line-no">741</span><span id="line-741">   *</span>
-<span class="source-line-no">742</span><span id="line-742">   * @exception NullPointerException if {@code types} is {@code null}</span>
-<span class="source-line-no">743</span><span id="line-743">   *</span>
-<span class="source-line-no">744</span><span id="line-744">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">745</span><span id="line-745">   *</span>
-<span class="source-line-no">746</span><span id="line-746">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">747</span><span id="line-747">   *</span>
-<span class="source-line-no">748</span><span id="line-748">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">749</span><span id="line-749">   * threads.</span>
-<span class="source-line-no">750</span><span id="line-750">   */</span>
-<span class="source-line-no">751</span><span id="line-751">  public static final JavaTypeSet of(final Collection&lt;?&gt; types) {</span>
-<span class="source-line-no">752</span><span id="line-752">    return new JavaTypeSet(types);</span>
-<span class="source-line-no">753</span><span id="line-753">  }</span>
-<span class="source-line-no">754</span><span id="line-754"></span>
-<span class="source-line-no">755</span><span id="line-755">  /**</span>
-<span class="source-line-no">756</span><span id="line-756">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">757</span><span id="line-757">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
-<span class="source-line-no">758</span><span id="line-758">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
-<span class="source-line-no">759</span><span id="line-759">   * include the modeled {@link Type} itself).</span>
-<span class="source-line-no">760</span><span id="line-760">   *</span>
-<span class="source-line-no">761</span><span id="line-761">   * @param t the {@link org.microbean.type.Type} in question; must</span>
-<span class="source-line-no">762</span><span id="line-762">   * not be {@code null}</span>
-<span class="source-line-no">763</span><span id="line-763">   *</span>
-<span class="source-line-no">764</span><span id="line-764">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">765</span><span id="line-765">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
-<span class="source-line-no">766</span><span id="line-766">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
-<span class="source-line-no">767</span><span id="line-767">   * include the modeled {@link Type} itself); never {@code null}</span>
+<span class="source-line-no">738</span><span id="line-738">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">739</span><span id="line-739">   * threads.</span>
+<span class="source-line-no">740</span><span id="line-740">   *</span>
+<span class="source-line-no">741</span><span id="line-741">   * @see #of(Collection)</span>
+<span class="source-line-no">742</span><span id="line-742">   *</span>
+<span class="source-line-no">743</span><span id="line-743">   * @see JavaType#of(Type)</span>
+<span class="source-line-no">744</span><span id="line-744">   */</span>
+<span class="source-line-no">745</span><span id="line-745">  @Convenience</span>
+<span class="source-line-no">746</span><span id="line-746">  public static final JavaTypeSet of(final Type... types) {</span>
+<span class="source-line-no">747</span><span id="line-747">    if (types.length == 0) {</span>
+<span class="source-line-no">748</span><span id="line-748">      return of();</span>
+<span class="source-line-no">749</span><span id="line-749">    }</span>
+<span class="source-line-no">750</span><span id="line-750">    return of(Arrays.asList(types));</span>
+<span class="source-line-no">751</span><span id="line-751">  }</span>
+<span class="source-line-no">752</span><span id="line-752"></span>
+<span class="source-line-no">753</span><span id="line-753">  /**</span>
+<span class="source-line-no">754</span><span id="line-754">   * Returns a {@link JavaTypeSet} whose sole element is the supplied</span>
+<span class="source-line-no">755</span><span id="line-755">   * {@link org.microbean.type.Type}.</span>
+<span class="source-line-no">756</span><span id="line-756">   *</span>
+<span class="source-line-no">757</span><span id="line-757">   * @param t the {@link org.microbean.type.Type} in question; must</span>
+<span class="source-line-no">758</span><span id="line-758">   * not be {@code null}</span>
+<span class="source-line-no">759</span><span id="line-759">   *</span>
+<span class="source-line-no">760</span><span id="line-760">   * @return a {@link JavaTypeSet} whose sole element is the supplied</span>
+<span class="source-line-no">761</span><span id="line-761">   * {@link JavaType}; never {@code null}</span>
+<span class="source-line-no">762</span><span id="line-762">   *</span>
+<span class="source-line-no">763</span><span id="line-763">   * @exception NullPointerException if {@code t} is {@code null}</span>
+<span class="source-line-no">764</span><span id="line-764">   *</span>
+<span class="source-line-no">765</span><span id="line-765">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">766</span><span id="line-766">   *</span>
+<span class="source-line-no">767</span><span id="line-767">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">768</span><span id="line-768">   *</span>
-<span class="source-line-no">769</span><span id="line-769">   * @exception NullPointerException if {@code t} is {@code null}</span>
-<span class="source-line-no">770</span><span id="line-770">   *</span>
-<span class="source-line-no">771</span><span id="line-771">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">772</span><span id="line-772">   *</span>
-<span class="source-line-no">773</span><span id="line-773">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">774</span><span id="line-774">   *</span>
-<span class="source-line-no">775</span><span id="line-775">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">776</span><span id="line-776">   * threads.</span>
-<span class="source-line-no">777</span><span id="line-777">   *</span>
-<span class="source-line-no">778</span><span id="line-778">   * @see #ofSupertypes(org.microbean.type.Type, Predicate)</span>
-<span class="source-line-no">779</span><span id="line-779">   */</span>
-<span class="source-line-no">780</span><span id="line-780">  @Convenience</span>
-<span class="source-line-no">781</span><span id="line-781">  public static final JavaTypeSet ofSupertypes(final org.microbean.type.Type&lt;? extends Type&gt; t) {</span>
-<span class="source-line-no">782</span><span id="line-782">    return ofSupertypes(t.object(), JavaTypes::acceptAll);</span>
-<span class="source-line-no">783</span><span id="line-783">  }</span>
-<span class="source-line-no">784</span><span id="line-784"></span>
-<span class="source-line-no">785</span><span id="line-785">  /**</span>
-<span class="source-line-no">786</span><span id="line-786">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">787</span><span id="line-787">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
-<span class="source-line-no">788</span><span id="line-788">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
-<span class="source-line-no">789</span><span id="line-789">   * include the modeled {@link Type} itself).</span>
+<span class="source-line-no">769</span><span id="line-769">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">770</span><span id="line-770">   * threads.</span>
+<span class="source-line-no">771</span><span id="line-771">   */</span>
+<span class="source-line-no">772</span><span id="line-772">  public static final JavaTypeSet of(final org.microbean.type.Type&lt;? extends Type&gt; t) {</span>
+<span class="source-line-no">773</span><span id="line-773">    return new JavaTypeSet(t);</span>
+<span class="source-line-no">774</span><span id="line-774">  }</span>
+<span class="source-line-no">775</span><span id="line-775"></span>
+<span class="source-line-no">776</span><span id="line-776">  /**</span>
+<span class="source-line-no">777</span><span id="line-777">   * Returns a {@link JavaTypeSet} whose elements are the supplied</span>
+<span class="source-line-no">778</span><span id="line-778">   * {@link org.microbean.type.Type}s.</span>
+<span class="source-line-no">779</span><span id="line-779">   *</span>
+<span class="source-line-no">780</span><span id="line-780">   * @param t0 one of the {@link org.microbean.type.Type}s in</span>
+<span class="source-line-no">781</span><span id="line-781">   * question; must not be {@code null}</span>
+<span class="source-line-no">782</span><span id="line-782">   *</span>
+<span class="source-line-no">783</span><span id="line-783">   * @param t1 one of the {@link org.microbean.type.Type}s in</span>
+<span class="source-line-no">784</span><span id="line-784">   * question; must not be {@code null}</span>
+<span class="source-line-no">785</span><span id="line-785">   *</span>
+<span class="source-line-no">786</span><span id="line-786">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
+<span class="source-line-no">787</span><span id="line-787">   * supplied {@link org.microbean.type.Type}s; never {@code null}</span>
+<span class="source-line-no">788</span><span id="line-788">   *</span>
+<span class="source-line-no">789</span><span id="line-789">   * @exception NullPointerException if any argument is {@code null}</span>
 <span class="source-line-no">790</span><span id="line-790">   *</span>
-<span class="source-line-no">791</span><span id="line-791">   * @param t the {@link org.microbean.type.Type} in question; must</span>
-<span class="source-line-no">792</span><span id="line-792">   * not be {@code null}</span>
-<span class="source-line-no">793</span><span id="line-793">   *</span>
-<span class="source-line-no">794</span><span id="line-794">   * @param acceptancePredicate a {@link Predicate} controlling</span>
-<span class="source-line-no">795</span><span id="line-795">   * membership of a {@link Type} in the returned {@link JavaTypeSet};</span>
-<span class="source-line-no">796</span><span id="line-796">   * must not be {@code null}</span>
+<span class="source-line-no">791</span><span id="line-791">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">792</span><span id="line-792">   *</span>
+<span class="source-line-no">793</span><span id="line-793">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">794</span><span id="line-794">   *</span>
+<span class="source-line-no">795</span><span id="line-795">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">796</span><span id="line-796">   * threads.</span>
 <span class="source-line-no">797</span><span id="line-797">   *</span>
-<span class="source-line-no">798</span><span id="line-798">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">799</span><span id="line-799">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
-<span class="source-line-no">800</span><span id="line-800">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
-<span class="source-line-no">801</span><span id="line-801">   * include the modeled {@link Type} itself); never {@code null}</span>
-<span class="source-line-no">802</span><span id="line-802">   *</span>
-<span class="source-line-no">803</span><span id="line-803">   * @exception NullPointerException if {@code t} is {@code null}</span>
-<span class="source-line-no">804</span><span id="line-804">   *</span>
-<span class="source-line-no">805</span><span id="line-805">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">806</span><span id="line-806">   *</span>
-<span class="source-line-no">807</span><span id="line-807">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">808</span><span id="line-808">   *</span>
-<span class="source-line-no">809</span><span id="line-809">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">810</span><span id="line-810">   * threads.</span>
-<span class="source-line-no">811</span><span id="line-811">   *</span>
-<span class="source-line-no">812</span><span id="line-812">   * @see #ofSupertypes(org.microbean.type.Type, Predicate)</span>
-<span class="source-line-no">813</span><span id="line-813">   */</span>
-<span class="source-line-no">814</span><span id="line-814">  @Convenience</span>
-<span class="source-line-no">815</span><span id="line-815">  public static final JavaTypeSet ofSupertypes(final org.microbean.type.Type&lt;? extends Type&gt; t,</span>
-<span class="source-line-no">816</span><span id="line-816">                                               final Predicate&lt;? super Type&gt; acceptancePredicate) {</span>
-<span class="source-line-no">817</span><span id="line-817">    return ofSupertypes(t.object(), acceptancePredicate);</span>
-<span class="source-line-no">818</span><span id="line-818">  }</span>
-<span class="source-line-no">819</span><span id="line-819">  </span>
-<span class="source-line-no">820</span><span id="line-820">  /**</span>
-<span class="source-line-no">821</span><span id="line-821">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">822</span><span id="line-822">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
-<span class="source-line-no">823</span><span id="line-823">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
-<span class="source-line-no">824</span><span id="line-824">   * itself).</span>
-<span class="source-line-no">825</span><span id="line-825">   *</span>
-<span class="source-line-no">826</span><span id="line-826">   * @param t the {@link Type} in question; must not be {@code null}</span>
-<span class="source-line-no">827</span><span id="line-827">   *</span>
-<span class="source-line-no">828</span><span id="line-828">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">829</span><span id="line-829">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
-<span class="source-line-no">830</span><span id="line-830">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
-<span class="source-line-no">831</span><span id="line-831">   * itself)</span>
-<span class="source-line-no">832</span><span id="line-832">   *</span>
-<span class="source-line-no">833</span><span id="line-833">   * @exception NullPointerException if {@code t} is {@code null}</span>
-<span class="source-line-no">834</span><span id="line-834">   *</span>
-<span class="source-line-no">835</span><span id="line-835">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">836</span><span id="line-836">   *</span>
-<span class="source-line-no">837</span><span id="line-837">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">838</span><span id="line-838">   *</span>
-<span class="source-line-no">839</span><span id="line-839">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">840</span><span id="line-840">   * threads.</span>
+<span class="source-line-no">798</span><span id="line-798">   * @see #of(Collection)</span>
+<span class="source-line-no">799</span><span id="line-799">   */</span>
+<span class="source-line-no">800</span><span id="line-800">  @Convenience</span>
+<span class="source-line-no">801</span><span id="line-801">  public static final JavaTypeSet of(final org.microbean.type.Type&lt;? extends Type&gt; t0,</span>
+<span class="source-line-no">802</span><span id="line-802">                                     final org.microbean.type.Type&lt;? extends Type&gt; t1) {</span>
+<span class="source-line-no">803</span><span id="line-803">    return of(List.of(t0, t1));</span>
+<span class="source-line-no">804</span><span id="line-804">  }</span>
+<span class="source-line-no">805</span><span id="line-805"></span>
+<span class="source-line-no">806</span><span id="line-806">  /**</span>
+<span class="source-line-no">807</span><span id="line-807">   * Returns a {@link JavaTypeSet} whose elements are modeled by the</span>
+<span class="source-line-no">808</span><span id="line-808">   * supplied {@link org.microbean.type.Type}s.</span>
+<span class="source-line-no">809</span><span id="line-809">   *</span>
+<span class="source-line-no">810</span><span id="line-810">   * @param types the {@link org.microbean.type.Type}s in question;</span>
+<span class="source-line-no">811</span><span id="line-811">   * must not be {@code null}</span>
+<span class="source-line-no">812</span><span id="line-812">   *</span>
+<span class="source-line-no">813</span><span id="line-813">   * @return a {@link JavaTypeSet} whose elements are modeled by the</span>
+<span class="source-line-no">814</span><span id="line-814">   * supplied {@link org.microbean.type.Type}s; never {@code null}</span>
+<span class="source-line-no">815</span><span id="line-815">   *</span>
+<span class="source-line-no">816</span><span id="line-816">   * @exception NullPointerException if any argument is {@code null}</span>
+<span class="source-line-no">817</span><span id="line-817">   *</span>
+<span class="source-line-no">818</span><span id="line-818">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">819</span><span id="line-819">   *</span>
+<span class="source-line-no">820</span><span id="line-820">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">821</span><span id="line-821">   *</span>
+<span class="source-line-no">822</span><span id="line-822">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">823</span><span id="line-823">   * threads.</span>
+<span class="source-line-no">824</span><span id="line-824">   *</span>
+<span class="source-line-no">825</span><span id="line-825">   * @see #of(Collection)</span>
+<span class="source-line-no">826</span><span id="line-826">   */</span>
+<span class="source-line-no">827</span><span id="line-827">  @Convenience</span>
+<span class="source-line-no">828</span><span id="line-828">  @SafeVarargs</span>
+<span class="source-line-no">829</span><span id="line-829">  @SuppressWarnings("varargs")</span>
+<span class="source-line-no">830</span><span id="line-830">  public static final JavaTypeSet of(final org.microbean.type.Type&lt;? extends Type&gt;... types) {</span>
+<span class="source-line-no">831</span><span id="line-831">    if (types.length == 0) {</span>
+<span class="source-line-no">832</span><span id="line-832">      return of();</span>
+<span class="source-line-no">833</span><span id="line-833">    }</span>
+<span class="source-line-no">834</span><span id="line-834">    return of(Arrays.asList(types));</span>
+<span class="source-line-no">835</span><span id="line-835">  }</span>
+<span class="source-line-no">836</span><span id="line-836"></span>
+<span class="source-line-no">837</span><span id="line-837">  /**</span>
+<span class="source-line-no">838</span><span id="line-838">   * Returns a {@link JavaTypeSet} whose elements are drawn from the</span>
+<span class="source-line-no">839</span><span id="line-839">   * supplied {@link Collection}, in its {@linkplain</span>
+<span class="source-line-no">840</span><span id="line-840">   * Collection#iterator() iteration order}.</span>
 <span class="source-line-no">841</span><span id="line-841">   *</span>
-<span class="source-line-no">842</span><span id="line-842">   * @see #ofSupertypes(Type, Predicate)</span>
-<span class="source-line-no">843</span><span id="line-843">   */</span>
-<span class="source-line-no">844</span><span id="line-844">  @Convenience</span>
-<span class="source-line-no">845</span><span id="line-845">  public static final JavaTypeSet ofSupertypes(final Type t) {</span>
-<span class="source-line-no">846</span><span id="line-846">    return ofSupertypes(t, JavaTypes::acceptAll);</span>
-<span class="source-line-no">847</span><span id="line-847">  }</span>
-<span class="source-line-no">848</span><span id="line-848"></span>
-<span class="source-line-no">849</span><span id="line-849">  /**</span>
-<span class="source-line-no">850</span><span id="line-850">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">851</span><span id="line-851">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
-<span class="source-line-no">852</span><span id="line-852">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
-<span class="source-line-no">853</span><span id="line-853">   * itself), gated by the supplied {@link Predicate}.</span>
-<span class="source-line-no">854</span><span id="line-854">   *</span>
-<span class="source-line-no">855</span><span id="line-855">   * @param t the {@link Type} in question; must not be {@code null}</span>
-<span class="source-line-no">856</span><span id="line-856">   *</span>
-<span class="source-line-no">857</span><span id="line-857">   * @param acceptancePredicate a {@link Predicate} controlling</span>
-<span class="source-line-no">858</span><span id="line-858">   * membership of a {@link Type} in the returned {@link Collection};</span>
-<span class="source-line-no">859</span><span id="line-859">   * must not be {@code null}</span>
-<span class="source-line-no">860</span><span id="line-860">   *</span>
-<span class="source-line-no">861</span><span id="line-861">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
-<span class="source-line-no">862</span><span id="line-862">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
-<span class="source-line-no">863</span><span id="line-863">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
-<span class="source-line-no">864</span><span id="line-864">   * itself)</span>
-<span class="source-line-no">865</span><span id="line-865">   *</span>
-<span class="source-line-no">866</span><span id="line-866">   * @exception NullPointerException if either {@code t} or {@code</span>
-<span class="source-line-no">867</span><span id="line-867">   * acceptancePredicate} is {@code null}</span>
-<span class="source-line-no">868</span><span id="line-868">   *</span>
-<span class="source-line-no">869</span><span id="line-869">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">842</span><span id="line-842">   * @param types the {@link Collection} in question; must not be</span>
+<span class="source-line-no">843</span><span id="line-843">   * {@code null}; only its elements that are instances of either</span>
+<span class="source-line-no">844</span><span id="line-844">   * {@link Type} or {@link JavaType} or {@link</span>
+<span class="source-line-no">845</span><span id="line-845">   * org.microbean.type.Type org.microbean.type.Type&amp;lt;? extends</span>
+<span class="source-line-no">846</span><span id="line-846">   * Type&amp;gt;} will be considered</span>
+<span class="source-line-no">847</span><span id="line-847">   *</span>
+<span class="source-line-no">848</span><span id="line-848">   * @return a {@link JavaTypeSet} whose elements are drawn from the</span>
+<span class="source-line-no">849</span><span id="line-849">   * supplied {@link Collection}, in its {@linkplain</span>
+<span class="source-line-no">850</span><span id="line-850">   * Collection#iterator() iteration order}; never {@code null}</span>
+<span class="source-line-no">851</span><span id="line-851">   *</span>
+<span class="source-line-no">852</span><span id="line-852">   * @exception NullPointerException if {@code types} is {@code null}</span>
+<span class="source-line-no">853</span><span id="line-853">   *</span>
+<span class="source-line-no">854</span><span id="line-854">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">855</span><span id="line-855">   *</span>
+<span class="source-line-no">856</span><span id="line-856">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">857</span><span id="line-857">   *</span>
+<span class="source-line-no">858</span><span id="line-858">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">859</span><span id="line-859">   * threads.</span>
+<span class="source-line-no">860</span><span id="line-860">   */</span>
+<span class="source-line-no">861</span><span id="line-861">  public static final JavaTypeSet of(final Collection&lt;?&gt; types) {</span>
+<span class="source-line-no">862</span><span id="line-862">    return new JavaTypeSet(types);</span>
+<span class="source-line-no">863</span><span id="line-863">  }</span>
+<span class="source-line-no">864</span><span id="line-864"></span>
+<span class="source-line-no">865</span><span id="line-865">  /**</span>
+<span class="source-line-no">866</span><span id="line-866">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">867</span><span id="line-867">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
+<span class="source-line-no">868</span><span id="line-868">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
+<span class="source-line-no">869</span><span id="line-869">   * include the modeled {@link Type} itself).</span>
 <span class="source-line-no">870</span><span id="line-870">   *</span>
-<span class="source-line-no">871</span><span id="line-871">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">872</span><span id="line-872">   *</span>
-<span class="source-line-no">873</span><span id="line-873">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">874</span><span id="line-874">   * threads.</span>
-<span class="source-line-no">875</span><span id="line-875">   *</span>
-<span class="source-line-no">876</span><span id="line-876">   * @see #of(Collection)</span>
-<span class="source-line-no">877</span><span id="line-877">   *</span>
-<span class="source-line-no">878</span><span id="line-878">   * @see JavaTypes#supertypes(Type)</span>
-<span class="source-line-no">879</span><span id="line-879">   */</span>
-<span class="source-line-no">880</span><span id="line-880">  @Convenience</span>
-<span class="source-line-no">881</span><span id="line-881">  public static final JavaTypeSet ofSupertypes(final Type t,</span>
-<span class="source-line-no">882</span><span id="line-882">                                               final Predicate&lt;? super Type&gt; acceptancePredicate) {</span>
-<span class="source-line-no">883</span><span id="line-883">    return of(JavaTypes.supertypes(t, acceptancePredicate));</span>
-<span class="source-line-no">884</span><span id="line-884">  }</span>
-<span class="source-line-no">885</span><span id="line-885"></span>
-<span class="source-line-no">886</span><span id="line-886">  private static final boolean nonInterfaceType(final JavaType t) {</span>
-<span class="source-line-no">887</span><span id="line-887">    return nonInterfaceType(t.type());</span>
-<span class="source-line-no">888</span><span id="line-888">  }</span>
-<span class="source-line-no">889</span><span id="line-889"></span>
-<span class="source-line-no">890</span><span id="line-890">  private static final boolean nonInterfaceType(final Type t) {</span>
-<span class="source-line-no">891</span><span id="line-891">    final Class&lt;?&gt; c = JavaTypes.erase(t);</span>
-<span class="source-line-no">892</span><span id="line-892">    return c != null &amp;&amp; !c.isInterface();</span>
+<span class="source-line-no">871</span><span id="line-871">   * @param t the {@link org.microbean.type.Type} in question; must</span>
+<span class="source-line-no">872</span><span id="line-872">   * not be {@code null}</span>
+<span class="source-line-no">873</span><span id="line-873">   *</span>
+<span class="source-line-no">874</span><span id="line-874">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">875</span><span id="line-875">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
+<span class="source-line-no">876</span><span id="line-876">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
+<span class="source-line-no">877</span><span id="line-877">   * include the modeled {@link Type} itself); never {@code null}</span>
+<span class="source-line-no">878</span><span id="line-878">   *</span>
+<span class="source-line-no">879</span><span id="line-879">   * @exception NullPointerException if {@code t} is {@code null}</span>
+<span class="source-line-no">880</span><span id="line-880">   *</span>
+<span class="source-line-no">881</span><span id="line-881">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">882</span><span id="line-882">   *</span>
+<span class="source-line-no">883</span><span id="line-883">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">884</span><span id="line-884">   *</span>
+<span class="source-line-no">885</span><span id="line-885">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">886</span><span id="line-886">   * threads.</span>
+<span class="source-line-no">887</span><span id="line-887">   *</span>
+<span class="source-line-no">888</span><span id="line-888">   * @see #ofSupertypes(org.microbean.type.Type, Predicate)</span>
+<span class="source-line-no">889</span><span id="line-889">   */</span>
+<span class="source-line-no">890</span><span id="line-890">  @Convenience</span>
+<span class="source-line-no">891</span><span id="line-891">  public static final JavaTypeSet ofSupertypes(final org.microbean.type.Type&lt;? extends Type&gt; t) {</span>
+<span class="source-line-no">892</span><span id="line-892">    return ofSupertypes(t.object(), JavaTypes::acceptAll);</span>
 <span class="source-line-no">893</span><span id="line-893">  }</span>
 <span class="source-line-no">894</span><span id="line-894"></span>
-<span class="source-line-no">895</span><span id="line-895">  private static final boolean interfaceType(final JavaType t) {</span>
-<span class="source-line-no">896</span><span id="line-896">    return interfaceType(t.type());</span>
-<span class="source-line-no">897</span><span id="line-897">  }</span>
-<span class="source-line-no">898</span><span id="line-898"></span>
-<span class="source-line-no">899</span><span id="line-899">  private static final boolean interfaceType(final Type t) {</span>
-<span class="source-line-no">900</span><span id="line-900">    final Class&lt;?&gt; c = JavaTypes.erase(t);</span>
-<span class="source-line-no">901</span><span id="line-901">    return c != null &amp;&amp; c.isInterface();</span>
-<span class="source-line-no">902</span><span id="line-902">  }</span>
-<span class="source-line-no">903</span><span id="line-903"></span>
-<span class="source-line-no">904</span><span id="line-904"></span>
-<span class="source-line-no">905</span><span id="line-905">  /*</span>
-<span class="source-line-no">906</span><span id="line-906">   * Inner and nested classes.</span>
-<span class="source-line-no">907</span><span id="line-907">   */</span>
-<span class="source-line-no">908</span><span id="line-908"></span>
-<span class="source-line-no">909</span><span id="line-909"></span>
-<span class="source-line-no">910</span><span id="line-910">  private static final class TypeIterator implements Iterator&lt;Type&gt; {</span>
-<span class="source-line-no">911</span><span id="line-911"></span>
-<span class="source-line-no">912</span><span id="line-912">    private final Iterator&lt;? extends JavaType&gt; i;</span>
-<span class="source-line-no">913</span><span id="line-913"></span>
-<span class="source-line-no">914</span><span id="line-914">    private TypeIterator(final Iterator&lt;? extends JavaType&gt; i) {</span>
-<span class="source-line-no">915</span><span id="line-915">      super();</span>
-<span class="source-line-no">916</span><span id="line-916">      this.i = Objects.requireNonNull(i, "i");</span>
-<span class="source-line-no">917</span><span id="line-917">    }</span>
-<span class="source-line-no">918</span><span id="line-918"></span>
-<span class="source-line-no">919</span><span id="line-919">    @Override // Iterator&lt;Type&gt;</span>
-<span class="source-line-no">920</span><span id="line-920">    public final boolean hasNext() {</span>
-<span class="source-line-no">921</span><span id="line-921">      return this.i.hasNext();</span>
-<span class="source-line-no">922</span><span id="line-922">    }</span>
-<span class="source-line-no">923</span><span id="line-923"></span>
-<span class="source-line-no">924</span><span id="line-924">    @Override // Iterator&lt;Type&gt;</span>
-<span class="source-line-no">925</span><span id="line-925">    public final Type next() {</span>
-<span class="source-line-no">926</span><span id="line-926">      return this.i.next().object();</span>
-<span class="source-line-no">927</span><span id="line-927">    }</span>
-<span class="source-line-no">928</span><span id="line-928"></span>
-<span class="source-line-no">929</span><span id="line-929">    @Override // Iterator&lt;Type&gt;</span>
-<span class="source-line-no">930</span><span id="line-930">    public final void remove() {</span>
-<span class="source-line-no">931</span><span id="line-931">      this.i.remove();</span>
-<span class="source-line-no">932</span><span id="line-932">    }</span>
-<span class="source-line-no">933</span><span id="line-933"></span>
-<span class="source-line-no">934</span><span id="line-934">  }</span>
-<span class="source-line-no">935</span><span id="line-935"></span>
-<span class="source-line-no">936</span><span id="line-936"></span>
-<span class="source-line-no">937</span><span id="line-937">  private static final class NullType implements Type {</span>
-<span class="source-line-no">938</span><span id="line-938"></span>
-<span class="source-line-no">939</span><span id="line-939">    private static final Type INSTANCE = new NullType();</span>
-<span class="source-line-no">940</span><span id="line-940"></span>
-<span class="source-line-no">941</span><span id="line-941">    private NullType() {</span>
-<span class="source-line-no">942</span><span id="line-942">      super();</span>
-<span class="source-line-no">943</span><span id="line-943">    }</span>
-<span class="source-line-no">944</span><span id="line-944"></span>
-<span class="source-line-no">945</span><span id="line-945">  }</span>
-<span class="source-line-no">946</span><span id="line-946"></span>
-<span class="source-line-no">947</span><span id="line-947">}</span>
+<span class="source-line-no">895</span><span id="line-895">  /**</span>
+<span class="source-line-no">896</span><span id="line-896">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">897</span><span id="line-897">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
+<span class="source-line-no">898</span><span id="line-898">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
+<span class="source-line-no">899</span><span id="line-899">   * include the modeled {@link Type} itself).</span>
+<span class="source-line-no">900</span><span id="line-900">   *</span>
+<span class="source-line-no">901</span><span id="line-901">   * @param t the {@link org.microbean.type.Type} in question; must</span>
+<span class="source-line-no">902</span><span id="line-902">   * not be {@code null}</span>
+<span class="source-line-no">903</span><span id="line-903">   *</span>
+<span class="source-line-no">904</span><span id="line-904">   * @param acceptancePredicate a {@link Predicate} controlling</span>
+<span class="source-line-no">905</span><span id="line-905">   * membership of a {@link Type} in the returned {@link JavaTypeSet};</span>
+<span class="source-line-no">906</span><span id="line-906">   * must not be {@code null}</span>
+<span class="source-line-no">907</span><span id="line-907">   *</span>
+<span class="source-line-no">908</span><span id="line-908">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">909</span><span id="line-909">   * JavaTypes#supertypes(Type) supertypes} of the {@link Type}</span>
+<span class="source-line-no">910</span><span id="line-910">   * modeled by the supplied {@link org.microbean.type.Type} (which</span>
+<span class="source-line-no">911</span><span id="line-911">   * include the modeled {@link Type} itself); never {@code null}</span>
+<span class="source-line-no">912</span><span id="line-912">   *</span>
+<span class="source-line-no">913</span><span id="line-913">   * @exception NullPointerException if {@code t} is {@code null}</span>
+<span class="source-line-no">914</span><span id="line-914">   *</span>
+<span class="source-line-no">915</span><span id="line-915">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">916</span><span id="line-916">   *</span>
+<span class="source-line-no">917</span><span id="line-917">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">918</span><span id="line-918">   *</span>
+<span class="source-line-no">919</span><span id="line-919">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">920</span><span id="line-920">   * threads.</span>
+<span class="source-line-no">921</span><span id="line-921">   *</span>
+<span class="source-line-no">922</span><span id="line-922">   * @see #ofSupertypes(org.microbean.type.Type, Predicate)</span>
+<span class="source-line-no">923</span><span id="line-923">   */</span>
+<span class="source-line-no">924</span><span id="line-924">  @Convenience</span>
+<span class="source-line-no">925</span><span id="line-925">  public static final JavaTypeSet ofSupertypes(final org.microbean.type.Type&lt;? extends Type&gt; t,</span>
+<span class="source-line-no">926</span><span id="line-926">                                               final Predicate&lt;? super Type&gt; acceptancePredicate) {</span>
+<span class="source-line-no">927</span><span id="line-927">    return ofSupertypes(t.object(), acceptancePredicate);</span>
+<span class="source-line-no">928</span><span id="line-928">  }</span>
+<span class="source-line-no">929</span><span id="line-929"></span>
+<span class="source-line-no">930</span><span id="line-930">  /**</span>
+<span class="source-line-no">931</span><span id="line-931">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">932</span><span id="line-932">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
+<span class="source-line-no">933</span><span id="line-933">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
+<span class="source-line-no">934</span><span id="line-934">   * itself).</span>
+<span class="source-line-no">935</span><span id="line-935">   *</span>
+<span class="source-line-no">936</span><span id="line-936">   * @param t the {@link Type} in question; must not be {@code null}</span>
+<span class="source-line-no">937</span><span id="line-937">   *</span>
+<span class="source-line-no">938</span><span id="line-938">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">939</span><span id="line-939">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
+<span class="source-line-no">940</span><span id="line-940">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
+<span class="source-line-no">941</span><span id="line-941">   * itself)</span>
+<span class="source-line-no">942</span><span id="line-942">   *</span>
+<span class="source-line-no">943</span><span id="line-943">   * @exception NullPointerException if {@code t} is {@code null}</span>
+<span class="source-line-no">944</span><span id="line-944">   *</span>
+<span class="source-line-no">945</span><span id="line-945">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">946</span><span id="line-946">   *</span>
+<span class="source-line-no">947</span><span id="line-947">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">948</span><span id="line-948">   *</span>
+<span class="source-line-no">949</span><span id="line-949">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">950</span><span id="line-950">   * threads.</span>
+<span class="source-line-no">951</span><span id="line-951">   *</span>
+<span class="source-line-no">952</span><span id="line-952">   * @see #ofSupertypes(Type, Predicate)</span>
+<span class="source-line-no">953</span><span id="line-953">   */</span>
+<span class="source-line-no">954</span><span id="line-954">  @Convenience</span>
+<span class="source-line-no">955</span><span id="line-955">  public static final JavaTypeSet ofSupertypes(final Type t) {</span>
+<span class="source-line-no">956</span><span id="line-956">    return ofSupertypes(t, JavaTypes::acceptAll);</span>
+<span class="source-line-no">957</span><span id="line-957">  }</span>
+<span class="source-line-no">958</span><span id="line-958"></span>
+<span class="source-line-no">959</span><span id="line-959">  /**</span>
+<span class="source-line-no">960</span><span id="line-960">   * Returns a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">961</span><span id="line-961">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
+<span class="source-line-no">962</span><span id="line-962">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
+<span class="source-line-no">963</span><span id="line-963">   * itself), gated by the supplied {@link Predicate}.</span>
+<span class="source-line-no">964</span><span id="line-964">   *</span>
+<span class="source-line-no">965</span><span id="line-965">   * @param t the {@link Type} in question; must not be {@code null}</span>
+<span class="source-line-no">966</span><span id="line-966">   *</span>
+<span class="source-line-no">967</span><span id="line-967">   * @param acceptancePredicate a {@link Predicate} controlling</span>
+<span class="source-line-no">968</span><span id="line-968">   * membership of a {@link Type} in the returned {@link Collection};</span>
+<span class="source-line-no">969</span><span id="line-969">   * must not be {@code null}</span>
+<span class="source-line-no">970</span><span id="line-970">   *</span>
+<span class="source-line-no">971</span><span id="line-971">   * @return a {@link JavaTypeSet} whose elements are the {@linkplain</span>
+<span class="source-line-no">972</span><span id="line-972">   * JavaTypes#supertypes(Type) supertypes of the supplied</span>
+<span class="source-line-no">973</span><span id="line-973">   * &lt;code&gt;Type&lt;/code&gt;} (which include the supplied {@link Type}</span>
+<span class="source-line-no">974</span><span id="line-974">   * itself)</span>
+<span class="source-line-no">975</span><span id="line-975">   *</span>
+<span class="source-line-no">976</span><span id="line-976">   * @exception NullPointerException if either {@code t} or {@code</span>
+<span class="source-line-no">977</span><span id="line-977">   * acceptancePredicate} is {@code null}</span>
+<span class="source-line-no">978</span><span id="line-978">   *</span>
+<span class="source-line-no">979</span><span id="line-979">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">980</span><span id="line-980">   *</span>
+<span class="source-line-no">981</span><span id="line-981">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">982</span><span id="line-982">   *</span>
+<span class="source-line-no">983</span><span id="line-983">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">984</span><span id="line-984">   * threads.</span>
+<span class="source-line-no">985</span><span id="line-985">   *</span>
+<span class="source-line-no">986</span><span id="line-986">   * @see #of(Collection)</span>
+<span class="source-line-no">987</span><span id="line-987">   *</span>
+<span class="source-line-no">988</span><span id="line-988">   * @see JavaTypes#supertypes(Type)</span>
+<span class="source-line-no">989</span><span id="line-989">   */</span>
+<span class="source-line-no">990</span><span id="line-990">  @Convenience</span>
+<span class="source-line-no">991</span><span id="line-991">  public static final JavaTypeSet ofSupertypes(final Type t, final Predicate&lt;? super Type&gt; acceptancePredicate) {</span>
+<span class="source-line-no">992</span><span id="line-992">    return of(JavaTypes.supertypes(t, acceptancePredicate));</span>
+<span class="source-line-no">993</span><span id="line-993">  }</span>
+<span class="source-line-no">994</span><span id="line-994"></span>
+<span class="source-line-no">995</span><span id="line-995">  private static final boolean nonInterfaceType(final JavaType t) {</span>
+<span class="source-line-no">996</span><span id="line-996">    return nonInterfaceType(t.type());</span>
+<span class="source-line-no">997</span><span id="line-997">  }</span>
+<span class="source-line-no">998</span><span id="line-998"></span>
+<span class="source-line-no">999</span><span id="line-999">  private static final boolean nonInterfaceType(final Type t) {</span>
+<span class="source-line-no">1000</span><span id="line-1000">    final Class&lt;?&gt; c = JavaTypes.erase(t);</span>
+<span class="source-line-no">1001</span><span id="line-1001">    return c != null &amp;&amp; !c.isInterface();</span>
+<span class="source-line-no">1002</span><span id="line-1002">  }</span>
+<span class="source-line-no">1003</span><span id="line-1003"></span>
+<span class="source-line-no">1004</span><span id="line-1004">  private static final boolean interfaceType(final JavaType t) {</span>
+<span class="source-line-no">1005</span><span id="line-1005">    return interfaceType(t.type());</span>
+<span class="source-line-no">1006</span><span id="line-1006">  }</span>
+<span class="source-line-no">1007</span><span id="line-1007"></span>
+<span class="source-line-no">1008</span><span id="line-1008">  private static final boolean interfaceType(final Type t) {</span>
+<span class="source-line-no">1009</span><span id="line-1009">    final Class&lt;?&gt; c = JavaTypes.erase(t);</span>
+<span class="source-line-no">1010</span><span id="line-1010">    return c != null &amp;&amp; c.isInterface();</span>
+<span class="source-line-no">1011</span><span id="line-1011">  }</span>
+<span class="source-line-no">1012</span><span id="line-1012"></span>
+<span class="source-line-no">1013</span><span id="line-1013"></span>
+<span class="source-line-no">1014</span><span id="line-1014">  /*</span>
+<span class="source-line-no">1015</span><span id="line-1015">   * Inner and nested classes.</span>
+<span class="source-line-no">1016</span><span id="line-1016">   */</span>
+<span class="source-line-no">1017</span><span id="line-1017"></span>
+<span class="source-line-no">1018</span><span id="line-1018"></span>
+<span class="source-line-no">1019</span><span id="line-1019">  private static final class TypeIterator implements Iterator&lt;Type&gt; {</span>
+<span class="source-line-no">1020</span><span id="line-1020"></span>
+<span class="source-line-no">1021</span><span id="line-1021">    private final Iterator&lt;? extends JavaType&gt; i;</span>
+<span class="source-line-no">1022</span><span id="line-1022"></span>
+<span class="source-line-no">1023</span><span id="line-1023">    private TypeIterator(final Iterator&lt;? extends JavaType&gt; i) {</span>
+<span class="source-line-no">1024</span><span id="line-1024">      super();</span>
+<span class="source-line-no">1025</span><span id="line-1025">      this.i = Objects.requireNonNull(i, "i");</span>
+<span class="source-line-no">1026</span><span id="line-1026">    }</span>
+<span class="source-line-no">1027</span><span id="line-1027"></span>
+<span class="source-line-no">1028</span><span id="line-1028">    @Override // Iterator&lt;Type&gt;</span>
+<span class="source-line-no">1029</span><span id="line-1029">    public final boolean hasNext() {</span>
+<span class="source-line-no">1030</span><span id="line-1030">      return this.i.hasNext();</span>
+<span class="source-line-no">1031</span><span id="line-1031">    }</span>
+<span class="source-line-no">1032</span><span id="line-1032"></span>
+<span class="source-line-no">1033</span><span id="line-1033">    @Override // Iterator&lt;Type&gt;</span>
+<span class="source-line-no">1034</span><span id="line-1034">    public final Type next() {</span>
+<span class="source-line-no">1035</span><span id="line-1035">      return this.i.next().object();</span>
+<span class="source-line-no">1036</span><span id="line-1036">    }</span>
+<span class="source-line-no">1037</span><span id="line-1037"></span>
+<span class="source-line-no">1038</span><span id="line-1038">    @Override // Iterator&lt;Type&gt;</span>
+<span class="source-line-no">1039</span><span id="line-1039">    public final void remove() {</span>
+<span class="source-line-no">1040</span><span id="line-1040">      this.i.remove();</span>
+<span class="source-line-no">1041</span><span id="line-1041">    }</span>
+<span class="source-line-no">1042</span><span id="line-1042"></span>
+<span class="source-line-no">1043</span><span id="line-1043">  }</span>
+<span class="source-line-no">1044</span><span id="line-1044"></span>
+<span class="source-line-no">1045</span><span id="line-1045"></span>
+<span class="source-line-no">1046</span><span id="line-1046">  private static final class NullType implements Type {</span>
+<span class="source-line-no">1047</span><span id="line-1047"></span>
+<span class="source-line-no">1048</span><span id="line-1048">    private static final Type INSTANCE = new NullType();</span>
+<span class="source-line-no">1049</span><span id="line-1049"></span>
+<span class="source-line-no">1050</span><span id="line-1050">    private NullType() {</span>
+<span class="source-line-no">1051</span><span id="line-1051">      super();</span>
+<span class="source-line-no">1052</span><span id="line-1052">    }</span>
+<span class="source-line-no">1053</span><span id="line-1053"></span>
+<span class="source-line-no">1054</span><span id="line-1054">  }</span>
+<span class="source-line-no">1055</span><span id="line-1055"></span>
+<span class="source-line-no">1056</span><span id="line-1056">}</span>
 
 
 

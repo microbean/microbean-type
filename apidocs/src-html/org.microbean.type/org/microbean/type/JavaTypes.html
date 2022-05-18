@@ -847,886 +847,889 @@
 <span class="source-line-no">833</span><span id="line-833">   * WildcardType#getUpperBounds() first upper bound}&lt;/strong&gt; is</span>
 <span class="source-line-no">834</span><span id="line-834">   * returned.  &lt;strong&gt;Any other bounds are ignored.&lt;/strong&gt;&lt;/li&gt;</span>
 <span class="source-line-no">835</span><span id="line-835">   *</span>
-<span class="source-line-no">836</span><span id="line-836">   * &lt;/ul&gt;</span>
-<span class="source-line-no">837</span><span id="line-837">   *</span>
-<span class="source-line-no">838</span><span id="line-838">   * @param type the {@link Type} for which the corresponding type</span>
-<span class="source-line-no">839</span><span id="line-839">   * erasure is to be returned; may be {@code null} in which case</span>
-<span class="source-line-no">840</span><span id="line-840">   * {@code null} will be returned</span>
-<span class="source-line-no">841</span><span id="line-841">   *</span>
-<span class="source-line-no">842</span><span id="line-842">   * @return a {@link Class}, or {@code null} if a suitable {@link</span>
-<span class="source-line-no">843</span><span id="line-843">   * Class}-typed type erasure could not be determined, indicating</span>
-<span class="source-line-no">844</span><span id="line-844">   * that the type erasure is the supplied {@link Type} itself</span>
-<span class="source-line-no">845</span><span id="line-845">   *</span>
-<span class="source-line-no">846</span><span id="line-846">   * @nullability This method may return {@code null}.</span>
-<span class="source-line-no">847</span><span id="line-847">   *</span>
-<span class="source-line-no">848</span><span id="line-848">   * @threadsafety This method is safe for concurrent use by mutltiple</span>
-<span class="source-line-no">849</span><span id="line-849">   * threads.</span>
+<span class="source-line-no">836</span><span id="line-836">   * &lt;li&gt;If any other {@link Type} implementation is supplied, {@code</span>
+<span class="source-line-no">837</span><span id="line-837">   * null} is returned.&lt;/li&gt;</span>
+<span class="source-line-no">838</span><span id="line-838">   *</span>
+<span class="source-line-no">839</span><span id="line-839">   * &lt;/ul&gt;</span>
+<span class="source-line-no">840</span><span id="line-840">   *</span>
+<span class="source-line-no">841</span><span id="line-841">   * @param type the {@link Type} for which the corresponding type</span>
+<span class="source-line-no">842</span><span id="line-842">   * erasure is to be returned; may be {@code null} in which case</span>
+<span class="source-line-no">843</span><span id="line-843">   * {@code null} will be returned</span>
+<span class="source-line-no">844</span><span id="line-844">   *</span>
+<span class="source-line-no">845</span><span id="line-845">   * @return a {@link Class}, or {@code null} if a suitable {@link</span>
+<span class="source-line-no">846</span><span id="line-846">   * Class}-typed type erasure could not be determined, indicating</span>
+<span class="source-line-no">847</span><span id="line-847">   * that the type erasure is the supplied {@link Type} itself</span>
+<span class="source-line-no">848</span><span id="line-848">   *</span>
+<span class="source-line-no">849</span><span id="line-849">   * @nullability This method may return {@code null}.</span>
 <span class="source-line-no">850</span><span id="line-850">   *</span>
-<span class="source-line-no">851</span><span id="line-851">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">852</span><span id="line-852">   */</span>
-<span class="source-line-no">853</span><span id="line-853">  public static final Class&lt;?&gt; erase(final Type type) {</span>
-<span class="source-line-no">854</span><span id="line-854">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
-<span class="source-line-no">855</span><span id="line-855">    // 4.6. Type Erasure</span>
-<span class="source-line-no">856</span><span id="line-856">    //</span>
-<span class="source-line-no">857</span><span id="line-857">    // Type erasure is a mapping from types (possibly including</span>
-<span class="source-line-no">858</span><span id="line-858">    // parameterized types and type variables) to types (that are</span>
-<span class="source-line-no">859</span><span id="line-859">    // never parameterized types or type variables). We write |T| for</span>
-<span class="source-line-no">860</span><span id="line-860">    // the erasure of type T. The erasure mapping is defined as</span>
-<span class="source-line-no">861</span><span id="line-861">    // follows:</span>
-<span class="source-line-no">862</span><span id="line-862">    //</span>
-<span class="source-line-no">863</span><span id="line-863">    // The erasure of a parameterized type (§4.5) G&lt;T1,…,Tn&gt; is |G|.</span>
-<span class="source-line-no">864</span><span id="line-864">    //</span>
-<span class="source-line-no">865</span><span id="line-865">    // The erasure of a nested type T.C is |T|.C.</span>
-<span class="source-line-no">866</span><span id="line-866">    //</span>
-<span class="source-line-no">867</span><span id="line-867">    // The erasure of an array type T[] is |T|[].</span>
-<span class="source-line-no">868</span><span id="line-868">    //</span>
-<span class="source-line-no">869</span><span id="line-869">    // The erasure of a type variable (§4.4) is the erasure of its</span>
-<span class="source-line-no">870</span><span id="line-870">    // leftmost bound.</span>
+<span class="source-line-no">851</span><span id="line-851">   * @threadsafety This method is safe for concurrent use by mutltiple</span>
+<span class="source-line-no">852</span><span id="line-852">   * threads.</span>
+<span class="source-line-no">853</span><span id="line-853">   *</span>
+<span class="source-line-no">854</span><span id="line-854">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">855</span><span id="line-855">   */</span>
+<span class="source-line-no">856</span><span id="line-856">  public static final Class&lt;?&gt; erase(final Type type) {</span>
+<span class="source-line-no">857</span><span id="line-857">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
+<span class="source-line-no">858</span><span id="line-858">    // 4.6. Type Erasure</span>
+<span class="source-line-no">859</span><span id="line-859">    //</span>
+<span class="source-line-no">860</span><span id="line-860">    // Type erasure is a mapping from types (possibly including</span>
+<span class="source-line-no">861</span><span id="line-861">    // parameterized types and type variables) to types (that are</span>
+<span class="source-line-no">862</span><span id="line-862">    // never parameterized types or type variables). We write |T| for</span>
+<span class="source-line-no">863</span><span id="line-863">    // the erasure of type T. The erasure mapping is defined as</span>
+<span class="source-line-no">864</span><span id="line-864">    // follows:</span>
+<span class="source-line-no">865</span><span id="line-865">    //</span>
+<span class="source-line-no">866</span><span id="line-866">    // The erasure of a parameterized type (§4.5) G&lt;T1,…,Tn&gt; is |G|.</span>
+<span class="source-line-no">867</span><span id="line-867">    //</span>
+<span class="source-line-no">868</span><span id="line-868">    // The erasure of a nested type T.C is |T|.C.</span>
+<span class="source-line-no">869</span><span id="line-869">    //</span>
+<span class="source-line-no">870</span><span id="line-870">    // The erasure of an array type T[] is |T|[].</span>
 <span class="source-line-no">871</span><span id="line-871">    //</span>
-<span class="source-line-no">872</span><span id="line-872">    // The erasure of every other type is the type itself.</span>
-<span class="source-line-no">873</span><span id="line-873">    if (type == null) {</span>
-<span class="source-line-no">874</span><span id="line-874">      return null;</span>
-<span class="source-line-no">875</span><span id="line-875">    } else if (type instanceof Class&lt;?&gt; c) {</span>
-<span class="source-line-no">876</span><span id="line-876">      return erase(c);</span>
-<span class="source-line-no">877</span><span id="line-877">    } else if (type instanceof ParameterizedType p) {</span>
-<span class="source-line-no">878</span><span id="line-878">      return erase(p);</span>
-<span class="source-line-no">879</span><span id="line-879">    } else if (type instanceof GenericArrayType g) {</span>
-<span class="source-line-no">880</span><span id="line-880">      return erase(g);</span>
-<span class="source-line-no">881</span><span id="line-881">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
-<span class="source-line-no">882</span><span id="line-882">      return erase(tv);</span>
-<span class="source-line-no">883</span><span id="line-883">    } else if (type instanceof WildcardType w) {</span>
-<span class="source-line-no">884</span><span id="line-884">      return erase(w);</span>
-<span class="source-line-no">885</span><span id="line-885">    } else {</span>
-<span class="source-line-no">886</span><span id="line-886">      return null;</span>
-<span class="source-line-no">887</span><span id="line-887">    }</span>
-<span class="source-line-no">888</span><span id="line-888">  }</span>
-<span class="source-line-no">889</span><span id="line-889"></span>
-<span class="source-line-no">890</span><span id="line-890">  private static final Class&lt;?&gt; erase(final Class&lt;?&gt; type) {</span>
-<span class="source-line-no">891</span><span id="line-891">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
-<span class="source-line-no">892</span><span id="line-892">    // …</span>
-<span class="source-line-no">893</span><span id="line-893">    // The erasure of a nested type T.C is</span>
-<span class="source-line-no">894</span><span id="line-894">    // |T|.C. [Class.getDeclaringClass() returns an already erased</span>
-<span class="source-line-no">895</span><span id="line-895">    // type.]</span>
-<span class="source-line-no">896</span><span id="line-896">    //</span>
-<span class="source-line-no">897</span><span id="line-897">    // The erasure of an array type T[] is |T|[]. [A Class that is an</span>
-<span class="source-line-no">898</span><span id="line-898">    // array has a Class as its component type, and that is already</span>
-<span class="source-line-no">899</span><span id="line-899">    // erased.]</span>
-<span class="source-line-no">900</span><span id="line-900">    // …</span>
-<span class="source-line-no">901</span><span id="line-901">    // The erasure of every other type is the type itself. [So in all</span>
-<span class="source-line-no">902</span><span id="line-902">    // cases we can just return the supplied Class&lt;?&gt;.]</span>
-<span class="source-line-no">903</span><span id="line-903">    return type;</span>
-<span class="source-line-no">904</span><span id="line-904">  }</span>
-<span class="source-line-no">905</span><span id="line-905"></span>
-<span class="source-line-no">906</span><span id="line-906">  private static final Class&lt;?&gt; erase(final ParameterizedType type) {</span>
-<span class="source-line-no">907</span><span id="line-907">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
-<span class="source-line-no">908</span><span id="line-908">    // …</span>
-<span class="source-line-no">909</span><span id="line-909">    // The erasure of a parameterized type (§4.5) G&lt;T1,…,Tₙ&gt; is |G|</span>
-<span class="source-line-no">910</span><span id="line-910">    // [|G| means the erasure of G, i.e. the erasure of</span>
-<span class="source-line-no">911</span><span id="line-911">    // type.getRawType()].</span>
-<span class="source-line-no">912</span><span id="line-912">    return erase(type.getRawType());</span>
-<span class="source-line-no">913</span><span id="line-913">  }</span>
-<span class="source-line-no">914</span><span id="line-914"></span>
-<span class="source-line-no">915</span><span id="line-915">  private static final Class&lt;?&gt; erase(final GenericArrayType type) {</span>
-<span class="source-line-no">916</span><span id="line-916">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
-<span class="source-line-no">917</span><span id="line-917">    //</span>
-<span class="source-line-no">918</span><span id="line-918">    // The erasure of an array type T[] is |T|[]. [|T| means the</span>
-<span class="source-line-no">919</span><span id="line-919">    // erasure of T. We erase the genericComponentType() and use</span>
-<span class="source-line-no">920</span><span id="line-920">    // Class#arrayType() to find the "normal" array class for the</span>
-<span class="source-line-no">921</span><span id="line-921">    // erasure.]</span>
-<span class="source-line-no">922</span><span id="line-922">    final Class&lt;?&gt; componentType = erase(type.getGenericComponentType());</span>
-<span class="source-line-no">923</span><span id="line-923">    if (componentType == null) {</span>
-<span class="source-line-no">924</span><span id="line-924">      return null;</span>
-<span class="source-line-no">925</span><span id="line-925">    } else {</span>
-<span class="source-line-no">926</span><span id="line-926">      return componentType.arrayType();</span>
-<span class="source-line-no">927</span><span id="line-927">    }</span>
-<span class="source-line-no">928</span><span id="line-928">  }</span>
-<span class="source-line-no">929</span><span id="line-929"></span>
-<span class="source-line-no">930</span><span id="line-930">  private static final Class&lt;?&gt; erase(final TypeVariable&lt;?&gt; type) {</span>
-<span class="source-line-no">931</span><span id="line-931">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
-<span class="source-line-no">932</span><span id="line-932">    //</span>
-<span class="source-line-no">933</span><span id="line-933">    // The erasure of a type variable (§4.4) is the erasure of its</span>
-<span class="source-line-no">934</span><span id="line-934">    // leftmost bound. [In the case of a TypeVariable&lt;?&gt; that returns</span>
-<span class="source-line-no">935</span><span id="line-935">    // multiple bounds, we know they will start with a class, not an</span>
-<span class="source-line-no">936</span><span id="line-936">    // interface and not a type variable.]</span>
-<span class="source-line-no">937</span><span id="line-937">    final Type[] bounds = type.getBounds();</span>
-<span class="source-line-no">938</span><span id="line-938">    return bounds.length &gt; 0 ? erase(bounds[0]) : Object.class;</span>
-<span class="source-line-no">939</span><span id="line-939">  }</span>
-<span class="source-line-no">940</span><span id="line-940"></span>
-<span class="source-line-no">941</span><span id="line-941">  private static final Class&lt;?&gt; erase(final WildcardType type) {</span>
-<span class="source-line-no">942</span><span id="line-942">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
-<span class="source-line-no">943</span><span id="line-943">    //</span>
-<span class="source-line-no">944</span><span id="line-944">    // The erasure of a type variable (§4.4) is the erasure of its</span>
-<span class="source-line-no">945</span><span id="line-945">    // leftmost bound.  [WildcardTypes aren't really in the JLS per se</span>
-<span class="source-line-no">946</span><span id="line-946">    // but they behave like type variables. Only upper bounds will</span>
-<span class="source-line-no">947</span><span id="line-947">    // matter here.]</span>
-<span class="source-line-no">948</span><span id="line-948">    final Type[] bounds = type.getUpperBounds();</span>
-<span class="source-line-no">949</span><span id="line-949">    return bounds != null &amp;&amp; bounds.length &gt; 0 ? erase(bounds[0]) : Object.class;</span>
-<span class="source-line-no">950</span><span id="line-950">  }</span>
-<span class="source-line-no">951</span><span id="line-951"></span>
-<span class="source-line-no">952</span><span id="line-952">  /**</span>
-<span class="source-line-no">953</span><span id="line-953">   * Tests two {@link Type}s for equality in a manner that is</span>
-<span class="source-line-no">954</span><span id="line-954">   * independent of their implementations.</span>
-<span class="source-line-no">955</span><span id="line-955">   *</span>
-<span class="source-line-no">956</span><span id="line-956">   * @param type0 the first {@link Type}; may be {@code null}</span>
-<span class="source-line-no">957</span><span id="line-957">   *</span>
-<span class="source-line-no">958</span><span id="line-958">   * @param type1 the second {@link Type}; may be {@code null}</span>
-<span class="source-line-no">959</span><span id="line-959">   *</span>
-<span class="source-line-no">960</span><span id="line-960">   * @return {@code true} if the two {@link Type}s are equal; {@code</span>
-<span class="source-line-no">961</span><span id="line-961">   * false} otherwise</span>
+<span class="source-line-no">872</span><span id="line-872">    // The erasure of a type variable (§4.4) is the erasure of its</span>
+<span class="source-line-no">873</span><span id="line-873">    // leftmost bound.</span>
+<span class="source-line-no">874</span><span id="line-874">    //</span>
+<span class="source-line-no">875</span><span id="line-875">    // The erasure of every other type is the type itself.</span>
+<span class="source-line-no">876</span><span id="line-876">    if (type == null) {</span>
+<span class="source-line-no">877</span><span id="line-877">      return null;</span>
+<span class="source-line-no">878</span><span id="line-878">    } else if (type instanceof Class&lt;?&gt; c) {</span>
+<span class="source-line-no">879</span><span id="line-879">      return erase(c);</span>
+<span class="source-line-no">880</span><span id="line-880">    } else if (type instanceof ParameterizedType p) {</span>
+<span class="source-line-no">881</span><span id="line-881">      return erase(p);</span>
+<span class="source-line-no">882</span><span id="line-882">    } else if (type instanceof GenericArrayType g) {</span>
+<span class="source-line-no">883</span><span id="line-883">      return erase(g);</span>
+<span class="source-line-no">884</span><span id="line-884">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
+<span class="source-line-no">885</span><span id="line-885">      return erase(tv);</span>
+<span class="source-line-no">886</span><span id="line-886">    } else if (type instanceof WildcardType w) {</span>
+<span class="source-line-no">887</span><span id="line-887">      return erase(w);</span>
+<span class="source-line-no">888</span><span id="line-888">    } else {</span>
+<span class="source-line-no">889</span><span id="line-889">      return null;</span>
+<span class="source-line-no">890</span><span id="line-890">    }</span>
+<span class="source-line-no">891</span><span id="line-891">  }</span>
+<span class="source-line-no">892</span><span id="line-892"></span>
+<span class="source-line-no">893</span><span id="line-893">  private static final Class&lt;?&gt; erase(final Class&lt;?&gt; type) {</span>
+<span class="source-line-no">894</span><span id="line-894">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
+<span class="source-line-no">895</span><span id="line-895">    // …</span>
+<span class="source-line-no">896</span><span id="line-896">    // The erasure of a nested type T.C is</span>
+<span class="source-line-no">897</span><span id="line-897">    // |T|.C. [Class.getDeclaringClass() returns an already erased</span>
+<span class="source-line-no">898</span><span id="line-898">    // type.]</span>
+<span class="source-line-no">899</span><span id="line-899">    //</span>
+<span class="source-line-no">900</span><span id="line-900">    // The erasure of an array type T[] is |T|[]. [A Class that is an</span>
+<span class="source-line-no">901</span><span id="line-901">    // array has a Class as its component type, and that is already</span>
+<span class="source-line-no">902</span><span id="line-902">    // erased.]</span>
+<span class="source-line-no">903</span><span id="line-903">    // …</span>
+<span class="source-line-no">904</span><span id="line-904">    // The erasure of every other type is the type itself. [So in all</span>
+<span class="source-line-no">905</span><span id="line-905">    // cases we can just return the supplied Class&lt;?&gt;.]</span>
+<span class="source-line-no">906</span><span id="line-906">    return type;</span>
+<span class="source-line-no">907</span><span id="line-907">  }</span>
+<span class="source-line-no">908</span><span id="line-908"></span>
+<span class="source-line-no">909</span><span id="line-909">  private static final Class&lt;?&gt; erase(final ParameterizedType type) {</span>
+<span class="source-line-no">910</span><span id="line-910">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
+<span class="source-line-no">911</span><span id="line-911">    // …</span>
+<span class="source-line-no">912</span><span id="line-912">    // The erasure of a parameterized type (§4.5) G&lt;T1,…,Tₙ&gt; is |G|</span>
+<span class="source-line-no">913</span><span id="line-913">    // [|G| means the erasure of G, i.e. the erasure of</span>
+<span class="source-line-no">914</span><span id="line-914">    // type.getRawType()].</span>
+<span class="source-line-no">915</span><span id="line-915">    return erase(type.getRawType());</span>
+<span class="source-line-no">916</span><span id="line-916">  }</span>
+<span class="source-line-no">917</span><span id="line-917"></span>
+<span class="source-line-no">918</span><span id="line-918">  private static final Class&lt;?&gt; erase(final GenericArrayType type) {</span>
+<span class="source-line-no">919</span><span id="line-919">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
+<span class="source-line-no">920</span><span id="line-920">    //</span>
+<span class="source-line-no">921</span><span id="line-921">    // The erasure of an array type T[] is |T|[]. [|T| means the</span>
+<span class="source-line-no">922</span><span id="line-922">    // erasure of T. We erase the genericComponentType() and use</span>
+<span class="source-line-no">923</span><span id="line-923">    // Class#arrayType() to find the "normal" array class for the</span>
+<span class="source-line-no">924</span><span id="line-924">    // erasure.]</span>
+<span class="source-line-no">925</span><span id="line-925">    final Class&lt;?&gt; componentType = erase(type.getGenericComponentType());</span>
+<span class="source-line-no">926</span><span id="line-926">    if (componentType == null) {</span>
+<span class="source-line-no">927</span><span id="line-927">      return null;</span>
+<span class="source-line-no">928</span><span id="line-928">    } else {</span>
+<span class="source-line-no">929</span><span id="line-929">      return componentType.arrayType();</span>
+<span class="source-line-no">930</span><span id="line-930">    }</span>
+<span class="source-line-no">931</span><span id="line-931">  }</span>
+<span class="source-line-no">932</span><span id="line-932"></span>
+<span class="source-line-no">933</span><span id="line-933">  private static final Class&lt;?&gt; erase(final TypeVariable&lt;?&gt; type) {</span>
+<span class="source-line-no">934</span><span id="line-934">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
+<span class="source-line-no">935</span><span id="line-935">    //</span>
+<span class="source-line-no">936</span><span id="line-936">    // The erasure of a type variable (§4.4) is the erasure of its</span>
+<span class="source-line-no">937</span><span id="line-937">    // leftmost bound. [In the case of a TypeVariable&lt;?&gt; that returns</span>
+<span class="source-line-no">938</span><span id="line-938">    // multiple bounds, we know they will start with a class, not an</span>
+<span class="source-line-no">939</span><span id="line-939">    // interface and not a type variable.]</span>
+<span class="source-line-no">940</span><span id="line-940">    final Type[] bounds = type.getBounds();</span>
+<span class="source-line-no">941</span><span id="line-941">    return bounds.length &gt; 0 ? erase(bounds[0]) : Object.class;</span>
+<span class="source-line-no">942</span><span id="line-942">  }</span>
+<span class="source-line-no">943</span><span id="line-943"></span>
+<span class="source-line-no">944</span><span id="line-944">  private static final Class&lt;?&gt; erase(final WildcardType type) {</span>
+<span class="source-line-no">945</span><span id="line-945">    // https://docs.oracle.com/javase/specs/jls/se11/html/jls-4.html#jls-4.6</span>
+<span class="source-line-no">946</span><span id="line-946">    //</span>
+<span class="source-line-no">947</span><span id="line-947">    // The erasure of a type variable (§4.4) is the erasure of its</span>
+<span class="source-line-no">948</span><span id="line-948">    // leftmost bound.  [WildcardTypes aren't really in the JLS per se</span>
+<span class="source-line-no">949</span><span id="line-949">    // but they behave like type variables. Only upper bounds will</span>
+<span class="source-line-no">950</span><span id="line-950">    // matter here.]</span>
+<span class="source-line-no">951</span><span id="line-951">    final Type[] bounds = type.getUpperBounds();</span>
+<span class="source-line-no">952</span><span id="line-952">    return bounds != null &amp;&amp; bounds.length &gt; 0 ? erase(bounds[0]) : Object.class;</span>
+<span class="source-line-no">953</span><span id="line-953">  }</span>
+<span class="source-line-no">954</span><span id="line-954"></span>
+<span class="source-line-no">955</span><span id="line-955">  /**</span>
+<span class="source-line-no">956</span><span id="line-956">   * Tests two {@link Type}s for equality in a manner that is</span>
+<span class="source-line-no">957</span><span id="line-957">   * independent of their implementations.</span>
+<span class="source-line-no">958</span><span id="line-958">   *</span>
+<span class="source-line-no">959</span><span id="line-959">   * @param type0 the first {@link Type}; may be {@code null}</span>
+<span class="source-line-no">960</span><span id="line-960">   *</span>
+<span class="source-line-no">961</span><span id="line-961">   * @param type1 the second {@link Type}; may be {@code null}</span>
 <span class="source-line-no">962</span><span id="line-962">   *</span>
-<span class="source-line-no">963</span><span id="line-963">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">964</span><span id="line-964">   * threads.</span>
+<span class="source-line-no">963</span><span id="line-963">   * @return {@code true} if the two {@link Type}s are equal; {@code</span>
+<span class="source-line-no">964</span><span id="line-964">   * false} otherwise</span>
 <span class="source-line-no">965</span><span id="line-965">   *</span>
-<span class="source-line-no">966</span><span id="line-966">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">967</span><span id="line-967">   */</span>
-<span class="source-line-no">968</span><span id="line-968">  public static final boolean equals(final Type type0, final Type type1) {</span>
-<span class="source-line-no">969</span><span id="line-969">    if (type0 == null) {</span>
-<span class="source-line-no">970</span><span id="line-970">      return type1 == null;</span>
-<span class="source-line-no">971</span><span id="line-971">    } else if (type1 == null) {</span>
-<span class="source-line-no">972</span><span id="line-972">      return false;</span>
-<span class="source-line-no">973</span><span id="line-973">    } else if (type0 == type1) {</span>
-<span class="source-line-no">974</span><span id="line-974">      return true;</span>
-<span class="source-line-no">975</span><span id="line-975">    } else if (type0 instanceof Class&lt;?&gt; c0) {</span>
-<span class="source-line-no">976</span><span id="line-976">      return type1 instanceof Class&lt;?&gt; c1 &amp;&amp; equals(c0, c1);</span>
-<span class="source-line-no">977</span><span id="line-977">    } else if (type0 instanceof ParameterizedType p0) {</span>
-<span class="source-line-no">978</span><span id="line-978">      return type1 instanceof ParameterizedType p1 &amp;&amp; equals(p0, p1);</span>
-<span class="source-line-no">979</span><span id="line-979">    } else if (type0 instanceof GenericArrayType g0) {</span>
-<span class="source-line-no">980</span><span id="line-980">      return type1 instanceof GenericArrayType g1 &amp;&amp; equals(g0, g1);</span>
-<span class="source-line-no">981</span><span id="line-981">    } else if (type0 instanceof TypeVariable&lt;?&gt; tv0) {</span>
-<span class="source-line-no">982</span><span id="line-982">      return type1 instanceof TypeVariable&lt;?&gt; tv1 &amp;&amp; equals(tv0, tv1);</span>
-<span class="source-line-no">983</span><span id="line-983">    } else if (type0 instanceof WildcardType w0) {</span>
-<span class="source-line-no">984</span><span id="line-984">      return type1 instanceof WildcardType w1 &amp;&amp; equals(w0, w1);</span>
-<span class="source-line-no">985</span><span id="line-985">    } else {</span>
-<span class="source-line-no">986</span><span id="line-986">      return Objects.equals(type0, type1);</span>
-<span class="source-line-no">987</span><span id="line-987">    }</span>
-<span class="source-line-no">988</span><span id="line-988">  }</span>
-<span class="source-line-no">989</span><span id="line-989"></span>
-<span class="source-line-no">990</span><span id="line-990">  private static final boolean equals(final Type[] ts0, final Type[] ts1) {</span>
-<span class="source-line-no">991</span><span id="line-991">    if (ts0 == null) {</span>
-<span class="source-line-no">992</span><span id="line-992">      return ts1 == null;</span>
-<span class="source-line-no">993</span><span id="line-993">    } else if (ts1 == null) {</span>
-<span class="source-line-no">994</span><span id="line-994">      return false;</span>
-<span class="source-line-no">995</span><span id="line-995">    } else if (ts0 == ts1) {</span>
-<span class="source-line-no">996</span><span id="line-996">      return true;</span>
-<span class="source-line-no">997</span><span id="line-997">    } else if (ts0.length == ts1.length) {</span>
-<span class="source-line-no">998</span><span id="line-998">      for (final Type t0 : ts0) {</span>
-<span class="source-line-no">999</span><span id="line-999">        for (final Type t1 : ts1) {</span>
-<span class="source-line-no">1000</span><span id="line-1000">          if (!equals(t0, t1)) {</span>
-<span class="source-line-no">1001</span><span id="line-1001">            return false;</span>
-<span class="source-line-no">1002</span><span id="line-1002">          }</span>
-<span class="source-line-no">1003</span><span id="line-1003">        }</span>
-<span class="source-line-no">1004</span><span id="line-1004">      }</span>
-<span class="source-line-no">1005</span><span id="line-1005">      return true;</span>
-<span class="source-line-no">1006</span><span id="line-1006">    } else {</span>
-<span class="source-line-no">1007</span><span id="line-1007">      return false;</span>
-<span class="source-line-no">1008</span><span id="line-1008">    }</span>
-<span class="source-line-no">1009</span><span id="line-1009">  }</span>
-<span class="source-line-no">1010</span><span id="line-1010"></span>
-<span class="source-line-no">1011</span><span id="line-1011">  private static final boolean equals(final Class&lt;?&gt; c0, final Class&lt;?&gt; c1) {</span>
-<span class="source-line-no">1012</span><span id="line-1012">    return Objects.equals(c0, c1);</span>
-<span class="source-line-no">1013</span><span id="line-1013">  }</span>
-<span class="source-line-no">1014</span><span id="line-1014"></span>
-<span class="source-line-no">1015</span><span id="line-1015">  private static final boolean equals(final ParameterizedType pt0, final ParameterizedType pt1) {</span>
-<span class="source-line-no">1016</span><span id="line-1016">    if (pt0 == null) {</span>
-<span class="source-line-no">1017</span><span id="line-1017">      return pt1 == null;</span>
-<span class="source-line-no">1018</span><span id="line-1018">    } else if (pt1 == null) {</span>
-<span class="source-line-no">1019</span><span id="line-1019">      return false;</span>
-<span class="source-line-no">1020</span><span id="line-1020">    } else if (pt0 == pt1) {</span>
-<span class="source-line-no">1021</span><span id="line-1021">      return true;</span>
-<span class="source-line-no">1022</span><span id="line-1022">    } else {</span>
-<span class="source-line-no">1023</span><span id="line-1023">      return</span>
-<span class="source-line-no">1024</span><span id="line-1024">        equals(pt0.getOwnerType(), pt1.getOwnerType()) &amp;&amp;</span>
-<span class="source-line-no">1025</span><span id="line-1025">        equals(pt0.getRawType(), pt1.getRawType()) &amp;&amp;</span>
-<span class="source-line-no">1026</span><span id="line-1026">        equals(pt0.getActualTypeArguments(), pt1.getActualTypeArguments());</span>
-<span class="source-line-no">1027</span><span id="line-1027">    }</span>
-<span class="source-line-no">1028</span><span id="line-1028">  }</span>
-<span class="source-line-no">1029</span><span id="line-1029"></span>
-<span class="source-line-no">1030</span><span id="line-1030">  private static final boolean equals(final GenericArrayType ga0, final GenericArrayType ga1) {</span>
-<span class="source-line-no">1031</span><span id="line-1031">    if (ga0 == null) {</span>
-<span class="source-line-no">1032</span><span id="line-1032">      return ga1 == null;</span>
-<span class="source-line-no">1033</span><span id="line-1033">    } else if (ga1 == null) {</span>
-<span class="source-line-no">1034</span><span id="line-1034">      return false;</span>
-<span class="source-line-no">1035</span><span id="line-1035">    } else if (ga0 == ga1) {</span>
-<span class="source-line-no">1036</span><span id="line-1036">      return true;</span>
-<span class="source-line-no">1037</span><span id="line-1037">    } else {</span>
-<span class="source-line-no">1038</span><span id="line-1038">      return equals(ga0.getGenericComponentType(), ga1.getGenericComponentType());</span>
-<span class="source-line-no">1039</span><span id="line-1039">    }</span>
-<span class="source-line-no">1040</span><span id="line-1040">  }</span>
-<span class="source-line-no">1041</span><span id="line-1041"></span>
-<span class="source-line-no">1042</span><span id="line-1042">  private static final boolean equals(final TypeVariable&lt;?&gt; tv0, final TypeVariable&lt;?&gt; tv1) {</span>
-<span class="source-line-no">1043</span><span id="line-1043">    if (tv0 == null) {</span>
-<span class="source-line-no">1044</span><span id="line-1044">      return tv1 == null;</span>
-<span class="source-line-no">1045</span><span id="line-1045">    } else if (tv1 == null) {</span>
-<span class="source-line-no">1046</span><span id="line-1046">      return false;</span>
-<span class="source-line-no">1047</span><span id="line-1047">    } else if (tv0 == tv1) {</span>
-<span class="source-line-no">1048</span><span id="line-1048">      return true;</span>
-<span class="source-line-no">1049</span><span id="line-1049">    } else {</span>
-<span class="source-line-no">1050</span><span id="line-1050">      return</span>
-<span class="source-line-no">1051</span><span id="line-1051">        equals(tv0.getGenericDeclaration(), tv1.getGenericDeclaration()) &amp;&amp;</span>
-<span class="source-line-no">1052</span><span id="line-1052">        Objects.equals(tv0.getName(), tv1.getName());</span>
-<span class="source-line-no">1053</span><span id="line-1053">    }</span>
-<span class="source-line-no">1054</span><span id="line-1054">  }</span>
-<span class="source-line-no">1055</span><span id="line-1055"></span>
-<span class="source-line-no">1056</span><span id="line-1056">  private static final boolean equals(final GenericDeclaration gd0, final GenericDeclaration gd1) {</span>
-<span class="source-line-no">1057</span><span id="line-1057">    if (gd0 == null) {</span>
-<span class="source-line-no">1058</span><span id="line-1058">      return gd1 == null;</span>
-<span class="source-line-no">1059</span><span id="line-1059">    } else if (gd1 == null) {</span>
-<span class="source-line-no">1060</span><span id="line-1060">      return false;</span>
-<span class="source-line-no">1061</span><span id="line-1061">    } else if (gd0 == gd1) {</span>
-<span class="source-line-no">1062</span><span id="line-1062">      return true;</span>
-<span class="source-line-no">1063</span><span id="line-1063">    } else if (gd0 instanceof Class&lt;?&gt; c0) {</span>
-<span class="source-line-no">1064</span><span id="line-1064">      return gd1 instanceof Class&lt;?&gt; c1 &amp;&amp; equals(c0, c1);</span>
-<span class="source-line-no">1065</span><span id="line-1065">    } else if (gd0 instanceof Executable e0) {</span>
-<span class="source-line-no">1066</span><span id="line-1066">      return gd1 instanceof Executable e1 &amp;&amp; equals(e0, e1);</span>
-<span class="source-line-no">1067</span><span id="line-1067">    } else {</span>
-<span class="source-line-no">1068</span><span id="line-1068">      return Objects.equals(gd0, gd1);</span>
-<span class="source-line-no">1069</span><span id="line-1069">    }</span>
-<span class="source-line-no">1070</span><span id="line-1070">  }</span>
-<span class="source-line-no">1071</span><span id="line-1071"></span>
-<span class="source-line-no">1072</span><span id="line-1072">  private static final boolean equals(final Executable e0, final Executable e1) {</span>
-<span class="source-line-no">1073</span><span id="line-1073">    if (e0 == null) {</span>
-<span class="source-line-no">1074</span><span id="line-1074">      return e1 == null;</span>
-<span class="source-line-no">1075</span><span id="line-1075">    } else if (e1 == null) {</span>
-<span class="source-line-no">1076</span><span id="line-1076">      return false;</span>
-<span class="source-line-no">1077</span><span id="line-1077">    } else if (e0 == e1) {</span>
-<span class="source-line-no">1078</span><span id="line-1078">      return true;</span>
-<span class="source-line-no">1079</span><span id="line-1079">    } else if (e0 instanceof Constructor&lt;?&gt; c0) {</span>
-<span class="source-line-no">1080</span><span id="line-1080">      return e1 instanceof Constructor&lt;?&gt; c1 &amp;&amp; equals(c0, c1);</span>
-<span class="source-line-no">1081</span><span id="line-1081">    } else if (e0 instanceof Method m0) {</span>
-<span class="source-line-no">1082</span><span id="line-1082">      return e1 instanceof Method m1 &amp;&amp; equals(m0, m1);</span>
-<span class="source-line-no">1083</span><span id="line-1083">    } else {</span>
-<span class="source-line-no">1084</span><span id="line-1084">      return Objects.equals(e0, e1);</span>
-<span class="source-line-no">1085</span><span id="line-1085">    }</span>
-<span class="source-line-no">1086</span><span id="line-1086">  }</span>
-<span class="source-line-no">1087</span><span id="line-1087"></span>
-<span class="source-line-no">1088</span><span id="line-1088">  private static final boolean equals(final Constructor&lt;?&gt; c0, final Constructor&lt;?&gt; c1) {</span>
-<span class="source-line-no">1089</span><span id="line-1089">    return Objects.equals(c0, c1);</span>
-<span class="source-line-no">1090</span><span id="line-1090">  }</span>
-<span class="source-line-no">1091</span><span id="line-1091"></span>
-<span class="source-line-no">1092</span><span id="line-1092">  private static final boolean equals(final Method m0, final Method m1) {</span>
-<span class="source-line-no">1093</span><span id="line-1093">    return Objects.equals(m0, m1);</span>
-<span class="source-line-no">1094</span><span id="line-1094">  }</span>
-<span class="source-line-no">1095</span><span id="line-1095"></span>
-<span class="source-line-no">1096</span><span id="line-1096">  private static final boolean equals(final WildcardType w0, final WildcardType w1) {</span>
-<span class="source-line-no">1097</span><span id="line-1097">    if (w0 == null) {</span>
-<span class="source-line-no">1098</span><span id="line-1098">      return w1 == null;</span>
-<span class="source-line-no">1099</span><span id="line-1099">    } else if (w1 == null) {</span>
-<span class="source-line-no">1100</span><span id="line-1100">      return false;</span>
-<span class="source-line-no">1101</span><span id="line-1101">    } else if (w0 == w1) {</span>
-<span class="source-line-no">1102</span><span id="line-1102">      return true;</span>
-<span class="source-line-no">1103</span><span id="line-1103">    } else {</span>
-<span class="source-line-no">1104</span><span id="line-1104">      return</span>
-<span class="source-line-no">1105</span><span id="line-1105">        equals(w0.getLowerBounds(), w1.getLowerBounds()) &amp;&amp;</span>
-<span class="source-line-no">1106</span><span id="line-1106">        equals(w0.getUpperBounds(), w1.getUpperBounds());</span>
-<span class="source-line-no">1107</span><span id="line-1107">    }</span>
-<span class="source-line-no">1108</span><span id="line-1108">  }</span>
-<span class="source-line-no">1109</span><span id="line-1109"></span>
-<span class="source-line-no">1110</span><span id="line-1110">  /**</span>
-<span class="source-line-no">1111</span><span id="line-1111">   * Computes and returns a hashcode for the supplied {@link Type} independent of</span>
-<span class="source-line-no">1112</span><span id="line-1112">   * its implementation.</span>
-<span class="source-line-no">1113</span><span id="line-1113">   *</span>
-<span class="source-line-no">1114</span><span id="line-1114">   * @param type the {@link Type} in question; may be {@code null} in</span>
-<span class="source-line-no">1115</span><span id="line-1115">   * which case {@code 0} will be returned</span>
+<span class="source-line-no">966</span><span id="line-966">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">967</span><span id="line-967">   * threads.</span>
+<span class="source-line-no">968</span><span id="line-968">   *</span>
+<span class="source-line-no">969</span><span id="line-969">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">970</span><span id="line-970">   */</span>
+<span class="source-line-no">971</span><span id="line-971">  public static final boolean equals(final Type type0, final Type type1) {</span>
+<span class="source-line-no">972</span><span id="line-972">    if (type0 == null) {</span>
+<span class="source-line-no">973</span><span id="line-973">      return type1 == null;</span>
+<span class="source-line-no">974</span><span id="line-974">    } else if (type1 == null) {</span>
+<span class="source-line-no">975</span><span id="line-975">      return false;</span>
+<span class="source-line-no">976</span><span id="line-976">    } else if (type0 == type1) {</span>
+<span class="source-line-no">977</span><span id="line-977">      return true;</span>
+<span class="source-line-no">978</span><span id="line-978">    } else if (type0 instanceof Class&lt;?&gt; c0) {</span>
+<span class="source-line-no">979</span><span id="line-979">      return type1 instanceof Class&lt;?&gt; c1 &amp;&amp; equals(c0, c1);</span>
+<span class="source-line-no">980</span><span id="line-980">    } else if (type0 instanceof ParameterizedType p0) {</span>
+<span class="source-line-no">981</span><span id="line-981">      return type1 instanceof ParameterizedType p1 &amp;&amp; equals(p0, p1);</span>
+<span class="source-line-no">982</span><span id="line-982">    } else if (type0 instanceof GenericArrayType g0) {</span>
+<span class="source-line-no">983</span><span id="line-983">      return type1 instanceof GenericArrayType g1 &amp;&amp; equals(g0, g1);</span>
+<span class="source-line-no">984</span><span id="line-984">    } else if (type0 instanceof TypeVariable&lt;?&gt; tv0) {</span>
+<span class="source-line-no">985</span><span id="line-985">      return type1 instanceof TypeVariable&lt;?&gt; tv1 &amp;&amp; equals(tv0, tv1);</span>
+<span class="source-line-no">986</span><span id="line-986">    } else if (type0 instanceof WildcardType w0) {</span>
+<span class="source-line-no">987</span><span id="line-987">      return type1 instanceof WildcardType w1 &amp;&amp; equals(w0, w1);</span>
+<span class="source-line-no">988</span><span id="line-988">    } else {</span>
+<span class="source-line-no">989</span><span id="line-989">      return Objects.equals(type0, type1);</span>
+<span class="source-line-no">990</span><span id="line-990">    }</span>
+<span class="source-line-no">991</span><span id="line-991">  }</span>
+<span class="source-line-no">992</span><span id="line-992"></span>
+<span class="source-line-no">993</span><span id="line-993">  private static final boolean equals(final Type[] ts0, final Type[] ts1) {</span>
+<span class="source-line-no">994</span><span id="line-994">    if (ts0 == null) {</span>
+<span class="source-line-no">995</span><span id="line-995">      return ts1 == null;</span>
+<span class="source-line-no">996</span><span id="line-996">    } else if (ts1 == null) {</span>
+<span class="source-line-no">997</span><span id="line-997">      return false;</span>
+<span class="source-line-no">998</span><span id="line-998">    } else if (ts0 == ts1) {</span>
+<span class="source-line-no">999</span><span id="line-999">      return true;</span>
+<span class="source-line-no">1000</span><span id="line-1000">    } else if (ts0.length == ts1.length) {</span>
+<span class="source-line-no">1001</span><span id="line-1001">      for (final Type t0 : ts0) {</span>
+<span class="source-line-no">1002</span><span id="line-1002">        for (final Type t1 : ts1) {</span>
+<span class="source-line-no">1003</span><span id="line-1003">          if (!equals(t0, t1)) {</span>
+<span class="source-line-no">1004</span><span id="line-1004">            return false;</span>
+<span class="source-line-no">1005</span><span id="line-1005">          }</span>
+<span class="source-line-no">1006</span><span id="line-1006">        }</span>
+<span class="source-line-no">1007</span><span id="line-1007">      }</span>
+<span class="source-line-no">1008</span><span id="line-1008">      return true;</span>
+<span class="source-line-no">1009</span><span id="line-1009">    } else {</span>
+<span class="source-line-no">1010</span><span id="line-1010">      return false;</span>
+<span class="source-line-no">1011</span><span id="line-1011">    }</span>
+<span class="source-line-no">1012</span><span id="line-1012">  }</span>
+<span class="source-line-no">1013</span><span id="line-1013"></span>
+<span class="source-line-no">1014</span><span id="line-1014">  private static final boolean equals(final Class&lt;?&gt; c0, final Class&lt;?&gt; c1) {</span>
+<span class="source-line-no">1015</span><span id="line-1015">    return Objects.equals(c0, c1);</span>
+<span class="source-line-no">1016</span><span id="line-1016">  }</span>
+<span class="source-line-no">1017</span><span id="line-1017"></span>
+<span class="source-line-no">1018</span><span id="line-1018">  private static final boolean equals(final ParameterizedType pt0, final ParameterizedType pt1) {</span>
+<span class="source-line-no">1019</span><span id="line-1019">    if (pt0 == null) {</span>
+<span class="source-line-no">1020</span><span id="line-1020">      return pt1 == null;</span>
+<span class="source-line-no">1021</span><span id="line-1021">    } else if (pt1 == null) {</span>
+<span class="source-line-no">1022</span><span id="line-1022">      return false;</span>
+<span class="source-line-no">1023</span><span id="line-1023">    } else if (pt0 == pt1) {</span>
+<span class="source-line-no">1024</span><span id="line-1024">      return true;</span>
+<span class="source-line-no">1025</span><span id="line-1025">    } else {</span>
+<span class="source-line-no">1026</span><span id="line-1026">      return</span>
+<span class="source-line-no">1027</span><span id="line-1027">        equals(pt0.getOwnerType(), pt1.getOwnerType()) &amp;&amp;</span>
+<span class="source-line-no">1028</span><span id="line-1028">        equals(pt0.getRawType(), pt1.getRawType()) &amp;&amp;</span>
+<span class="source-line-no">1029</span><span id="line-1029">        equals(pt0.getActualTypeArguments(), pt1.getActualTypeArguments());</span>
+<span class="source-line-no">1030</span><span id="line-1030">    }</span>
+<span class="source-line-no">1031</span><span id="line-1031">  }</span>
+<span class="source-line-no">1032</span><span id="line-1032"></span>
+<span class="source-line-no">1033</span><span id="line-1033">  private static final boolean equals(final GenericArrayType ga0, final GenericArrayType ga1) {</span>
+<span class="source-line-no">1034</span><span id="line-1034">    if (ga0 == null) {</span>
+<span class="source-line-no">1035</span><span id="line-1035">      return ga1 == null;</span>
+<span class="source-line-no">1036</span><span id="line-1036">    } else if (ga1 == null) {</span>
+<span class="source-line-no">1037</span><span id="line-1037">      return false;</span>
+<span class="source-line-no">1038</span><span id="line-1038">    } else if (ga0 == ga1) {</span>
+<span class="source-line-no">1039</span><span id="line-1039">      return true;</span>
+<span class="source-line-no">1040</span><span id="line-1040">    } else {</span>
+<span class="source-line-no">1041</span><span id="line-1041">      return equals(ga0.getGenericComponentType(), ga1.getGenericComponentType());</span>
+<span class="source-line-no">1042</span><span id="line-1042">    }</span>
+<span class="source-line-no">1043</span><span id="line-1043">  }</span>
+<span class="source-line-no">1044</span><span id="line-1044"></span>
+<span class="source-line-no">1045</span><span id="line-1045">  private static final boolean equals(final TypeVariable&lt;?&gt; tv0, final TypeVariable&lt;?&gt; tv1) {</span>
+<span class="source-line-no">1046</span><span id="line-1046">    if (tv0 == null) {</span>
+<span class="source-line-no">1047</span><span id="line-1047">      return tv1 == null;</span>
+<span class="source-line-no">1048</span><span id="line-1048">    } else if (tv1 == null) {</span>
+<span class="source-line-no">1049</span><span id="line-1049">      return false;</span>
+<span class="source-line-no">1050</span><span id="line-1050">    } else if (tv0 == tv1) {</span>
+<span class="source-line-no">1051</span><span id="line-1051">      return true;</span>
+<span class="source-line-no">1052</span><span id="line-1052">    } else {</span>
+<span class="source-line-no">1053</span><span id="line-1053">      return</span>
+<span class="source-line-no">1054</span><span id="line-1054">        equals(tv0.getGenericDeclaration(), tv1.getGenericDeclaration()) &amp;&amp;</span>
+<span class="source-line-no">1055</span><span id="line-1055">        Objects.equals(tv0.getName(), tv1.getName());</span>
+<span class="source-line-no">1056</span><span id="line-1056">    }</span>
+<span class="source-line-no">1057</span><span id="line-1057">  }</span>
+<span class="source-line-no">1058</span><span id="line-1058"></span>
+<span class="source-line-no">1059</span><span id="line-1059">  private static final boolean equals(final GenericDeclaration gd0, final GenericDeclaration gd1) {</span>
+<span class="source-line-no">1060</span><span id="line-1060">    if (gd0 == null) {</span>
+<span class="source-line-no">1061</span><span id="line-1061">      return gd1 == null;</span>
+<span class="source-line-no">1062</span><span id="line-1062">    } else if (gd1 == null) {</span>
+<span class="source-line-no">1063</span><span id="line-1063">      return false;</span>
+<span class="source-line-no">1064</span><span id="line-1064">    } else if (gd0 == gd1) {</span>
+<span class="source-line-no">1065</span><span id="line-1065">      return true;</span>
+<span class="source-line-no">1066</span><span id="line-1066">    } else if (gd0 instanceof Class&lt;?&gt; c0) {</span>
+<span class="source-line-no">1067</span><span id="line-1067">      return gd1 instanceof Class&lt;?&gt; c1 &amp;&amp; equals(c0, c1);</span>
+<span class="source-line-no">1068</span><span id="line-1068">    } else if (gd0 instanceof Executable e0) {</span>
+<span class="source-line-no">1069</span><span id="line-1069">      return gd1 instanceof Executable e1 &amp;&amp; equals(e0, e1);</span>
+<span class="source-line-no">1070</span><span id="line-1070">    } else {</span>
+<span class="source-line-no">1071</span><span id="line-1071">      return Objects.equals(gd0, gd1);</span>
+<span class="source-line-no">1072</span><span id="line-1072">    }</span>
+<span class="source-line-no">1073</span><span id="line-1073">  }</span>
+<span class="source-line-no">1074</span><span id="line-1074"></span>
+<span class="source-line-no">1075</span><span id="line-1075">  private static final boolean equals(final Executable e0, final Executable e1) {</span>
+<span class="source-line-no">1076</span><span id="line-1076">    if (e0 == null) {</span>
+<span class="source-line-no">1077</span><span id="line-1077">      return e1 == null;</span>
+<span class="source-line-no">1078</span><span id="line-1078">    } else if (e1 == null) {</span>
+<span class="source-line-no">1079</span><span id="line-1079">      return false;</span>
+<span class="source-line-no">1080</span><span id="line-1080">    } else if (e0 == e1) {</span>
+<span class="source-line-no">1081</span><span id="line-1081">      return true;</span>
+<span class="source-line-no">1082</span><span id="line-1082">    } else if (e0 instanceof Constructor&lt;?&gt; c0) {</span>
+<span class="source-line-no">1083</span><span id="line-1083">      return e1 instanceof Constructor&lt;?&gt; c1 &amp;&amp; equals(c0, c1);</span>
+<span class="source-line-no">1084</span><span id="line-1084">    } else if (e0 instanceof Method m0) {</span>
+<span class="source-line-no">1085</span><span id="line-1085">      return e1 instanceof Method m1 &amp;&amp; equals(m0, m1);</span>
+<span class="source-line-no">1086</span><span id="line-1086">    } else {</span>
+<span class="source-line-no">1087</span><span id="line-1087">      return Objects.equals(e0, e1);</span>
+<span class="source-line-no">1088</span><span id="line-1088">    }</span>
+<span class="source-line-no">1089</span><span id="line-1089">  }</span>
+<span class="source-line-no">1090</span><span id="line-1090"></span>
+<span class="source-line-no">1091</span><span id="line-1091">  private static final boolean equals(final Constructor&lt;?&gt; c0, final Constructor&lt;?&gt; c1) {</span>
+<span class="source-line-no">1092</span><span id="line-1092">    return Objects.equals(c0, c1);</span>
+<span class="source-line-no">1093</span><span id="line-1093">  }</span>
+<span class="source-line-no">1094</span><span id="line-1094"></span>
+<span class="source-line-no">1095</span><span id="line-1095">  private static final boolean equals(final Method m0, final Method m1) {</span>
+<span class="source-line-no">1096</span><span id="line-1096">    return Objects.equals(m0, m1);</span>
+<span class="source-line-no">1097</span><span id="line-1097">  }</span>
+<span class="source-line-no">1098</span><span id="line-1098"></span>
+<span class="source-line-no">1099</span><span id="line-1099">  private static final boolean equals(final WildcardType w0, final WildcardType w1) {</span>
+<span class="source-line-no">1100</span><span id="line-1100">    if (w0 == null) {</span>
+<span class="source-line-no">1101</span><span id="line-1101">      return w1 == null;</span>
+<span class="source-line-no">1102</span><span id="line-1102">    } else if (w1 == null) {</span>
+<span class="source-line-no">1103</span><span id="line-1103">      return false;</span>
+<span class="source-line-no">1104</span><span id="line-1104">    } else if (w0 == w1) {</span>
+<span class="source-line-no">1105</span><span id="line-1105">      return true;</span>
+<span class="source-line-no">1106</span><span id="line-1106">    } else {</span>
+<span class="source-line-no">1107</span><span id="line-1107">      return</span>
+<span class="source-line-no">1108</span><span id="line-1108">        equals(w0.getLowerBounds(), w1.getLowerBounds()) &amp;&amp;</span>
+<span class="source-line-no">1109</span><span id="line-1109">        equals(w0.getUpperBounds(), w1.getUpperBounds());</span>
+<span class="source-line-no">1110</span><span id="line-1110">    }</span>
+<span class="source-line-no">1111</span><span id="line-1111">  }</span>
+<span class="source-line-no">1112</span><span id="line-1112"></span>
+<span class="source-line-no">1113</span><span id="line-1113">  /**</span>
+<span class="source-line-no">1114</span><span id="line-1114">   * Computes and returns a hashcode for the supplied {@link Type} independent of</span>
+<span class="source-line-no">1115</span><span id="line-1115">   * its implementation.</span>
 <span class="source-line-no">1116</span><span id="line-1116">   *</span>
-<span class="source-line-no">1117</span><span id="line-1117">   * @return a hashcode for the supplied {@link Type}</span>
-<span class="source-line-no">1118</span><span id="line-1118">   *</span>
-<span class="source-line-no">1119</span><span id="line-1119">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1120</span><span id="line-1120">   * threads.</span>
+<span class="source-line-no">1117</span><span id="line-1117">   * @param type the {@link Type} in question; may be {@code null} in</span>
+<span class="source-line-no">1118</span><span id="line-1118">   * which case {@code 0} will be returned</span>
+<span class="source-line-no">1119</span><span id="line-1119">   *</span>
+<span class="source-line-no">1120</span><span id="line-1120">   * @return a hashcode for the supplied {@link Type}</span>
 <span class="source-line-no">1121</span><span id="line-1121">   *</span>
-<span class="source-line-no">1122</span><span id="line-1122">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1123</span><span id="line-1123">   */</span>
-<span class="source-line-no">1124</span><span id="line-1124">  public static final int hashCode(final Type type) {</span>
-<span class="source-line-no">1125</span><span id="line-1125">    if (type == null) {</span>
-<span class="source-line-no">1126</span><span id="line-1126">      return 0;</span>
-<span class="source-line-no">1127</span><span id="line-1127">    } else if (type instanceof Class&lt;?&gt; c) {</span>
-<span class="source-line-no">1128</span><span id="line-1128">      return hashCode(c);</span>
-<span class="source-line-no">1129</span><span id="line-1129">    } else if (type instanceof ParameterizedType p) {</span>
-<span class="source-line-no">1130</span><span id="line-1130">      return hashCode(p);</span>
-<span class="source-line-no">1131</span><span id="line-1131">    } else if (type instanceof GenericArrayType g) {</span>
-<span class="source-line-no">1132</span><span id="line-1132">      return hashCode(g);</span>
-<span class="source-line-no">1133</span><span id="line-1133">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
-<span class="source-line-no">1134</span><span id="line-1134">      return hashCode(tv);</span>
-<span class="source-line-no">1135</span><span id="line-1135">    } else if (type instanceof WildcardType w) {</span>
-<span class="source-line-no">1136</span><span id="line-1136">      return hashCode(w);</span>
-<span class="source-line-no">1137</span><span id="line-1137">    } else {</span>
-<span class="source-line-no">1138</span><span id="line-1138">      return type.hashCode();</span>
-<span class="source-line-no">1139</span><span id="line-1139">    }</span>
-<span class="source-line-no">1140</span><span id="line-1140">  }</span>
-<span class="source-line-no">1141</span><span id="line-1141"></span>
-<span class="source-line-no">1142</span><span id="line-1142">  private static final int hashCode(final Class&lt;?&gt; type) {</span>
-<span class="source-line-no">1143</span><span id="line-1143">    return type == null ? 0 : type.hashCode();</span>
-<span class="source-line-no">1144</span><span id="line-1144">  }</span>
-<span class="source-line-no">1145</span><span id="line-1145"></span>
-<span class="source-line-no">1146</span><span id="line-1146">  private static final int hashCode(final ParameterizedType type) {</span>
-<span class="source-line-no">1147</span><span id="line-1147">    if (type == null) {</span>
-<span class="source-line-no">1148</span><span id="line-1148">      return 0;</span>
-<span class="source-line-no">1149</span><span id="line-1149">    } else {</span>
-<span class="source-line-no">1150</span><span id="line-1150">      return Arrays.hashCode(type.getActualTypeArguments()) ^ hashCode(type.getOwnerType()) ^ hashCode(type.getRawType());</span>
-<span class="source-line-no">1151</span><span id="line-1151">    }</span>
-<span class="source-line-no">1152</span><span id="line-1152">  }</span>
-<span class="source-line-no">1153</span><span id="line-1153"></span>
-<span class="source-line-no">1154</span><span id="line-1154">  private static final int hashCode(final GenericArrayType type) {</span>
-<span class="source-line-no">1155</span><span id="line-1155">    return type == null ? 0 : Objects.hashCode(type.getGenericComponentType());</span>
-<span class="source-line-no">1156</span><span id="line-1156">  }</span>
-<span class="source-line-no">1157</span><span id="line-1157"></span>
-<span class="source-line-no">1158</span><span id="line-1158">  private static final int hashCode(final TypeVariable&lt;?&gt; type) {</span>
-<span class="source-line-no">1159</span><span id="line-1159">    return type == null ? 0 : type.hashCode();</span>
-<span class="source-line-no">1160</span><span id="line-1160">  }</span>
-<span class="source-line-no">1161</span><span id="line-1161"></span>
-<span class="source-line-no">1162</span><span id="line-1162">  private static final int hashCode(final WildcardType type) {</span>
-<span class="source-line-no">1163</span><span id="line-1163">    return type == null ? 0 : Arrays.hashCode(type.getUpperBounds()) ^ Arrays.hashCode(type.getLowerBounds());</span>
-<span class="source-line-no">1164</span><span id="line-1164">  }</span>
-<span class="source-line-no">1165</span><span id="line-1165"></span>
-<span class="source-line-no">1166</span><span id="line-1166">  /**</span>
-<span class="source-line-no">1167</span><span id="line-1167">   * Returns a {@link String} representation of the supplied {@link</span>
-<span class="source-line-no">1168</span><span id="line-1168">   * Type} that is independent of its implementation.</span>
-<span class="source-line-no">1169</span><span id="line-1169">   *</span>
-<span class="source-line-no">1170</span><span id="line-1170">   * &lt;p&gt;This method never returns {@code null}.&lt;/p&gt;</span>
-<span class="source-line-no">1171</span><span id="line-1171">   *</span>
-<span class="source-line-no">1172</span><span id="line-1172">   * @param type the {@link Type} in question; may be {@code null} in which</span>
-<span class="source-line-no">1173</span><span id="line-1173">   * case "{@code null}" will be returned</span>
+<span class="source-line-no">1122</span><span id="line-1122">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1123</span><span id="line-1123">   * threads.</span>
+<span class="source-line-no">1124</span><span id="line-1124">   *</span>
+<span class="source-line-no">1125</span><span id="line-1125">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">1126</span><span id="line-1126">   */</span>
+<span class="source-line-no">1127</span><span id="line-1127">  public static final int hashCode(final Type type) {</span>
+<span class="source-line-no">1128</span><span id="line-1128">    if (type == null) {</span>
+<span class="source-line-no">1129</span><span id="line-1129">      return 0;</span>
+<span class="source-line-no">1130</span><span id="line-1130">    } else if (type instanceof Class&lt;?&gt; c) {</span>
+<span class="source-line-no">1131</span><span id="line-1131">      return hashCode(c);</span>
+<span class="source-line-no">1132</span><span id="line-1132">    } else if (type instanceof ParameterizedType p) {</span>
+<span class="source-line-no">1133</span><span id="line-1133">      return hashCode(p);</span>
+<span class="source-line-no">1134</span><span id="line-1134">    } else if (type instanceof GenericArrayType g) {</span>
+<span class="source-line-no">1135</span><span id="line-1135">      return hashCode(g);</span>
+<span class="source-line-no">1136</span><span id="line-1136">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
+<span class="source-line-no">1137</span><span id="line-1137">      return hashCode(tv);</span>
+<span class="source-line-no">1138</span><span id="line-1138">    } else if (type instanceof WildcardType w) {</span>
+<span class="source-line-no">1139</span><span id="line-1139">      return hashCode(w);</span>
+<span class="source-line-no">1140</span><span id="line-1140">    } else {</span>
+<span class="source-line-no">1141</span><span id="line-1141">      return type.hashCode();</span>
+<span class="source-line-no">1142</span><span id="line-1142">    }</span>
+<span class="source-line-no">1143</span><span id="line-1143">  }</span>
+<span class="source-line-no">1144</span><span id="line-1144"></span>
+<span class="source-line-no">1145</span><span id="line-1145">  private static final int hashCode(final Class&lt;?&gt; type) {</span>
+<span class="source-line-no">1146</span><span id="line-1146">    return type == null ? 0 : type.hashCode();</span>
+<span class="source-line-no">1147</span><span id="line-1147">  }</span>
+<span class="source-line-no">1148</span><span id="line-1148"></span>
+<span class="source-line-no">1149</span><span id="line-1149">  private static final int hashCode(final ParameterizedType type) {</span>
+<span class="source-line-no">1150</span><span id="line-1150">    if (type == null) {</span>
+<span class="source-line-no">1151</span><span id="line-1151">      return 0;</span>
+<span class="source-line-no">1152</span><span id="line-1152">    } else {</span>
+<span class="source-line-no">1153</span><span id="line-1153">      return Arrays.hashCode(type.getActualTypeArguments()) ^ hashCode(type.getOwnerType()) ^ hashCode(type.getRawType());</span>
+<span class="source-line-no">1154</span><span id="line-1154">    }</span>
+<span class="source-line-no">1155</span><span id="line-1155">  }</span>
+<span class="source-line-no">1156</span><span id="line-1156"></span>
+<span class="source-line-no">1157</span><span id="line-1157">  private static final int hashCode(final GenericArrayType type) {</span>
+<span class="source-line-no">1158</span><span id="line-1158">    return type == null ? 0 : Objects.hashCode(type.getGenericComponentType());</span>
+<span class="source-line-no">1159</span><span id="line-1159">  }</span>
+<span class="source-line-no">1160</span><span id="line-1160"></span>
+<span class="source-line-no">1161</span><span id="line-1161">  private static final int hashCode(final TypeVariable&lt;?&gt; type) {</span>
+<span class="source-line-no">1162</span><span id="line-1162">    return type == null ? 0 : type.hashCode();</span>
+<span class="source-line-no">1163</span><span id="line-1163">  }</span>
+<span class="source-line-no">1164</span><span id="line-1164"></span>
+<span class="source-line-no">1165</span><span id="line-1165">  private static final int hashCode(final WildcardType type) {</span>
+<span class="source-line-no">1166</span><span id="line-1166">    return type == null ? 0 : Arrays.hashCode(type.getUpperBounds()) ^ Arrays.hashCode(type.getLowerBounds());</span>
+<span class="source-line-no">1167</span><span id="line-1167">  }</span>
+<span class="source-line-no">1168</span><span id="line-1168"></span>
+<span class="source-line-no">1169</span><span id="line-1169">  /**</span>
+<span class="source-line-no">1170</span><span id="line-1170">   * Returns a {@link String} representation of the supplied {@link</span>
+<span class="source-line-no">1171</span><span id="line-1171">   * Type} that is independent of its implementation.</span>
+<span class="source-line-no">1172</span><span id="line-1172">   *</span>
+<span class="source-line-no">1173</span><span id="line-1173">   * &lt;p&gt;This method never returns {@code null}.&lt;/p&gt;</span>
 <span class="source-line-no">1174</span><span id="line-1174">   *</span>
-<span class="source-line-no">1175</span><span id="line-1175">   * @return a non-{@code null} {@link String} representation of the</span>
-<span class="source-line-no">1176</span><span id="line-1176">   * supplied {@link Type}</span>
+<span class="source-line-no">1175</span><span id="line-1175">   * @param type the {@link Type} in question; may be {@code null} in which</span>
+<span class="source-line-no">1176</span><span id="line-1176">   * case "{@code null}" will be returned</span>
 <span class="source-line-no">1177</span><span id="line-1177">   *</span>
-<span class="source-line-no">1178</span><span id="line-1178">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1179</span><span id="line-1179">   *</span>
-<span class="source-line-no">1180</span><span id="line-1180">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1181</span><span id="line-1181">   * threads.</span>
+<span class="source-line-no">1178</span><span id="line-1178">   * @return a non-{@code null} {@link String} representation of the</span>
+<span class="source-line-no">1179</span><span id="line-1179">   * supplied {@link Type}</span>
+<span class="source-line-no">1180</span><span id="line-1180">   *</span>
+<span class="source-line-no">1181</span><span id="line-1181">   * @nullability This method never returns {@code null}.</span>
 <span class="source-line-no">1182</span><span id="line-1182">   *</span>
-<span class="source-line-no">1183</span><span id="line-1183">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1184</span><span id="line-1184">   */</span>
-<span class="source-line-no">1185</span><span id="line-1185">  public static final String toString(final Type type) {</span>
-<span class="source-line-no">1186</span><span id="line-1186">    if (type == null) {</span>
-<span class="source-line-no">1187</span><span id="line-1187">      return "null";</span>
-<span class="source-line-no">1188</span><span id="line-1188">    } else if (type instanceof Class&lt;?&gt; c) {</span>
-<span class="source-line-no">1189</span><span id="line-1189">      return toString(c);</span>
-<span class="source-line-no">1190</span><span id="line-1190">    } else if (type instanceof ParameterizedType p) {</span>
-<span class="source-line-no">1191</span><span id="line-1191">      return toString(p);</span>
-<span class="source-line-no">1192</span><span id="line-1192">    } else if (type instanceof GenericArrayType g) {</span>
-<span class="source-line-no">1193</span><span id="line-1193">      return toString(g);</span>
-<span class="source-line-no">1194</span><span id="line-1194">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
-<span class="source-line-no">1195</span><span id="line-1195">      return toString(tv);</span>
-<span class="source-line-no">1196</span><span id="line-1196">    } else if (type instanceof WildcardType w) {</span>
-<span class="source-line-no">1197</span><span id="line-1197">      return toString(w);</span>
-<span class="source-line-no">1198</span><span id="line-1198">    } else {</span>
-<span class="source-line-no">1199</span><span id="line-1199">      return type.getTypeName();</span>
-<span class="source-line-no">1200</span><span id="line-1200">    }</span>
-<span class="source-line-no">1201</span><span id="line-1201">  }</span>
-<span class="source-line-no">1202</span><span id="line-1202"></span>
-<span class="source-line-no">1203</span><span id="line-1203">  private static final String toString(final Class&lt;?&gt; c) {</span>
-<span class="source-line-no">1204</span><span id="line-1204">    return c == null ? "null" : c.getTypeName();</span>
-<span class="source-line-no">1205</span><span id="line-1205">  }</span>
-<span class="source-line-no">1206</span><span id="line-1206"></span>
-<span class="source-line-no">1207</span><span id="line-1207">  private static final String toString(final ParameterizedType ptype) {</span>
-<span class="source-line-no">1208</span><span id="line-1208">    if (ptype == null) {</span>
-<span class="source-line-no">1209</span><span id="line-1209">      return "null";</span>
-<span class="source-line-no">1210</span><span id="line-1210">    } else {</span>
-<span class="source-line-no">1211</span><span id="line-1211">      final StringBuilder sb = new StringBuilder();</span>
-<span class="source-line-no">1212</span><span id="line-1212">      final Type ownerType = ptype.getOwnerType();</span>
-<span class="source-line-no">1213</span><span id="line-1213">      if (ownerType == null) {</span>
-<span class="source-line-no">1214</span><span id="line-1214">        sb.append(toString(ptype.getRawType()));</span>
-<span class="source-line-no">1215</span><span id="line-1215">      } else {</span>
-<span class="source-line-no">1216</span><span id="line-1216">        sb.append(toString(ownerType)).append("$");</span>
-<span class="source-line-no">1217</span><span id="line-1217">        final Type rawType = ptype.getRawType();</span>
-<span class="source-line-no">1218</span><span id="line-1218">        if (ownerType instanceof ParameterizedType p) {</span>
-<span class="source-line-no">1219</span><span id="line-1219">          sb.append(toString(rawType).replace(toString(p.getRawType()) + "$", ""));</span>
-<span class="source-line-no">1220</span><span id="line-1220">        } else if (rawType instanceof Class&lt;?&gt; c) {</span>
-<span class="source-line-no">1221</span><span id="line-1221">          sb.append(c.getSimpleName());</span>
-<span class="source-line-no">1222</span><span id="line-1222">        } else {</span>
-<span class="source-line-no">1223</span><span id="line-1223">          sb.append(toString(rawType));</span>
-<span class="source-line-no">1224</span><span id="line-1224">        }</span>
-<span class="source-line-no">1225</span><span id="line-1225">      }</span>
-<span class="source-line-no">1226</span><span id="line-1226">      final Type[] actualTypeArguments = ptype.getActualTypeArguments();</span>
-<span class="source-line-no">1227</span><span id="line-1227">      if (actualTypeArguments != null &amp;&amp; actualTypeArguments.length &gt; 0) {</span>
-<span class="source-line-no">1228</span><span id="line-1228">        final StringJoiner stringJoiner = new StringJoiner(", ", "&lt;", "&gt;");</span>
-<span class="source-line-no">1229</span><span id="line-1229">        stringJoiner.setEmptyValue("");</span>
-<span class="source-line-no">1230</span><span id="line-1230">        for (final Type actualTypeArgument : actualTypeArguments) {</span>
-<span class="source-line-no">1231</span><span id="line-1231">          stringJoiner.add(toString(actualTypeArgument));</span>
-<span class="source-line-no">1232</span><span id="line-1232">        }</span>
-<span class="source-line-no">1233</span><span id="line-1233">        sb.append(stringJoiner.toString());</span>
-<span class="source-line-no">1234</span><span id="line-1234">      }</span>
-<span class="source-line-no">1235</span><span id="line-1235">      return sb.toString();</span>
-<span class="source-line-no">1236</span><span id="line-1236">    }</span>
-<span class="source-line-no">1237</span><span id="line-1237">  }</span>
-<span class="source-line-no">1238</span><span id="line-1238"></span>
-<span class="source-line-no">1239</span><span id="line-1239">  private static final String toString(final GenericArrayType gatype) {</span>
-<span class="source-line-no">1240</span><span id="line-1240">    if (gatype == null) {</span>
-<span class="source-line-no">1241</span><span id="line-1241">      return "null";</span>
-<span class="source-line-no">1242</span><span id="line-1242">    } else {</span>
-<span class="source-line-no">1243</span><span id="line-1243">      return toString(gatype.getGenericComponentType()) + "[]";</span>
-<span class="source-line-no">1244</span><span id="line-1244">    }</span>
-<span class="source-line-no">1245</span><span id="line-1245">  }</span>
-<span class="source-line-no">1246</span><span id="line-1246"></span>
-<span class="source-line-no">1247</span><span id="line-1247">  private static final String toString(final TypeVariable&lt;?&gt; tv) {</span>
-<span class="source-line-no">1248</span><span id="line-1248">    return tv == null ? "null" : tv.getName();</span>
-<span class="source-line-no">1249</span><span id="line-1249">  }</span>
-<span class="source-line-no">1250</span><span id="line-1250"></span>
-<span class="source-line-no">1251</span><span id="line-1251">  private static final String toString(final WildcardType wc) {</span>
-<span class="source-line-no">1252</span><span id="line-1252">    if (wc == null) {</span>
-<span class="source-line-no">1253</span><span id="line-1253">      return "null";</span>
-<span class="source-line-no">1254</span><span id="line-1254">    } else {</span>
-<span class="source-line-no">1255</span><span id="line-1255">      final StringBuilder sb = new StringBuilder("?");</span>
-<span class="source-line-no">1256</span><span id="line-1256">      Type[] bounds = wc.getLowerBounds();</span>
-<span class="source-line-no">1257</span><span id="line-1257">      if (bounds == null || bounds.length &lt;= 0) {</span>
-<span class="source-line-no">1258</span><span id="line-1258">        // Upper bounds only.</span>
-<span class="source-line-no">1259</span><span id="line-1259">        bounds = wc.getUpperBounds();</span>
-<span class="source-line-no">1260</span><span id="line-1260">        if (bounds == null || bounds.length &lt;= 0 || Object.class.equals(bounds[0])) {</span>
-<span class="source-line-no">1261</span><span id="line-1261">          bounds = null;</span>
-<span class="source-line-no">1262</span><span id="line-1262">        } else {</span>
-<span class="source-line-no">1263</span><span id="line-1263">          sb.append(" extends ");</span>
-<span class="source-line-no">1264</span><span id="line-1264">        }</span>
-<span class="source-line-no">1265</span><span id="line-1265">      } else {</span>
-<span class="source-line-no">1266</span><span id="line-1266">        // Lower bounds only.</span>
-<span class="source-line-no">1267</span><span id="line-1267">        sb.append(" super ");</span>
-<span class="source-line-no">1268</span><span id="line-1268">      }</span>
-<span class="source-line-no">1269</span><span id="line-1269">      if (bounds != null) {</span>
-<span class="source-line-no">1270</span><span id="line-1270">        assert bounds.length &gt; 0;</span>
-<span class="source-line-no">1271</span><span id="line-1271">        final StringJoiner sj = new StringJoiner(" &amp; ");</span>
-<span class="source-line-no">1272</span><span id="line-1272">        for (final Type bound: bounds) {</span>
-<span class="source-line-no">1273</span><span id="line-1273">          sj.add(String.valueOf(toString(bound)));</span>
-<span class="source-line-no">1274</span><span id="line-1274">        }</span>
-<span class="source-line-no">1275</span><span id="line-1275">        sb.append(sj.toString());</span>
-<span class="source-line-no">1276</span><span id="line-1276">      }</span>
-<span class="source-line-no">1277</span><span id="line-1277">      return sb.toString();</span>
-<span class="source-line-no">1278</span><span id="line-1278">    }</span>
-<span class="source-line-no">1279</span><span id="line-1279">  }</span>
-<span class="source-line-no">1280</span><span id="line-1280"></span>
-<span class="source-line-no">1281</span><span id="line-1281">  /**</span>
-<span class="source-line-no">1282</span><span id="line-1282">   * Returns an {@link Optional} representing the supplied {@link</span>
-<span class="source-line-no">1283</span><span id="line-1283">   * ConstantDesc}.</span>
-<span class="source-line-no">1284</span><span id="line-1284">   *</span>
-<span class="source-line-no">1285</span><span id="line-1285">   * @param constantDesc the {@link ConstantDesc} to represent; may be</span>
-<span class="source-line-no">1286</span><span id="line-1286">   * {@code null}; if {@code null}, then an {@link Optional}</span>
-<span class="source-line-no">1287</span><span id="line-1287">   * consisting of {@link java.lang.constant.ConstantDescs#NULL} will</span>
-<span class="source-line-no">1288</span><span id="line-1288">   * be returned</span>
-<span class="source-line-no">1289</span><span id="line-1289">   *</span>
-<span class="source-line-no">1290</span><span id="line-1290">   * @return an {@link Optional} representing the supplied {@link</span>
-<span class="source-line-no">1291</span><span id="line-1291">   * ConstantDesc}; never {@code null}; never {@linkplain</span>
-<span class="source-line-no">1292</span><span id="line-1292">   * Optional#isEmpty() empty}</span>
-<span class="source-line-no">1293</span><span id="line-1293">   *</span>
-<span class="source-line-no">1294</span><span id="line-1294">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1295</span><span id="line-1295">   *</span>
-<span class="source-line-no">1296</span><span id="line-1296">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1297</span><span id="line-1297">   *</span>
-<span class="source-line-no">1298</span><span id="line-1298">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1299</span><span id="line-1299">   * threads.</span>
-<span class="source-line-no">1300</span><span id="line-1300">   */</span>
-<span class="source-line-no">1301</span><span id="line-1301">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final ConstantDesc constantDesc) {</span>
-<span class="source-line-no">1302</span><span id="line-1302">    return constantDesc == null ? Optional.of(NULL) : Optional.of(constantDesc);</span>
-<span class="source-line-no">1303</span><span id="line-1303">  }</span>
-<span class="source-line-no">1304</span><span id="line-1304"></span>
-<span class="source-line-no">1305</span><span id="line-1305">  /**</span>
-<span class="source-line-no">1306</span><span id="line-1306">   * Returns an {@link Optional} representing the supplied {@link</span>
-<span class="source-line-no">1307</span><span id="line-1307">   * Constable}.</span>
-<span class="source-line-no">1308</span><span id="line-1308">   *</span>
-<span class="source-line-no">1309</span><span id="line-1309">   * @param constable the {@link Constable} to represent; may be</span>
-<span class="source-line-no">1310</span><span id="line-1310">   * {@code null}; if {@code null}, then an {@link Optional}</span>
-<span class="source-line-no">1311</span><span id="line-1311">   * consisting of {@link java.lang.constant.ConstantDescs#NULL} will</span>
-<span class="source-line-no">1312</span><span id="line-1312">   * be returned</span>
-<span class="source-line-no">1313</span><span id="line-1313">   *</span>
-<span class="source-line-no">1314</span><span id="line-1314">   * @return an {@link Optional} representing the supplied {@link</span>
-<span class="source-line-no">1315</span><span id="line-1315">   * Constable}; never {@code null}; possibly {@linkplain</span>
-<span class="source-line-no">1316</span><span id="line-1316">   * Optional#isEmpty() empty}</span>
-<span class="source-line-no">1317</span><span id="line-1317">   *</span>
-<span class="source-line-no">1318</span><span id="line-1318">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1319</span><span id="line-1319">   *</span>
-<span class="source-line-no">1320</span><span id="line-1320">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1321</span><span id="line-1321">   *</span>
-<span class="source-line-no">1322</span><span id="line-1322">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1323</span><span id="line-1323">   * threads.</span>
-<span class="source-line-no">1324</span><span id="line-1324">   */</span>
-<span class="source-line-no">1325</span><span id="line-1325">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Constable constable) {</span>
-<span class="source-line-no">1326</span><span id="line-1326">    return constable == null ? Optional.of(NULL) : constable.describeConstable();</span>
-<span class="source-line-no">1327</span><span id="line-1327">  }</span>
-<span class="source-line-no">1328</span><span id="line-1328"></span>
-<span class="source-line-no">1329</span><span id="line-1329">  /**</span>
-<span class="source-line-no">1330</span><span id="line-1330">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1331</span><span id="line-1331">   * the form of a {@link ConstantDesc} for the supplied {@link Type}, or</span>
-<span class="source-line-no">1332</span><span id="line-1332">   * an {@linkplain Optional#isEmpty() empty &lt;code&gt;Optional&lt;/code&gt;} if</span>
-<span class="source-line-no">1333</span><span id="line-1333">   * there is no such descriptor.</span>
-<span class="source-line-no">1334</span><span id="line-1334">   *</span>
-<span class="source-line-no">1335</span><span id="line-1335">   * @param type the {@link Type} in question; must be either {@code</span>
-<span class="source-line-no">1336</span><span id="line-1336">   * null}, a {@link ConstantDesc} itself, a {@link Constable}, a</span>
-<span class="source-line-no">1337</span><span id="line-1337">   * {@link ParameterizedType}, a {@link GenericArrayType}, a {@link</span>
-<span class="source-line-no">1338</span><span id="line-1338">   * TypeVariable} or a {@link WildcardType}</span>
-<span class="source-line-no">1339</span><span id="line-1339">   *</span>
-<span class="source-line-no">1340</span><span id="line-1340">   * @return an {@link Optional} as described above; never {@code</span>
-<span class="source-line-no">1341</span><span id="line-1341">   * null}</span>
+<span class="source-line-no">1183</span><span id="line-1183">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1184</span><span id="line-1184">   * threads.</span>
+<span class="source-line-no">1185</span><span id="line-1185">   *</span>
+<span class="source-line-no">1186</span><span id="line-1186">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">1187</span><span id="line-1187">   */</span>
+<span class="source-line-no">1188</span><span id="line-1188">  public static final String toString(final Type type) {</span>
+<span class="source-line-no">1189</span><span id="line-1189">    if (type == null) {</span>
+<span class="source-line-no">1190</span><span id="line-1190">      return "null";</span>
+<span class="source-line-no">1191</span><span id="line-1191">    } else if (type instanceof Class&lt;?&gt; c) {</span>
+<span class="source-line-no">1192</span><span id="line-1192">      return toString(c);</span>
+<span class="source-line-no">1193</span><span id="line-1193">    } else if (type instanceof ParameterizedType p) {</span>
+<span class="source-line-no">1194</span><span id="line-1194">      return toString(p);</span>
+<span class="source-line-no">1195</span><span id="line-1195">    } else if (type instanceof GenericArrayType g) {</span>
+<span class="source-line-no">1196</span><span id="line-1196">      return toString(g);</span>
+<span class="source-line-no">1197</span><span id="line-1197">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
+<span class="source-line-no">1198</span><span id="line-1198">      return toString(tv);</span>
+<span class="source-line-no">1199</span><span id="line-1199">    } else if (type instanceof WildcardType w) {</span>
+<span class="source-line-no">1200</span><span id="line-1200">      return toString(w);</span>
+<span class="source-line-no">1201</span><span id="line-1201">    } else {</span>
+<span class="source-line-no">1202</span><span id="line-1202">      return type.getTypeName();</span>
+<span class="source-line-no">1203</span><span id="line-1203">    }</span>
+<span class="source-line-no">1204</span><span id="line-1204">  }</span>
+<span class="source-line-no">1205</span><span id="line-1205"></span>
+<span class="source-line-no">1206</span><span id="line-1206">  private static final String toString(final Class&lt;?&gt; c) {</span>
+<span class="source-line-no">1207</span><span id="line-1207">    return c == null ? "null" : c.getTypeName();</span>
+<span class="source-line-no">1208</span><span id="line-1208">  }</span>
+<span class="source-line-no">1209</span><span id="line-1209"></span>
+<span class="source-line-no">1210</span><span id="line-1210">  private static final String toString(final ParameterizedType ptype) {</span>
+<span class="source-line-no">1211</span><span id="line-1211">    if (ptype == null) {</span>
+<span class="source-line-no">1212</span><span id="line-1212">      return "null";</span>
+<span class="source-line-no">1213</span><span id="line-1213">    } else {</span>
+<span class="source-line-no">1214</span><span id="line-1214">      final StringBuilder sb = new StringBuilder();</span>
+<span class="source-line-no">1215</span><span id="line-1215">      final Type ownerType = ptype.getOwnerType();</span>
+<span class="source-line-no">1216</span><span id="line-1216">      if (ownerType == null) {</span>
+<span class="source-line-no">1217</span><span id="line-1217">        sb.append(toString(ptype.getRawType()));</span>
+<span class="source-line-no">1218</span><span id="line-1218">      } else {</span>
+<span class="source-line-no">1219</span><span id="line-1219">        sb.append(toString(ownerType)).append("$");</span>
+<span class="source-line-no">1220</span><span id="line-1220">        final Type rawType = ptype.getRawType();</span>
+<span class="source-line-no">1221</span><span id="line-1221">        if (ownerType instanceof ParameterizedType p) {</span>
+<span class="source-line-no">1222</span><span id="line-1222">          sb.append(toString(rawType).replace(toString(p.getRawType()) + "$", ""));</span>
+<span class="source-line-no">1223</span><span id="line-1223">        } else if (rawType instanceof Class&lt;?&gt; c) {</span>
+<span class="source-line-no">1224</span><span id="line-1224">          sb.append(c.getSimpleName());</span>
+<span class="source-line-no">1225</span><span id="line-1225">        } else {</span>
+<span class="source-line-no">1226</span><span id="line-1226">          sb.append(toString(rawType));</span>
+<span class="source-line-no">1227</span><span id="line-1227">        }</span>
+<span class="source-line-no">1228</span><span id="line-1228">      }</span>
+<span class="source-line-no">1229</span><span id="line-1229">      final Type[] actualTypeArguments = ptype.getActualTypeArguments();</span>
+<span class="source-line-no">1230</span><span id="line-1230">      if (actualTypeArguments != null &amp;&amp; actualTypeArguments.length &gt; 0) {</span>
+<span class="source-line-no">1231</span><span id="line-1231">        final StringJoiner stringJoiner = new StringJoiner(", ", "&lt;", "&gt;");</span>
+<span class="source-line-no">1232</span><span id="line-1232">        stringJoiner.setEmptyValue("");</span>
+<span class="source-line-no">1233</span><span id="line-1233">        for (final Type actualTypeArgument : actualTypeArguments) {</span>
+<span class="source-line-no">1234</span><span id="line-1234">          stringJoiner.add(toString(actualTypeArgument));</span>
+<span class="source-line-no">1235</span><span id="line-1235">        }</span>
+<span class="source-line-no">1236</span><span id="line-1236">        sb.append(stringJoiner.toString());</span>
+<span class="source-line-no">1237</span><span id="line-1237">      }</span>
+<span class="source-line-no">1238</span><span id="line-1238">      return sb.toString();</span>
+<span class="source-line-no">1239</span><span id="line-1239">    }</span>
+<span class="source-line-no">1240</span><span id="line-1240">  }</span>
+<span class="source-line-no">1241</span><span id="line-1241"></span>
+<span class="source-line-no">1242</span><span id="line-1242">  private static final String toString(final GenericArrayType gatype) {</span>
+<span class="source-line-no">1243</span><span id="line-1243">    if (gatype == null) {</span>
+<span class="source-line-no">1244</span><span id="line-1244">      return "null";</span>
+<span class="source-line-no">1245</span><span id="line-1245">    } else {</span>
+<span class="source-line-no">1246</span><span id="line-1246">      return toString(gatype.getGenericComponentType()) + "[]";</span>
+<span class="source-line-no">1247</span><span id="line-1247">    }</span>
+<span class="source-line-no">1248</span><span id="line-1248">  }</span>
+<span class="source-line-no">1249</span><span id="line-1249"></span>
+<span class="source-line-no">1250</span><span id="line-1250">  private static final String toString(final TypeVariable&lt;?&gt; tv) {</span>
+<span class="source-line-no">1251</span><span id="line-1251">    return tv == null ? "null" : tv.getName();</span>
+<span class="source-line-no">1252</span><span id="line-1252">  }</span>
+<span class="source-line-no">1253</span><span id="line-1253"></span>
+<span class="source-line-no">1254</span><span id="line-1254">  private static final String toString(final WildcardType wc) {</span>
+<span class="source-line-no">1255</span><span id="line-1255">    if (wc == null) {</span>
+<span class="source-line-no">1256</span><span id="line-1256">      return "null";</span>
+<span class="source-line-no">1257</span><span id="line-1257">    } else {</span>
+<span class="source-line-no">1258</span><span id="line-1258">      final StringBuilder sb = new StringBuilder("?");</span>
+<span class="source-line-no">1259</span><span id="line-1259">      Type[] bounds = wc.getLowerBounds();</span>
+<span class="source-line-no">1260</span><span id="line-1260">      if (bounds == null || bounds.length &lt;= 0) {</span>
+<span class="source-line-no">1261</span><span id="line-1261">        // Upper bounds only.</span>
+<span class="source-line-no">1262</span><span id="line-1262">        bounds = wc.getUpperBounds();</span>
+<span class="source-line-no">1263</span><span id="line-1263">        if (bounds == null || bounds.length &lt;= 0 || Object.class.equals(bounds[0])) {</span>
+<span class="source-line-no">1264</span><span id="line-1264">          bounds = null;</span>
+<span class="source-line-no">1265</span><span id="line-1265">        } else {</span>
+<span class="source-line-no">1266</span><span id="line-1266">          sb.append(" extends ");</span>
+<span class="source-line-no">1267</span><span id="line-1267">        }</span>
+<span class="source-line-no">1268</span><span id="line-1268">      } else {</span>
+<span class="source-line-no">1269</span><span id="line-1269">        // Lower bounds only.</span>
+<span class="source-line-no">1270</span><span id="line-1270">        sb.append(" super ");</span>
+<span class="source-line-no">1271</span><span id="line-1271">      }</span>
+<span class="source-line-no">1272</span><span id="line-1272">      if (bounds != null) {</span>
+<span class="source-line-no">1273</span><span id="line-1273">        assert bounds.length &gt; 0;</span>
+<span class="source-line-no">1274</span><span id="line-1274">        final StringJoiner sj = new StringJoiner(" &amp; ");</span>
+<span class="source-line-no">1275</span><span id="line-1275">        for (final Type bound: bounds) {</span>
+<span class="source-line-no">1276</span><span id="line-1276">          sj.add(String.valueOf(toString(bound)));</span>
+<span class="source-line-no">1277</span><span id="line-1277">        }</span>
+<span class="source-line-no">1278</span><span id="line-1278">        sb.append(sj.toString());</span>
+<span class="source-line-no">1279</span><span id="line-1279">      }</span>
+<span class="source-line-no">1280</span><span id="line-1280">      return sb.toString();</span>
+<span class="source-line-no">1281</span><span id="line-1281">    }</span>
+<span class="source-line-no">1282</span><span id="line-1282">  }</span>
+<span class="source-line-no">1283</span><span id="line-1283"></span>
+<span class="source-line-no">1284</span><span id="line-1284">  /**</span>
+<span class="source-line-no">1285</span><span id="line-1285">   * Returns an {@link Optional} representing the supplied {@link</span>
+<span class="source-line-no">1286</span><span id="line-1286">   * ConstantDesc}.</span>
+<span class="source-line-no">1287</span><span id="line-1287">   *</span>
+<span class="source-line-no">1288</span><span id="line-1288">   * @param constantDesc the {@link ConstantDesc} to represent; may be</span>
+<span class="source-line-no">1289</span><span id="line-1289">   * {@code null}; if {@code null}, then an {@link Optional}</span>
+<span class="source-line-no">1290</span><span id="line-1290">   * consisting of {@link java.lang.constant.ConstantDescs#NULL} will</span>
+<span class="source-line-no">1291</span><span id="line-1291">   * be returned</span>
+<span class="source-line-no">1292</span><span id="line-1292">   *</span>
+<span class="source-line-no">1293</span><span id="line-1293">   * @return an {@link Optional} representing the supplied {@link</span>
+<span class="source-line-no">1294</span><span id="line-1294">   * ConstantDesc}; never {@code null}; never {@linkplain</span>
+<span class="source-line-no">1295</span><span id="line-1295">   * Optional#isEmpty() empty}</span>
+<span class="source-line-no">1296</span><span id="line-1296">   *</span>
+<span class="source-line-no">1297</span><span id="line-1297">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1298</span><span id="line-1298">   *</span>
+<span class="source-line-no">1299</span><span id="line-1299">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">1300</span><span id="line-1300">   *</span>
+<span class="source-line-no">1301</span><span id="line-1301">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1302</span><span id="line-1302">   * threads.</span>
+<span class="source-line-no">1303</span><span id="line-1303">   */</span>
+<span class="source-line-no">1304</span><span id="line-1304">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final ConstantDesc constantDesc) {</span>
+<span class="source-line-no">1305</span><span id="line-1305">    return constantDesc == null ? Optional.of(NULL) : Optional.of(constantDesc);</span>
+<span class="source-line-no">1306</span><span id="line-1306">  }</span>
+<span class="source-line-no">1307</span><span id="line-1307"></span>
+<span class="source-line-no">1308</span><span id="line-1308">  /**</span>
+<span class="source-line-no">1309</span><span id="line-1309">   * Returns an {@link Optional} representing the supplied {@link</span>
+<span class="source-line-no">1310</span><span id="line-1310">   * Constable}.</span>
+<span class="source-line-no">1311</span><span id="line-1311">   *</span>
+<span class="source-line-no">1312</span><span id="line-1312">   * @param constable the {@link Constable} to represent; may be</span>
+<span class="source-line-no">1313</span><span id="line-1313">   * {@code null}; if {@code null}, then an {@link Optional}</span>
+<span class="source-line-no">1314</span><span id="line-1314">   * consisting of {@link java.lang.constant.ConstantDescs#NULL} will</span>
+<span class="source-line-no">1315</span><span id="line-1315">   * be returned</span>
+<span class="source-line-no">1316</span><span id="line-1316">   *</span>
+<span class="source-line-no">1317</span><span id="line-1317">   * @return an {@link Optional} representing the supplied {@link</span>
+<span class="source-line-no">1318</span><span id="line-1318">   * Constable}; never {@code null}; possibly {@linkplain</span>
+<span class="source-line-no">1319</span><span id="line-1319">   * Optional#isEmpty() empty}</span>
+<span class="source-line-no">1320</span><span id="line-1320">   *</span>
+<span class="source-line-no">1321</span><span id="line-1321">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1322</span><span id="line-1322">   *</span>
+<span class="source-line-no">1323</span><span id="line-1323">   * @idempotency This method is idempotent and deterministic.</span>
+<span class="source-line-no">1324</span><span id="line-1324">   *</span>
+<span class="source-line-no">1325</span><span id="line-1325">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1326</span><span id="line-1326">   * threads.</span>
+<span class="source-line-no">1327</span><span id="line-1327">   */</span>
+<span class="source-line-no">1328</span><span id="line-1328">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Constable constable) {</span>
+<span class="source-line-no">1329</span><span id="line-1329">    return constable == null ? Optional.of(NULL) : constable.describeConstable();</span>
+<span class="source-line-no">1330</span><span id="line-1330">  }</span>
+<span class="source-line-no">1331</span><span id="line-1331"></span>
+<span class="source-line-no">1332</span><span id="line-1332">  /**</span>
+<span class="source-line-no">1333</span><span id="line-1333">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1334</span><span id="line-1334">   * the form of a {@link ConstantDesc} for the supplied {@link Type}, or</span>
+<span class="source-line-no">1335</span><span id="line-1335">   * an {@linkplain Optional#isEmpty() empty &lt;code&gt;Optional&lt;/code&gt;} if</span>
+<span class="source-line-no">1336</span><span id="line-1336">   * there is no such descriptor.</span>
+<span class="source-line-no">1337</span><span id="line-1337">   *</span>
+<span class="source-line-no">1338</span><span id="line-1338">   * @param type the {@link Type} in question; must be either {@code</span>
+<span class="source-line-no">1339</span><span id="line-1339">   * null}, a {@link ConstantDesc} itself, a {@link Constable}, a</span>
+<span class="source-line-no">1340</span><span id="line-1340">   * {@link ParameterizedType}, a {@link GenericArrayType}, a {@link</span>
+<span class="source-line-no">1341</span><span id="line-1341">   * TypeVariable} or a {@link WildcardType}</span>
 <span class="source-line-no">1342</span><span id="line-1342">   *</span>
-<span class="source-line-no">1343</span><span id="line-1343">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1344</span><span id="line-1344">   *</span>
-<span class="source-line-no">1345</span><span id="line-1345">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1346</span><span id="line-1346">   *</span>
-<span class="source-line-no">1347</span><span id="line-1347">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1348</span><span id="line-1348">   * threads.</span>
+<span class="source-line-no">1343</span><span id="line-1343">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1344</span><span id="line-1344">   * null}</span>
+<span class="source-line-no">1345</span><span id="line-1345">   *</span>
+<span class="source-line-no">1346</span><span id="line-1346">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1347</span><span id="line-1347">   *</span>
+<span class="source-line-no">1348</span><span id="line-1348">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1349</span><span id="line-1349">   *</span>
-<span class="source-line-no">1350</span><span id="line-1350">   * @see Constable</span>
-<span class="source-line-no">1351</span><span id="line-1351">   */</span>
-<span class="source-line-no">1352</span><span id="line-1352">  public static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Type type) {</span>
-<span class="source-line-no">1353</span><span id="line-1353">    if (type == null) {</span>
-<span class="source-line-no">1354</span><span id="line-1354">      return Optional.of(NULL);</span>
-<span class="source-line-no">1355</span><span id="line-1355">    } else if (type instanceof ConstantDesc constantDesc) {</span>
-<span class="source-line-no">1356</span><span id="line-1356">      return describeConstable(constantDesc);</span>
-<span class="source-line-no">1357</span><span id="line-1357">    } else if (type instanceof Constable constable) {</span>
-<span class="source-line-no">1358</span><span id="line-1358">      return describeConstable(constable); // includes Class&lt;?&gt;</span>
-<span class="source-line-no">1359</span><span id="line-1359">    } else if (type instanceof ParameterizedType p) {</span>
-<span class="source-line-no">1360</span><span id="line-1360">      return describeConstable(p);</span>
-<span class="source-line-no">1361</span><span id="line-1361">    } else if (type instanceof GenericArrayType g) {</span>
-<span class="source-line-no">1362</span><span id="line-1362">      return describeConstable(g);</span>
-<span class="source-line-no">1363</span><span id="line-1363">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
-<span class="source-line-no">1364</span><span id="line-1364">      return describeConstable(tv);</span>
-<span class="source-line-no">1365</span><span id="line-1365">    } else if (type instanceof WildcardType w) {</span>
-<span class="source-line-no">1366</span><span id="line-1366">      return describeConstable(w);</span>
-<span class="source-line-no">1367</span><span id="line-1367">    } else {</span>
-<span class="source-line-no">1368</span><span id="line-1368">      return Optional.empty();</span>
-<span class="source-line-no">1369</span><span id="line-1369">    }</span>
-<span class="source-line-no">1370</span><span id="line-1370">  }</span>
-<span class="source-line-no">1371</span><span id="line-1371"></span>
-<span class="source-line-no">1372</span><span id="line-1372">  /**</span>
-<span class="source-line-no">1373</span><span id="line-1373">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1374</span><span id="line-1374">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
-<span class="source-line-no">1375</span><span id="line-1375">   * ParameterizedType}, or an {@linkplain Optional#isEmpty() empty</span>
-<span class="source-line-no">1376</span><span id="line-1376">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
-<span class="source-line-no">1377</span><span id="line-1377">   *</span>
-<span class="source-line-no">1378</span><span id="line-1378">   * @param ptype the {@link ParameterizedType} in question; may be</span>
-<span class="source-line-no">1379</span><span id="line-1379">   * {@code null}</span>
+<span class="source-line-no">1350</span><span id="line-1350">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1351</span><span id="line-1351">   * threads.</span>
+<span class="source-line-no">1352</span><span id="line-1352">   *</span>
+<span class="source-line-no">1353</span><span id="line-1353">   * @see Constable</span>
+<span class="source-line-no">1354</span><span id="line-1354">   */</span>
+<span class="source-line-no">1355</span><span id="line-1355">  public static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Type type) {</span>
+<span class="source-line-no">1356</span><span id="line-1356">    if (type == null) {</span>
+<span class="source-line-no">1357</span><span id="line-1357">      return Optional.of(NULL);</span>
+<span class="source-line-no">1358</span><span id="line-1358">    } else if (type instanceof ConstantDesc constantDesc) {</span>
+<span class="source-line-no">1359</span><span id="line-1359">      return describeConstable(constantDesc);</span>
+<span class="source-line-no">1360</span><span id="line-1360">    } else if (type instanceof Constable constable) {</span>
+<span class="source-line-no">1361</span><span id="line-1361">      return describeConstable(constable); // includes Class&lt;?&gt;</span>
+<span class="source-line-no">1362</span><span id="line-1362">    } else if (type instanceof ParameterizedType p) {</span>
+<span class="source-line-no">1363</span><span id="line-1363">      return describeConstable(p);</span>
+<span class="source-line-no">1364</span><span id="line-1364">    } else if (type instanceof GenericArrayType g) {</span>
+<span class="source-line-no">1365</span><span id="line-1365">      return describeConstable(g);</span>
+<span class="source-line-no">1366</span><span id="line-1366">    } else if (type instanceof TypeVariable&lt;?&gt; tv) {</span>
+<span class="source-line-no">1367</span><span id="line-1367">      return describeConstable(tv);</span>
+<span class="source-line-no">1368</span><span id="line-1368">    } else if (type instanceof WildcardType w) {</span>
+<span class="source-line-no">1369</span><span id="line-1369">      return describeConstable(w);</span>
+<span class="source-line-no">1370</span><span id="line-1370">    } else {</span>
+<span class="source-line-no">1371</span><span id="line-1371">      return Optional.empty();</span>
+<span class="source-line-no">1372</span><span id="line-1372">    }</span>
+<span class="source-line-no">1373</span><span id="line-1373">  }</span>
+<span class="source-line-no">1374</span><span id="line-1374"></span>
+<span class="source-line-no">1375</span><span id="line-1375">  /**</span>
+<span class="source-line-no">1376</span><span id="line-1376">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1377</span><span id="line-1377">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
+<span class="source-line-no">1378</span><span id="line-1378">   * ParameterizedType}, or an {@linkplain Optional#isEmpty() empty</span>
+<span class="source-line-no">1379</span><span id="line-1379">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
 <span class="source-line-no">1380</span><span id="line-1380">   *</span>
-<span class="source-line-no">1381</span><span id="line-1381">   * @return an {@link Optional} as described above; never {@code</span>
-<span class="source-line-no">1382</span><span id="line-1382">   * null}</span>
+<span class="source-line-no">1381</span><span id="line-1381">   * @param ptype the {@link ParameterizedType} in question; may be</span>
+<span class="source-line-no">1382</span><span id="line-1382">   * {@code null}</span>
 <span class="source-line-no">1383</span><span id="line-1383">   *</span>
-<span class="source-line-no">1384</span><span id="line-1384">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1385</span><span id="line-1385">   *</span>
-<span class="source-line-no">1386</span><span id="line-1386">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1387</span><span id="line-1387">   *</span>
-<span class="source-line-no">1388</span><span id="line-1388">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1389</span><span id="line-1389">   * threads.</span>
+<span class="source-line-no">1384</span><span id="line-1384">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1385</span><span id="line-1385">   * null}</span>
+<span class="source-line-no">1386</span><span id="line-1386">   *</span>
+<span class="source-line-no">1387</span><span id="line-1387">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1388</span><span id="line-1388">   *</span>
+<span class="source-line-no">1389</span><span id="line-1389">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1390</span><span id="line-1390">   *</span>
-<span class="source-line-no">1391</span><span id="line-1391">   * @see Constable</span>
-<span class="source-line-no">1392</span><span id="line-1392">   */</span>
-<span class="source-line-no">1393</span><span id="line-1393">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final ParameterizedType ptype) {</span>
-<span class="source-line-no">1394</span><span id="line-1394">    if (ptype == null) {</span>
-<span class="source-line-no">1395</span><span id="line-1395">      return Optional.of(NULL);</span>
-<span class="source-line-no">1396</span><span id="line-1396">    } else if (ptype instanceof ConstantDesc constantDesc) {</span>
-<span class="source-line-no">1397</span><span id="line-1397">      return describeConstable(constantDesc);</span>
-<span class="source-line-no">1398</span><span id="line-1398">    } else if (ptype instanceof Constable constable) {</span>
-<span class="source-line-no">1399</span><span id="line-1399">      return describeConstable(constable);</span>
-<span class="source-line-no">1400</span><span id="line-1400">    } else {</span>
-<span class="source-line-no">1401</span><span id="line-1401">      final Optional&lt;? extends ConstantDesc&gt; ownerType = describeConstable(ptype.getOwnerType());</span>
-<span class="source-line-no">1402</span><span id="line-1402">      if (ownerType.isPresent()) {</span>
-<span class="source-line-no">1403</span><span id="line-1403">        final Optional&lt;? extends ConstantDesc&gt; rawType = describeConstable(ptype.getRawType());</span>
-<span class="source-line-no">1404</span><span id="line-1404">        if (rawType.isPresent()) {</span>
-<span class="source-line-no">1405</span><span id="line-1405">          final Type[] actualTypeArguments = ptype.getActualTypeArguments();</span>
-<span class="source-line-no">1406</span><span id="line-1406">          final int bsmInvokeArgumentsLength = actualTypeArguments.length + 3;</span>
-<span class="source-line-no">1407</span><span id="line-1407">          final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];</span>
-<span class="source-line-no">1408</span><span id="line-1408">          bsmInvokeArguments[0] =</span>
-<span class="source-line-no">1409</span><span id="line-1409">            MethodHandleDesc.ofConstructor(CD_DefaultParameterizedType,</span>
-<span class="source-line-no">1410</span><span id="line-1410">                                           CD_Type,</span>
-<span class="source-line-no">1411</span><span id="line-1411">                                           CD_Type,</span>
-<span class="source-line-no">1412</span><span id="line-1412">                                           CD_Type.arrayType());</span>
-<span class="source-line-no">1413</span><span id="line-1413">          bsmInvokeArguments[1] = ownerType.orElseThrow();</span>
-<span class="source-line-no">1414</span><span id="line-1414">          bsmInvokeArguments[2] = rawType.orElseThrow();</span>
-<span class="source-line-no">1415</span><span id="line-1415">          for (int i = 3; i &lt; bsmInvokeArgumentsLength; i++) {</span>
-<span class="source-line-no">1416</span><span id="line-1416">            final Optional&lt;? extends ConstantDesc&gt; arg = describeConstable(actualTypeArguments[i - 3]);</span>
-<span class="source-line-no">1417</span><span id="line-1417">            if (arg.isEmpty()) {</span>
-<span class="source-line-no">1418</span><span id="line-1418">              return Optional.empty();</span>
-<span class="source-line-no">1419</span><span id="line-1419">            }</span>
-<span class="source-line-no">1420</span><span id="line-1420">            bsmInvokeArguments[i] = arg.orElseThrow();</span>
-<span class="source-line-no">1421</span><span id="line-1421">          }</span>
-<span class="source-line-no">1422</span><span id="line-1422">          return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
-<span class="source-line-no">1423</span><span id="line-1423">                                                         DEFAULT_NAME,</span>
-<span class="source-line-no">1424</span><span id="line-1424">                                                         CD_DefaultParameterizedType,</span>
-<span class="source-line-no">1425</span><span id="line-1425">                                                         bsmInvokeArguments));</span>
-<span class="source-line-no">1426</span><span id="line-1426">        }</span>
-<span class="source-line-no">1427</span><span id="line-1427">      }</span>
-<span class="source-line-no">1428</span><span id="line-1428">      return Optional.empty();</span>
-<span class="source-line-no">1429</span><span id="line-1429">    }</span>
-<span class="source-line-no">1430</span><span id="line-1430">  }</span>
-<span class="source-line-no">1431</span><span id="line-1431"></span>
-<span class="source-line-no">1432</span><span id="line-1432">  /**</span>
-<span class="source-line-no">1433</span><span id="line-1433">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1434</span><span id="line-1434">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
-<span class="source-line-no">1435</span><span id="line-1435">   * GenericArrayType}, or an {@linkplain Optional#isEmpty() empty</span>
-<span class="source-line-no">1436</span><span id="line-1436">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
-<span class="source-line-no">1437</span><span id="line-1437">   *</span>
-<span class="source-line-no">1438</span><span id="line-1438">   * @param g the {@link GenericArrayType} in question; may be</span>
-<span class="source-line-no">1439</span><span id="line-1439">   * {@code null}</span>
+<span class="source-line-no">1391</span><span id="line-1391">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1392</span><span id="line-1392">   * threads.</span>
+<span class="source-line-no">1393</span><span id="line-1393">   *</span>
+<span class="source-line-no">1394</span><span id="line-1394">   * @see Constable</span>
+<span class="source-line-no">1395</span><span id="line-1395">   */</span>
+<span class="source-line-no">1396</span><span id="line-1396">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final ParameterizedType ptype) {</span>
+<span class="source-line-no">1397</span><span id="line-1397">    if (ptype == null) {</span>
+<span class="source-line-no">1398</span><span id="line-1398">      return Optional.of(NULL);</span>
+<span class="source-line-no">1399</span><span id="line-1399">    } else if (ptype instanceof ConstantDesc constantDesc) {</span>
+<span class="source-line-no">1400</span><span id="line-1400">      return describeConstable(constantDesc);</span>
+<span class="source-line-no">1401</span><span id="line-1401">    } else if (ptype instanceof Constable constable) {</span>
+<span class="source-line-no">1402</span><span id="line-1402">      return describeConstable(constable);</span>
+<span class="source-line-no">1403</span><span id="line-1403">    } else {</span>
+<span class="source-line-no">1404</span><span id="line-1404">      final Optional&lt;? extends ConstantDesc&gt; ownerType = describeConstable(ptype.getOwnerType());</span>
+<span class="source-line-no">1405</span><span id="line-1405">      if (ownerType.isPresent()) {</span>
+<span class="source-line-no">1406</span><span id="line-1406">        final Optional&lt;? extends ConstantDesc&gt; rawType = describeConstable(ptype.getRawType());</span>
+<span class="source-line-no">1407</span><span id="line-1407">        if (rawType.isPresent()) {</span>
+<span class="source-line-no">1408</span><span id="line-1408">          final Type[] actualTypeArguments = ptype.getActualTypeArguments();</span>
+<span class="source-line-no">1409</span><span id="line-1409">          final int bsmInvokeArgumentsLength = actualTypeArguments.length + 3;</span>
+<span class="source-line-no">1410</span><span id="line-1410">          final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];</span>
+<span class="source-line-no">1411</span><span id="line-1411">          bsmInvokeArguments[0] =</span>
+<span class="source-line-no">1412</span><span id="line-1412">            MethodHandleDesc.ofConstructor(CD_DefaultParameterizedType,</span>
+<span class="source-line-no">1413</span><span id="line-1413">                                           CD_Type,</span>
+<span class="source-line-no">1414</span><span id="line-1414">                                           CD_Type,</span>
+<span class="source-line-no">1415</span><span id="line-1415">                                           CD_Type.arrayType());</span>
+<span class="source-line-no">1416</span><span id="line-1416">          bsmInvokeArguments[1] = ownerType.orElseThrow();</span>
+<span class="source-line-no">1417</span><span id="line-1417">          bsmInvokeArguments[2] = rawType.orElseThrow();</span>
+<span class="source-line-no">1418</span><span id="line-1418">          for (int i = 3; i &lt; bsmInvokeArgumentsLength; i++) {</span>
+<span class="source-line-no">1419</span><span id="line-1419">            final Optional&lt;? extends ConstantDesc&gt; arg = describeConstable(actualTypeArguments[i - 3]);</span>
+<span class="source-line-no">1420</span><span id="line-1420">            if (arg.isEmpty()) {</span>
+<span class="source-line-no">1421</span><span id="line-1421">              return Optional.empty();</span>
+<span class="source-line-no">1422</span><span id="line-1422">            }</span>
+<span class="source-line-no">1423</span><span id="line-1423">            bsmInvokeArguments[i] = arg.orElseThrow();</span>
+<span class="source-line-no">1424</span><span id="line-1424">          }</span>
+<span class="source-line-no">1425</span><span id="line-1425">          return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
+<span class="source-line-no">1426</span><span id="line-1426">                                                         DEFAULT_NAME,</span>
+<span class="source-line-no">1427</span><span id="line-1427">                                                         CD_DefaultParameterizedType,</span>
+<span class="source-line-no">1428</span><span id="line-1428">                                                         bsmInvokeArguments));</span>
+<span class="source-line-no">1429</span><span id="line-1429">        }</span>
+<span class="source-line-no">1430</span><span id="line-1430">      }</span>
+<span class="source-line-no">1431</span><span id="line-1431">      return Optional.empty();</span>
+<span class="source-line-no">1432</span><span id="line-1432">    }</span>
+<span class="source-line-no">1433</span><span id="line-1433">  }</span>
+<span class="source-line-no">1434</span><span id="line-1434"></span>
+<span class="source-line-no">1435</span><span id="line-1435">  /**</span>
+<span class="source-line-no">1436</span><span id="line-1436">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1437</span><span id="line-1437">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
+<span class="source-line-no">1438</span><span id="line-1438">   * GenericArrayType}, or an {@linkplain Optional#isEmpty() empty</span>
+<span class="source-line-no">1439</span><span id="line-1439">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
 <span class="source-line-no">1440</span><span id="line-1440">   *</span>
-<span class="source-line-no">1441</span><span id="line-1441">   * @return an {@link Optional} as described above; never {@code</span>
-<span class="source-line-no">1442</span><span id="line-1442">   * null}</span>
+<span class="source-line-no">1441</span><span id="line-1441">   * @param g the {@link GenericArrayType} in question; may be</span>
+<span class="source-line-no">1442</span><span id="line-1442">   * {@code null}</span>
 <span class="source-line-no">1443</span><span id="line-1443">   *</span>
-<span class="source-line-no">1444</span><span id="line-1444">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1445</span><span id="line-1445">   *</span>
-<span class="source-line-no">1446</span><span id="line-1446">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1447</span><span id="line-1447">   *</span>
-<span class="source-line-no">1448</span><span id="line-1448">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1449</span><span id="line-1449">   * threads.</span>
+<span class="source-line-no">1444</span><span id="line-1444">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1445</span><span id="line-1445">   * null}</span>
+<span class="source-line-no">1446</span><span id="line-1446">   *</span>
+<span class="source-line-no">1447</span><span id="line-1447">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1448</span><span id="line-1448">   *</span>
+<span class="source-line-no">1449</span><span id="line-1449">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1450</span><span id="line-1450">   *</span>
-<span class="source-line-no">1451</span><span id="line-1451">   * @see Constable</span>
-<span class="source-line-no">1452</span><span id="line-1452">   */</span>
-<span class="source-line-no">1453</span><span id="line-1453">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final GenericArrayType g) {</span>
-<span class="source-line-no">1454</span><span id="line-1454">    if (g == null) {</span>
-<span class="source-line-no">1455</span><span id="line-1455">      return Optional.of(NULL);</span>
-<span class="source-line-no">1456</span><span id="line-1456">    } else if (g instanceof ConstantDesc constantDesc) {</span>
-<span class="source-line-no">1457</span><span id="line-1457">      return describeConstable(constantDesc);</span>
-<span class="source-line-no">1458</span><span id="line-1458">    } else if (g instanceof Constable c) {</span>
-<span class="source-line-no">1459</span><span id="line-1459">      return describeConstable(c);</span>
-<span class="source-line-no">1460</span><span id="line-1460">    } else {</span>
-<span class="source-line-no">1461</span><span id="line-1461">      final Optional&lt;? extends ConstantDesc&gt; genericComponentType = describeConstable(g.getGenericComponentType());</span>
-<span class="source-line-no">1462</span><span id="line-1462">      if (genericComponentType.isPresent()) {</span>
-<span class="source-line-no">1463</span><span id="line-1463">        return</span>
-<span class="source-line-no">1464</span><span id="line-1464">          Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
-<span class="source-line-no">1465</span><span id="line-1465">                                                  DEFAULT_NAME,</span>
-<span class="source-line-no">1466</span><span id="line-1466">                                                  CD_DefaultGenericArrayType,</span>
-<span class="source-line-no">1467</span><span id="line-1467">                                                  MethodHandleDesc.ofConstructor(CD_DefaultGenericArrayType,</span>
-<span class="source-line-no">1468</span><span id="line-1468">                                                                                 CD_Type),</span>
-<span class="source-line-no">1469</span><span id="line-1469">                                                  genericComponentType.orElseThrow()));</span>
-<span class="source-line-no">1470</span><span id="line-1470">      }</span>
-<span class="source-line-no">1471</span><span id="line-1471">      return Optional.empty();</span>
-<span class="source-line-no">1472</span><span id="line-1472">    }</span>
-<span class="source-line-no">1473</span><span id="line-1473">  }</span>
-<span class="source-line-no">1474</span><span id="line-1474"></span>
-<span class="source-line-no">1475</span><span id="line-1475">  /**</span>
-<span class="source-line-no">1476</span><span id="line-1476">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1477</span><span id="line-1477">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
-<span class="source-line-no">1478</span><span id="line-1478">   * TypeVariable}, or an {@linkplain Optional#isEmpty() empty</span>
-<span class="source-line-no">1479</span><span id="line-1479">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
-<span class="source-line-no">1480</span><span id="line-1480">   *</span>
-<span class="source-line-no">1481</span><span id="line-1481">   * @param tv the {@link TypeVariable} in question; may be {@code</span>
-<span class="source-line-no">1482</span><span id="line-1482">   * null}</span>
+<span class="source-line-no">1451</span><span id="line-1451">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1452</span><span id="line-1452">   * threads.</span>
+<span class="source-line-no">1453</span><span id="line-1453">   *</span>
+<span class="source-line-no">1454</span><span id="line-1454">   * @see Constable</span>
+<span class="source-line-no">1455</span><span id="line-1455">   */</span>
+<span class="source-line-no">1456</span><span id="line-1456">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final GenericArrayType g) {</span>
+<span class="source-line-no">1457</span><span id="line-1457">    if (g == null) {</span>
+<span class="source-line-no">1458</span><span id="line-1458">      return Optional.of(NULL);</span>
+<span class="source-line-no">1459</span><span id="line-1459">    } else if (g instanceof ConstantDesc constantDesc) {</span>
+<span class="source-line-no">1460</span><span id="line-1460">      return describeConstable(constantDesc);</span>
+<span class="source-line-no">1461</span><span id="line-1461">    } else if (g instanceof Constable c) {</span>
+<span class="source-line-no">1462</span><span id="line-1462">      return describeConstable(c);</span>
+<span class="source-line-no">1463</span><span id="line-1463">    } else {</span>
+<span class="source-line-no">1464</span><span id="line-1464">      final Optional&lt;? extends ConstantDesc&gt; genericComponentType = describeConstable(g.getGenericComponentType());</span>
+<span class="source-line-no">1465</span><span id="line-1465">      if (genericComponentType.isPresent()) {</span>
+<span class="source-line-no">1466</span><span id="line-1466">        return</span>
+<span class="source-line-no">1467</span><span id="line-1467">          Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
+<span class="source-line-no">1468</span><span id="line-1468">                                                  DEFAULT_NAME,</span>
+<span class="source-line-no">1469</span><span id="line-1469">                                                  CD_DefaultGenericArrayType,</span>
+<span class="source-line-no">1470</span><span id="line-1470">                                                  MethodHandleDesc.ofConstructor(CD_DefaultGenericArrayType,</span>
+<span class="source-line-no">1471</span><span id="line-1471">                                                                                 CD_Type),</span>
+<span class="source-line-no">1472</span><span id="line-1472">                                                  genericComponentType.orElseThrow()));</span>
+<span class="source-line-no">1473</span><span id="line-1473">      }</span>
+<span class="source-line-no">1474</span><span id="line-1474">      return Optional.empty();</span>
+<span class="source-line-no">1475</span><span id="line-1475">    }</span>
+<span class="source-line-no">1476</span><span id="line-1476">  }</span>
+<span class="source-line-no">1477</span><span id="line-1477"></span>
+<span class="source-line-no">1478</span><span id="line-1478">  /**</span>
+<span class="source-line-no">1479</span><span id="line-1479">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1480</span><span id="line-1480">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
+<span class="source-line-no">1481</span><span id="line-1481">   * TypeVariable}, or an {@linkplain Optional#isEmpty() empty</span>
+<span class="source-line-no">1482</span><span id="line-1482">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
 <span class="source-line-no">1483</span><span id="line-1483">   *</span>
-<span class="source-line-no">1484</span><span id="line-1484">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1484</span><span id="line-1484">   * @param tv the {@link TypeVariable} in question; may be {@code</span>
 <span class="source-line-no">1485</span><span id="line-1485">   * null}</span>
 <span class="source-line-no">1486</span><span id="line-1486">   *</span>
-<span class="source-line-no">1487</span><span id="line-1487">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1488</span><span id="line-1488">   *</span>
-<span class="source-line-no">1489</span><span id="line-1489">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1490</span><span id="line-1490">   *</span>
-<span class="source-line-no">1491</span><span id="line-1491">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1492</span><span id="line-1492">   * threads.</span>
+<span class="source-line-no">1487</span><span id="line-1487">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1488</span><span id="line-1488">   * null}</span>
+<span class="source-line-no">1489</span><span id="line-1489">   *</span>
+<span class="source-line-no">1490</span><span id="line-1490">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1491</span><span id="line-1491">   *</span>
+<span class="source-line-no">1492</span><span id="line-1492">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1493</span><span id="line-1493">   *</span>
-<span class="source-line-no">1494</span><span id="line-1494">   * @see Constable</span>
-<span class="source-line-no">1495</span><span id="line-1495">   */</span>
-<span class="source-line-no">1496</span><span id="line-1496">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final TypeVariable&lt;?&gt; tv) {</span>
-<span class="source-line-no">1497</span><span id="line-1497">    if (tv == null) {</span>
-<span class="source-line-no">1498</span><span id="line-1498">      return Optional.of(NULL);</span>
-<span class="source-line-no">1499</span><span id="line-1499">    } else if (tv instanceof ConstantDesc constantDesc) {</span>
-<span class="source-line-no">1500</span><span id="line-1500">      return describeConstable(constantDesc);</span>
-<span class="source-line-no">1501</span><span id="line-1501">    } else if (tv instanceof Constable constable) {</span>
-<span class="source-line-no">1502</span><span id="line-1502">      return describeConstable(constable);</span>
-<span class="source-line-no">1503</span><span id="line-1503">    } else {</span>
-<span class="source-line-no">1504</span><span id="line-1504">      final Optional&lt;? extends ConstantDesc&gt; gd = describeConstable(tv.getGenericDeclaration());</span>
-<span class="source-line-no">1505</span><span id="line-1505">      if (gd.isPresent()) {</span>
-<span class="source-line-no">1506</span><span id="line-1506">        final String name = tv.getName();</span>
-<span class="source-line-no">1507</span><span id="line-1507">        return</span>
-<span class="source-line-no">1508</span><span id="line-1508">          Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
-<span class="source-line-no">1509</span><span id="line-1509">                                                  name,</span>
-<span class="source-line-no">1510</span><span id="line-1510">                                                  CD_TypeVariable,</span>
-<span class="source-line-no">1511</span><span id="line-1511">                                                  MethodHandleDesc.ofMethod(STATIC,</span>
-<span class="source-line-no">1512</span><span id="line-1512">                                                                            Bootstraps.CD_Bootstraps,</span>
-<span class="source-line-no">1513</span><span id="line-1513">                                                                            "getTypeVariable",</span>
-<span class="source-line-no">1514</span><span id="line-1514">                                                                            MethodTypeDesc.of(CD_TypeVariable,</span>
-<span class="source-line-no">1515</span><span id="line-1515">                                                                                              CD_GenericDeclaration,</span>
-<span class="source-line-no">1516</span><span id="line-1516">                                                                                              CD_String)),</span>
-<span class="source-line-no">1517</span><span id="line-1517">                                                  gd.orElseThrow(),</span>
-<span class="source-line-no">1518</span><span id="line-1518">                                                  name));</span>
-<span class="source-line-no">1519</span><span id="line-1519">      }</span>
-<span class="source-line-no">1520</span><span id="line-1520">      return Optional.empty();</span>
-<span class="source-line-no">1521</span><span id="line-1521">    }</span>
-<span class="source-line-no">1522</span><span id="line-1522">  }</span>
-<span class="source-line-no">1523</span><span id="line-1523"></span>
-<span class="source-line-no">1524</span><span id="line-1524">  /**</span>
-<span class="source-line-no">1525</span><span id="line-1525">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1526</span><span id="line-1526">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
-<span class="source-line-no">1527</span><span id="line-1527">   * WildcardType}, or an {@linkplain Optional#isEmpty() empty</span>
-<span class="source-line-no">1528</span><span id="line-1528">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
-<span class="source-line-no">1529</span><span id="line-1529">   *</span>
-<span class="source-line-no">1530</span><span id="line-1530">   * @param w the {@link WildcardType} in question; may be {@code</span>
-<span class="source-line-no">1531</span><span id="line-1531">   * null}</span>
+<span class="source-line-no">1494</span><span id="line-1494">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1495</span><span id="line-1495">   * threads.</span>
+<span class="source-line-no">1496</span><span id="line-1496">   *</span>
+<span class="source-line-no">1497</span><span id="line-1497">   * @see Constable</span>
+<span class="source-line-no">1498</span><span id="line-1498">   */</span>
+<span class="source-line-no">1499</span><span id="line-1499">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final TypeVariable&lt;?&gt; tv) {</span>
+<span class="source-line-no">1500</span><span id="line-1500">    if (tv == null) {</span>
+<span class="source-line-no">1501</span><span id="line-1501">      return Optional.of(NULL);</span>
+<span class="source-line-no">1502</span><span id="line-1502">    } else if (tv instanceof ConstantDesc constantDesc) {</span>
+<span class="source-line-no">1503</span><span id="line-1503">      return describeConstable(constantDesc);</span>
+<span class="source-line-no">1504</span><span id="line-1504">    } else if (tv instanceof Constable constable) {</span>
+<span class="source-line-no">1505</span><span id="line-1505">      return describeConstable(constable);</span>
+<span class="source-line-no">1506</span><span id="line-1506">    } else {</span>
+<span class="source-line-no">1507</span><span id="line-1507">      final Optional&lt;? extends ConstantDesc&gt; gd = describeConstable(tv.getGenericDeclaration());</span>
+<span class="source-line-no">1508</span><span id="line-1508">      if (gd.isPresent()) {</span>
+<span class="source-line-no">1509</span><span id="line-1509">        final String name = tv.getName();</span>
+<span class="source-line-no">1510</span><span id="line-1510">        return</span>
+<span class="source-line-no">1511</span><span id="line-1511">          Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
+<span class="source-line-no">1512</span><span id="line-1512">                                                  name,</span>
+<span class="source-line-no">1513</span><span id="line-1513">                                                  CD_TypeVariable,</span>
+<span class="source-line-no">1514</span><span id="line-1514">                                                  MethodHandleDesc.ofMethod(STATIC,</span>
+<span class="source-line-no">1515</span><span id="line-1515">                                                                            Bootstraps.CD_Bootstraps,</span>
+<span class="source-line-no">1516</span><span id="line-1516">                                                                            "getTypeVariable",</span>
+<span class="source-line-no">1517</span><span id="line-1517">                                                                            MethodTypeDesc.of(CD_TypeVariable,</span>
+<span class="source-line-no">1518</span><span id="line-1518">                                                                                              CD_GenericDeclaration,</span>
+<span class="source-line-no">1519</span><span id="line-1519">                                                                                              CD_String)),</span>
+<span class="source-line-no">1520</span><span id="line-1520">                                                  gd.orElseThrow(),</span>
+<span class="source-line-no">1521</span><span id="line-1521">                                                  name));</span>
+<span class="source-line-no">1522</span><span id="line-1522">      }</span>
+<span class="source-line-no">1523</span><span id="line-1523">      return Optional.empty();</span>
+<span class="source-line-no">1524</span><span id="line-1524">    }</span>
+<span class="source-line-no">1525</span><span id="line-1525">  }</span>
+<span class="source-line-no">1526</span><span id="line-1526"></span>
+<span class="source-line-no">1527</span><span id="line-1527">  /**</span>
+<span class="source-line-no">1528</span><span id="line-1528">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1529</span><span id="line-1529">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
+<span class="source-line-no">1530</span><span id="line-1530">   * WildcardType}, or an {@linkplain Optional#isEmpty() empty</span>
+<span class="source-line-no">1531</span><span id="line-1531">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
 <span class="source-line-no">1532</span><span id="line-1532">   *</span>
-<span class="source-line-no">1533</span><span id="line-1533">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1533</span><span id="line-1533">   * @param w the {@link WildcardType} in question; may be {@code</span>
 <span class="source-line-no">1534</span><span id="line-1534">   * null}</span>
 <span class="source-line-no">1535</span><span id="line-1535">   *</span>
-<span class="source-line-no">1536</span><span id="line-1536">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1537</span><span id="line-1537">   *</span>
-<span class="source-line-no">1538</span><span id="line-1538">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1539</span><span id="line-1539">   *</span>
-<span class="source-line-no">1540</span><span id="line-1540">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1541</span><span id="line-1541">   * threads.</span>
+<span class="source-line-no">1536</span><span id="line-1536">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1537</span><span id="line-1537">   * null}</span>
+<span class="source-line-no">1538</span><span id="line-1538">   *</span>
+<span class="source-line-no">1539</span><span id="line-1539">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1540</span><span id="line-1540">   *</span>
+<span class="source-line-no">1541</span><span id="line-1541">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1542</span><span id="line-1542">   *</span>
-<span class="source-line-no">1543</span><span id="line-1543">   * @see Constable</span>
-<span class="source-line-no">1544</span><span id="line-1544">   */</span>
-<span class="source-line-no">1545</span><span id="line-1545">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final WildcardType w) {</span>
-<span class="source-line-no">1546</span><span id="line-1546">    if (w == null) {</span>
-<span class="source-line-no">1547</span><span id="line-1547">      return Optional.of(NULL);</span>
-<span class="source-line-no">1548</span><span id="line-1548">    } else if (w instanceof ConstantDesc constantDesc) {</span>
-<span class="source-line-no">1549</span><span id="line-1549">      return describeConstable(constantDesc);</span>
-<span class="source-line-no">1550</span><span id="line-1550">    } else if (w instanceof Constable c) {</span>
-<span class="source-line-no">1551</span><span id="line-1551">      return describeConstable(c);</span>
-<span class="source-line-no">1552</span><span id="line-1552">    } else {</span>
-<span class="source-line-no">1553</span><span id="line-1553">      final Type[] lowerBounds = w.getLowerBounds();</span>
-<span class="source-line-no">1554</span><span id="line-1554">      if (lowerBounds.length &lt;= 0) {</span>
-<span class="source-line-no">1555</span><span id="line-1555">        final Type[] upperBounds = w.getUpperBounds();</span>
-<span class="source-line-no">1556</span><span id="line-1556">        if (upperBounds.length &lt;= 0 || (upperBounds.length == 1 &amp;&amp; upperBounds[0] == Object.class)) {</span>
-<span class="source-line-no">1557</span><span id="line-1557">          // Unbounded.</span>
-<span class="source-line-no">1558</span><span id="line-1558">          return Optional.of(DynamicConstantDesc.ofNamed(BSM_GET_STATIC_FINAL,</span>
-<span class="source-line-no">1559</span><span id="line-1559">                                                         "INSTANCE",</span>
-<span class="source-line-no">1560</span><span id="line-1560">                                                         CD_WildcardType,</span>
-<span class="source-line-no">1561</span><span id="line-1561">                                                         CD_UnboundedWildcardType));</span>
-<span class="source-line-no">1562</span><span id="line-1562">        } else {</span>
-<span class="source-line-no">1563</span><span id="line-1563">          // Upper bounded (extends).</span>
-<span class="source-line-no">1564</span><span id="line-1564">          final int bsmInvokeArgumentsLength = upperBounds.length + 1;</span>
-<span class="source-line-no">1565</span><span id="line-1565">          final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];</span>
-<span class="source-line-no">1566</span><span id="line-1566">          bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_UpperBoundedWildcardType, CD_Type.arrayType());</span>
-<span class="source-line-no">1567</span><span id="line-1567">          for (int i = 1; i &lt; bsmInvokeArgumentsLength; i++) {</span>
-<span class="source-line-no">1568</span><span id="line-1568">            final Optional&lt;? extends ConstantDesc&gt; arg = describeConstable(upperBounds[i - 1]);</span>
-<span class="source-line-no">1569</span><span id="line-1569">            if (arg.isEmpty()) {</span>
-<span class="source-line-no">1570</span><span id="line-1570">              return Optional.empty();</span>
-<span class="source-line-no">1571</span><span id="line-1571">            }</span>
-<span class="source-line-no">1572</span><span id="line-1572">            bsmInvokeArguments[i] = arg.orElseThrow();</span>
-<span class="source-line-no">1573</span><span id="line-1573">          }</span>
-<span class="source-line-no">1574</span><span id="line-1574">          return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
-<span class="source-line-no">1575</span><span id="line-1575">                                                         DEFAULT_NAME,</span>
-<span class="source-line-no">1576</span><span id="line-1576">                                                         CD_UpperBoundedWildcardType,</span>
-<span class="source-line-no">1577</span><span id="line-1577">                                                         bsmInvokeArguments));</span>
-<span class="source-line-no">1578</span><span id="line-1578">        }</span>
-<span class="source-line-no">1579</span><span id="line-1579">      } else {</span>
-<span class="source-line-no">1580</span><span id="line-1580">        // Lower bounded.</span>
-<span class="source-line-no">1581</span><span id="line-1581">        final int bsmInvokeArgumentsLength = lowerBounds.length + 1;</span>
-<span class="source-line-no">1582</span><span id="line-1582">        final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];</span>
-<span class="source-line-no">1583</span><span id="line-1583">        bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_LowerBoundedWildcardType, CD_Type.arrayType());</span>
-<span class="source-line-no">1584</span><span id="line-1584">        for (int i = 1; i &lt; bsmInvokeArgumentsLength; i++) {</span>
-<span class="source-line-no">1585</span><span id="line-1585">          final Optional&lt;? extends ConstantDesc&gt; arg = describeConstable(lowerBounds[i - 1]);</span>
-<span class="source-line-no">1586</span><span id="line-1586">          if (arg.isEmpty()) {</span>
-<span class="source-line-no">1587</span><span id="line-1587">            return Optional.empty();</span>
-<span class="source-line-no">1588</span><span id="line-1588">          }</span>
-<span class="source-line-no">1589</span><span id="line-1589">          bsmInvokeArguments[i] = arg.orElseThrow();</span>
-<span class="source-line-no">1590</span><span id="line-1590">        }</span>
-<span class="source-line-no">1591</span><span id="line-1591">        return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
-<span class="source-line-no">1592</span><span id="line-1592">                                                       DEFAULT_NAME,</span>
-<span class="source-line-no">1593</span><span id="line-1593">                                                       CD_LowerBoundedWildcardType,</span>
-<span class="source-line-no">1594</span><span id="line-1594">                                                       bsmInvokeArguments));</span>
-<span class="source-line-no">1595</span><span id="line-1595">      }</span>
-<span class="source-line-no">1596</span><span id="line-1596">    }</span>
-<span class="source-line-no">1597</span><span id="line-1597">  }</span>
-<span class="source-line-no">1598</span><span id="line-1598"></span>
-<span class="source-line-no">1599</span><span id="line-1599">  /**</span>
-<span class="source-line-no">1600</span><span id="line-1600">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1601</span><span id="line-1601">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
-<span class="source-line-no">1602</span><span id="line-1602">   * GenericDeclaration}, or an {@linkplain Optional#isEmpty() empty</span>
-<span class="source-line-no">1603</span><span id="line-1603">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
-<span class="source-line-no">1604</span><span id="line-1604">   *</span>
-<span class="source-line-no">1605</span><span id="line-1605">   * @param gd the {@link GenericDeclaration} in question; must be</span>
-<span class="source-line-no">1606</span><span id="line-1606">   * either {@code null}, a {@link Class}, a {@link Constructor} or a</span>
-<span class="source-line-no">1607</span><span id="line-1607">   * {@link Method}</span>
-<span class="source-line-no">1608</span><span id="line-1608">   *</span>
-<span class="source-line-no">1609</span><span id="line-1609">   * @return an {@link Optional} as described above; never {@code</span>
-<span class="source-line-no">1610</span><span id="line-1610">   * null}</span>
+<span class="source-line-no">1543</span><span id="line-1543">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1544</span><span id="line-1544">   * threads.</span>
+<span class="source-line-no">1545</span><span id="line-1545">   *</span>
+<span class="source-line-no">1546</span><span id="line-1546">   * @see Constable</span>
+<span class="source-line-no">1547</span><span id="line-1547">   */</span>
+<span class="source-line-no">1548</span><span id="line-1548">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final WildcardType w) {</span>
+<span class="source-line-no">1549</span><span id="line-1549">    if (w == null) {</span>
+<span class="source-line-no">1550</span><span id="line-1550">      return Optional.of(NULL);</span>
+<span class="source-line-no">1551</span><span id="line-1551">    } else if (w instanceof ConstantDesc constantDesc) {</span>
+<span class="source-line-no">1552</span><span id="line-1552">      return describeConstable(constantDesc);</span>
+<span class="source-line-no">1553</span><span id="line-1553">    } else if (w instanceof Constable c) {</span>
+<span class="source-line-no">1554</span><span id="line-1554">      return describeConstable(c);</span>
+<span class="source-line-no">1555</span><span id="line-1555">    } else {</span>
+<span class="source-line-no">1556</span><span id="line-1556">      final Type[] lowerBounds = w.getLowerBounds();</span>
+<span class="source-line-no">1557</span><span id="line-1557">      if (lowerBounds.length &lt;= 0) {</span>
+<span class="source-line-no">1558</span><span id="line-1558">        final Type[] upperBounds = w.getUpperBounds();</span>
+<span class="source-line-no">1559</span><span id="line-1559">        if (upperBounds.length &lt;= 0 || (upperBounds.length == 1 &amp;&amp; upperBounds[0] == Object.class)) {</span>
+<span class="source-line-no">1560</span><span id="line-1560">          // Unbounded.</span>
+<span class="source-line-no">1561</span><span id="line-1561">          return Optional.of(DynamicConstantDesc.ofNamed(BSM_GET_STATIC_FINAL,</span>
+<span class="source-line-no">1562</span><span id="line-1562">                                                         "INSTANCE",</span>
+<span class="source-line-no">1563</span><span id="line-1563">                                                         CD_WildcardType,</span>
+<span class="source-line-no">1564</span><span id="line-1564">                                                         CD_UnboundedWildcardType));</span>
+<span class="source-line-no">1565</span><span id="line-1565">        } else {</span>
+<span class="source-line-no">1566</span><span id="line-1566">          // Upper bounded (extends).</span>
+<span class="source-line-no">1567</span><span id="line-1567">          final int bsmInvokeArgumentsLength = upperBounds.length + 1;</span>
+<span class="source-line-no">1568</span><span id="line-1568">          final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];</span>
+<span class="source-line-no">1569</span><span id="line-1569">          bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_UpperBoundedWildcardType, CD_Type.arrayType());</span>
+<span class="source-line-no">1570</span><span id="line-1570">          for (int i = 1; i &lt; bsmInvokeArgumentsLength; i++) {</span>
+<span class="source-line-no">1571</span><span id="line-1571">            final Optional&lt;? extends ConstantDesc&gt; arg = describeConstable(upperBounds[i - 1]);</span>
+<span class="source-line-no">1572</span><span id="line-1572">            if (arg.isEmpty()) {</span>
+<span class="source-line-no">1573</span><span id="line-1573">              return Optional.empty();</span>
+<span class="source-line-no">1574</span><span id="line-1574">            }</span>
+<span class="source-line-no">1575</span><span id="line-1575">            bsmInvokeArguments[i] = arg.orElseThrow();</span>
+<span class="source-line-no">1576</span><span id="line-1576">          }</span>
+<span class="source-line-no">1577</span><span id="line-1577">          return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
+<span class="source-line-no">1578</span><span id="line-1578">                                                         DEFAULT_NAME,</span>
+<span class="source-line-no">1579</span><span id="line-1579">                                                         CD_UpperBoundedWildcardType,</span>
+<span class="source-line-no">1580</span><span id="line-1580">                                                         bsmInvokeArguments));</span>
+<span class="source-line-no">1581</span><span id="line-1581">        }</span>
+<span class="source-line-no">1582</span><span id="line-1582">      } else {</span>
+<span class="source-line-no">1583</span><span id="line-1583">        // Lower bounded.</span>
+<span class="source-line-no">1584</span><span id="line-1584">        final int bsmInvokeArgumentsLength = lowerBounds.length + 1;</span>
+<span class="source-line-no">1585</span><span id="line-1585">        final ConstantDesc[] bsmInvokeArguments = new ConstantDesc[bsmInvokeArgumentsLength];</span>
+<span class="source-line-no">1586</span><span id="line-1586">        bsmInvokeArguments[0] = MethodHandleDesc.ofConstructor(CD_LowerBoundedWildcardType, CD_Type.arrayType());</span>
+<span class="source-line-no">1587</span><span id="line-1587">        for (int i = 1; i &lt; bsmInvokeArgumentsLength; i++) {</span>
+<span class="source-line-no">1588</span><span id="line-1588">          final Optional&lt;? extends ConstantDesc&gt; arg = describeConstable(lowerBounds[i - 1]);</span>
+<span class="source-line-no">1589</span><span id="line-1589">          if (arg.isEmpty()) {</span>
+<span class="source-line-no">1590</span><span id="line-1590">            return Optional.empty();</span>
+<span class="source-line-no">1591</span><span id="line-1591">          }</span>
+<span class="source-line-no">1592</span><span id="line-1592">          bsmInvokeArguments[i] = arg.orElseThrow();</span>
+<span class="source-line-no">1593</span><span id="line-1593">        }</span>
+<span class="source-line-no">1594</span><span id="line-1594">        return Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
+<span class="source-line-no">1595</span><span id="line-1595">                                                       DEFAULT_NAME,</span>
+<span class="source-line-no">1596</span><span id="line-1596">                                                       CD_LowerBoundedWildcardType,</span>
+<span class="source-line-no">1597</span><span id="line-1597">                                                       bsmInvokeArguments));</span>
+<span class="source-line-no">1598</span><span id="line-1598">      }</span>
+<span class="source-line-no">1599</span><span id="line-1599">    }</span>
+<span class="source-line-no">1600</span><span id="line-1600">  }</span>
+<span class="source-line-no">1601</span><span id="line-1601"></span>
+<span class="source-line-no">1602</span><span id="line-1602">  /**</span>
+<span class="source-line-no">1603</span><span id="line-1603">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1604</span><span id="line-1604">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
+<span class="source-line-no">1605</span><span id="line-1605">   * GenericDeclaration}, or an {@linkplain Optional#isEmpty() empty</span>
+<span class="source-line-no">1606</span><span id="line-1606">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
+<span class="source-line-no">1607</span><span id="line-1607">   *</span>
+<span class="source-line-no">1608</span><span id="line-1608">   * @param gd the {@link GenericDeclaration} in question; must be</span>
+<span class="source-line-no">1609</span><span id="line-1609">   * either {@code null}, a {@link Class}, a {@link Constructor} or a</span>
+<span class="source-line-no">1610</span><span id="line-1610">   * {@link Method}</span>
 <span class="source-line-no">1611</span><span id="line-1611">   *</span>
-<span class="source-line-no">1612</span><span id="line-1612">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1613</span><span id="line-1613">   *</span>
-<span class="source-line-no">1614</span><span id="line-1614">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1615</span><span id="line-1615">   *</span>
-<span class="source-line-no">1616</span><span id="line-1616">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1617</span><span id="line-1617">   * threads.</span>
+<span class="source-line-no">1612</span><span id="line-1612">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1613</span><span id="line-1613">   * null}</span>
+<span class="source-line-no">1614</span><span id="line-1614">   *</span>
+<span class="source-line-no">1615</span><span id="line-1615">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1616</span><span id="line-1616">   *</span>
+<span class="source-line-no">1617</span><span id="line-1617">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1618</span><span id="line-1618">   *</span>
-<span class="source-line-no">1619</span><span id="line-1619">   * @see Constable</span>
-<span class="source-line-no">1620</span><span id="line-1620">   */</span>
-<span class="source-line-no">1621</span><span id="line-1621">  static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final GenericDeclaration gd) {</span>
-<span class="source-line-no">1622</span><span id="line-1622">    if (gd instanceof ConstantDesc constantDesc) {</span>
-<span class="source-line-no">1623</span><span id="line-1623">      return describeConstable(constantDesc);</span>
-<span class="source-line-no">1624</span><span id="line-1624">    } else if (gd instanceof Constable constable) {</span>
-<span class="source-line-no">1625</span><span id="line-1625">      // Includes Class&lt;?&gt;</span>
-<span class="source-line-no">1626</span><span id="line-1626">      return describeConstable(constable);</span>
-<span class="source-line-no">1627</span><span id="line-1627">    } else if (gd instanceof Constructor&lt;?&gt; c) {</span>
-<span class="source-line-no">1628</span><span id="line-1628">      return describeConstable(c);</span>
-<span class="source-line-no">1629</span><span id="line-1629">    } else if (gd instanceof Method m) {</span>
-<span class="source-line-no">1630</span><span id="line-1630">      return describeConstable(m);</span>
-<span class="source-line-no">1631</span><span id="line-1631">    } else {</span>
-<span class="source-line-no">1632</span><span id="line-1632">      return Optional.empty();</span>
-<span class="source-line-no">1633</span><span id="line-1633">    }</span>
-<span class="source-line-no">1634</span><span id="line-1634">  }</span>
-<span class="source-line-no">1635</span><span id="line-1635"></span>
-<span class="source-line-no">1636</span><span id="line-1636">  /**</span>
-<span class="source-line-no">1637</span><span id="line-1637">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1638</span><span id="line-1638">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
-<span class="source-line-no">1639</span><span id="line-1639">   * Constructor}, or an {@linkplain Optional#isEmpty() empty</span>
-<span class="source-line-no">1640</span><span id="line-1640">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
-<span class="source-line-no">1641</span><span id="line-1641">   *</span>
-<span class="source-line-no">1642</span><span id="line-1642">   * @param constructor the {@link Constructor} in question; may be</span>
-<span class="source-line-no">1643</span><span id="line-1643">   * {@code null}</span>
+<span class="source-line-no">1619</span><span id="line-1619">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1620</span><span id="line-1620">   * threads.</span>
+<span class="source-line-no">1621</span><span id="line-1621">   *</span>
+<span class="source-line-no">1622</span><span id="line-1622">   * @see Constable</span>
+<span class="source-line-no">1623</span><span id="line-1623">   */</span>
+<span class="source-line-no">1624</span><span id="line-1624">  static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final GenericDeclaration gd) {</span>
+<span class="source-line-no">1625</span><span id="line-1625">    if (gd instanceof ConstantDesc constantDesc) {</span>
+<span class="source-line-no">1626</span><span id="line-1626">      return describeConstable(constantDesc);</span>
+<span class="source-line-no">1627</span><span id="line-1627">    } else if (gd instanceof Constable constable) {</span>
+<span class="source-line-no">1628</span><span id="line-1628">      // Includes Class&lt;?&gt;</span>
+<span class="source-line-no">1629</span><span id="line-1629">      return describeConstable(constable);</span>
+<span class="source-line-no">1630</span><span id="line-1630">    } else if (gd instanceof Constructor&lt;?&gt; c) {</span>
+<span class="source-line-no">1631</span><span id="line-1631">      return describeConstable(c);</span>
+<span class="source-line-no">1632</span><span id="line-1632">    } else if (gd instanceof Method m) {</span>
+<span class="source-line-no">1633</span><span id="line-1633">      return describeConstable(m);</span>
+<span class="source-line-no">1634</span><span id="line-1634">    } else {</span>
+<span class="source-line-no">1635</span><span id="line-1635">      return Optional.empty();</span>
+<span class="source-line-no">1636</span><span id="line-1636">    }</span>
+<span class="source-line-no">1637</span><span id="line-1637">  }</span>
+<span class="source-line-no">1638</span><span id="line-1638"></span>
+<span class="source-line-no">1639</span><span id="line-1639">  /**</span>
+<span class="source-line-no">1640</span><span id="line-1640">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1641</span><span id="line-1641">   * the form of a {@link ConstantDesc} for the supplied {@link</span>
+<span class="source-line-no">1642</span><span id="line-1642">   * Constructor}, or an {@linkplain Optional#isEmpty() empty</span>
+<span class="source-line-no">1643</span><span id="line-1643">   * &lt;code&gt;Optional&lt;/code&gt;} if there is no such descriptor.</span>
 <span class="source-line-no">1644</span><span id="line-1644">   *</span>
-<span class="source-line-no">1645</span><span id="line-1645">   * @return an {@link Optional} as described above; never {@code</span>
-<span class="source-line-no">1646</span><span id="line-1646">   * null}</span>
+<span class="source-line-no">1645</span><span id="line-1645">   * @param constructor the {@link Constructor} in question; may be</span>
+<span class="source-line-no">1646</span><span id="line-1646">   * {@code null}</span>
 <span class="source-line-no">1647</span><span id="line-1647">   *</span>
-<span class="source-line-no">1648</span><span id="line-1648">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1649</span><span id="line-1649">   *</span>
-<span class="source-line-no">1650</span><span id="line-1650">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1651</span><span id="line-1651">   *</span>
-<span class="source-line-no">1652</span><span id="line-1652">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1653</span><span id="line-1653">   * threads.</span>
+<span class="source-line-no">1648</span><span id="line-1648">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1649</span><span id="line-1649">   * null}</span>
+<span class="source-line-no">1650</span><span id="line-1650">   *</span>
+<span class="source-line-no">1651</span><span id="line-1651">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1652</span><span id="line-1652">   *</span>
+<span class="source-line-no">1653</span><span id="line-1653">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1654</span><span id="line-1654">   *</span>
-<span class="source-line-no">1655</span><span id="line-1655">   * @see Constable</span>
-<span class="source-line-no">1656</span><span id="line-1656">   */</span>
-<span class="source-line-no">1657</span><span id="line-1657">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Constructor&lt;?&gt; constructor) {</span>
-<span class="source-line-no">1658</span><span id="line-1658">    Optional&lt;? extends ConstantDesc&gt; c = null;</span>
-<span class="source-line-no">1659</span><span id="line-1659">    try {</span>
-<span class="source-line-no">1660</span><span id="line-1660">      c = MethodHandles.lookup().unreflectConstructor(constructor).describeConstable();</span>
-<span class="source-line-no">1661</span><span id="line-1661">    } catch (final IllegalAccessException illegalAccessException) {</span>
-<span class="source-line-no">1662</span><span id="line-1662">      c = Optional.empty();</span>
-<span class="source-line-no">1663</span><span id="line-1663">    }</span>
-<span class="source-line-no">1664</span><span id="line-1664">    if (c != null &amp;&amp; c.isPresent()) {</span>
-<span class="source-line-no">1665</span><span id="line-1665">      return</span>
-<span class="source-line-no">1666</span><span id="line-1666">        Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
-<span class="source-line-no">1667</span><span id="line-1667">                                                DEFAULT_NAME,</span>
-<span class="source-line-no">1668</span><span id="line-1668">                                                CD_Constructor,</span>
-<span class="source-line-no">1669</span><span id="line-1669">                                                DMHD_REFLECT_AS,</span>
-<span class="source-line-no">1670</span><span id="line-1670">                                                CD_Constructor,</span>
-<span class="source-line-no">1671</span><span id="line-1671">                                                c.orElseThrow()));</span>
-<span class="source-line-no">1672</span><span id="line-1672">    }</span>
-<span class="source-line-no">1673</span><span id="line-1673">    return Optional.empty();</span>
-<span class="source-line-no">1674</span><span id="line-1674">  }</span>
-<span class="source-line-no">1675</span><span id="line-1675"></span>
-<span class="source-line-no">1676</span><span id="line-1676">  /**</span>
-<span class="source-line-no">1677</span><span id="line-1677">   * Returns an {@link Optional} containing the nominal descriptor in</span>
-<span class="source-line-no">1678</span><span id="line-1678">   * the form of a {@link ConstantDesc} for the supplied {@link Method},</span>
-<span class="source-line-no">1679</span><span id="line-1679">   * or an {@linkplain Optional#isEmpty() empty &lt;code&gt;Optional&lt;/code&gt;}</span>
-<span class="source-line-no">1680</span><span id="line-1680">   * if there is no such descriptor.</span>
-<span class="source-line-no">1681</span><span id="line-1681">   *</span>
-<span class="source-line-no">1682</span><span id="line-1682">   * @param method the {@link Method} in question; may be {@code null}</span>
-<span class="source-line-no">1683</span><span id="line-1683">   *</span>
-<span class="source-line-no">1684</span><span id="line-1684">   * @return an {@link Optional} as described above; never {@code</span>
-<span class="source-line-no">1685</span><span id="line-1685">   * null}</span>
+<span class="source-line-no">1655</span><span id="line-1655">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1656</span><span id="line-1656">   * threads.</span>
+<span class="source-line-no">1657</span><span id="line-1657">   *</span>
+<span class="source-line-no">1658</span><span id="line-1658">   * @see Constable</span>
+<span class="source-line-no">1659</span><span id="line-1659">   */</span>
+<span class="source-line-no">1660</span><span id="line-1660">  private static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Constructor&lt;?&gt; constructor) {</span>
+<span class="source-line-no">1661</span><span id="line-1661">    Optional&lt;? extends ConstantDesc&gt; c = null;</span>
+<span class="source-line-no">1662</span><span id="line-1662">    try {</span>
+<span class="source-line-no">1663</span><span id="line-1663">      c = MethodHandles.lookup().unreflectConstructor(constructor).describeConstable();</span>
+<span class="source-line-no">1664</span><span id="line-1664">    } catch (final IllegalAccessException illegalAccessException) {</span>
+<span class="source-line-no">1665</span><span id="line-1665">      c = Optional.empty();</span>
+<span class="source-line-no">1666</span><span id="line-1666">    }</span>
+<span class="source-line-no">1667</span><span id="line-1667">    if (c != null &amp;&amp; c.isPresent()) {</span>
+<span class="source-line-no">1668</span><span id="line-1668">      return</span>
+<span class="source-line-no">1669</span><span id="line-1669">        Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
+<span class="source-line-no">1670</span><span id="line-1670">                                                DEFAULT_NAME,</span>
+<span class="source-line-no">1671</span><span id="line-1671">                                                CD_Constructor,</span>
+<span class="source-line-no">1672</span><span id="line-1672">                                                DMHD_REFLECT_AS,</span>
+<span class="source-line-no">1673</span><span id="line-1673">                                                CD_Constructor,</span>
+<span class="source-line-no">1674</span><span id="line-1674">                                                c.orElseThrow()));</span>
+<span class="source-line-no">1675</span><span id="line-1675">    }</span>
+<span class="source-line-no">1676</span><span id="line-1676">    return Optional.empty();</span>
+<span class="source-line-no">1677</span><span id="line-1677">  }</span>
+<span class="source-line-no">1678</span><span id="line-1678"></span>
+<span class="source-line-no">1679</span><span id="line-1679">  /**</span>
+<span class="source-line-no">1680</span><span id="line-1680">   * Returns an {@link Optional} containing the nominal descriptor in</span>
+<span class="source-line-no">1681</span><span id="line-1681">   * the form of a {@link ConstantDesc} for the supplied {@link Method},</span>
+<span class="source-line-no">1682</span><span id="line-1682">   * or an {@linkplain Optional#isEmpty() empty &lt;code&gt;Optional&lt;/code&gt;}</span>
+<span class="source-line-no">1683</span><span id="line-1683">   * if there is no such descriptor.</span>
+<span class="source-line-no">1684</span><span id="line-1684">   *</span>
+<span class="source-line-no">1685</span><span id="line-1685">   * @param method the {@link Method} in question; may be {@code null}</span>
 <span class="source-line-no">1686</span><span id="line-1686">   *</span>
-<span class="source-line-no">1687</span><span id="line-1687">   * @nullability This method never returns {@code null}.</span>
-<span class="source-line-no">1688</span><span id="line-1688">   *</span>
-<span class="source-line-no">1689</span><span id="line-1689">   * @idempotency This method is idempotent and deterministic.</span>
-<span class="source-line-no">1690</span><span id="line-1690">   *</span>
-<span class="source-line-no">1691</span><span id="line-1691">   * @threadsafety This method is safe for concurrent use by multiple</span>
-<span class="source-line-no">1692</span><span id="line-1692">   * threads.</span>
+<span class="source-line-no">1687</span><span id="line-1687">   * @return an {@link Optional} as described above; never {@code</span>
+<span class="source-line-no">1688</span><span id="line-1688">   * null}</span>
+<span class="source-line-no">1689</span><span id="line-1689">   *</span>
+<span class="source-line-no">1690</span><span id="line-1690">   * @nullability This method never returns {@code null}.</span>
+<span class="source-line-no">1691</span><span id="line-1691">   *</span>
+<span class="source-line-no">1692</span><span id="line-1692">   * @idempotency This method is idempotent and deterministic.</span>
 <span class="source-line-no">1693</span><span id="line-1693">   *</span>
-<span class="source-line-no">1694</span><span id="line-1694">   * @see Constable</span>
-<span class="source-line-no">1695</span><span id="line-1695">   */</span>
-<span class="source-line-no">1696</span><span id="line-1696">  static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Method method) {</span>
-<span class="source-line-no">1697</span><span id="line-1697">    Optional&lt;? extends ConstantDesc&gt; m = null;</span>
-<span class="source-line-no">1698</span><span id="line-1698">    try {</span>
-<span class="source-line-no">1699</span><span id="line-1699">      m = MethodHandles.lookup().unreflect(method).describeConstable();</span>
-<span class="source-line-no">1700</span><span id="line-1700">    } catch (final IllegalAccessException illegalAccessException) {</span>
-<span class="source-line-no">1701</span><span id="line-1701">      m = Optional.empty();</span>
-<span class="source-line-no">1702</span><span id="line-1702">    }</span>
-<span class="source-line-no">1703</span><span id="line-1703">    if (m != null &amp;&amp; m.isPresent()) {</span>
-<span class="source-line-no">1704</span><span id="line-1704">      return</span>
-<span class="source-line-no">1705</span><span id="line-1705">        Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
-<span class="source-line-no">1706</span><span id="line-1706">                                                DEFAULT_NAME,</span>
-<span class="source-line-no">1707</span><span id="line-1707">                                                CD_Method,</span>
-<span class="source-line-no">1708</span><span id="line-1708">                                                DMHD_REFLECT_AS,</span>
-<span class="source-line-no">1709</span><span id="line-1709">                                                CD_Method,</span>
-<span class="source-line-no">1710</span><span id="line-1710">                                                m.orElseThrow()));</span>
-<span class="source-line-no">1711</span><span id="line-1711">    }</span>
-<span class="source-line-no">1712</span><span id="line-1712">    return Optional.empty();</span>
-<span class="source-line-no">1713</span><span id="line-1713">  }</span>
-<span class="source-line-no">1714</span><span id="line-1714"></span>
-<span class="source-line-no">1715</span><span id="line-1715">}</span>
+<span class="source-line-no">1694</span><span id="line-1694">   * @threadsafety This method is safe for concurrent use by multiple</span>
+<span class="source-line-no">1695</span><span id="line-1695">   * threads.</span>
+<span class="source-line-no">1696</span><span id="line-1696">   *</span>
+<span class="source-line-no">1697</span><span id="line-1697">   * @see Constable</span>
+<span class="source-line-no">1698</span><span id="line-1698">   */</span>
+<span class="source-line-no">1699</span><span id="line-1699">  static final Optional&lt;? extends ConstantDesc&gt; describeConstable(final Method method) {</span>
+<span class="source-line-no">1700</span><span id="line-1700">    Optional&lt;? extends ConstantDesc&gt; m = null;</span>
+<span class="source-line-no">1701</span><span id="line-1701">    try {</span>
+<span class="source-line-no">1702</span><span id="line-1702">      m = MethodHandles.lookup().unreflect(method).describeConstable();</span>
+<span class="source-line-no">1703</span><span id="line-1703">    } catch (final IllegalAccessException illegalAccessException) {</span>
+<span class="source-line-no">1704</span><span id="line-1704">      m = Optional.empty();</span>
+<span class="source-line-no">1705</span><span id="line-1705">    }</span>
+<span class="source-line-no">1706</span><span id="line-1706">    if (m != null &amp;&amp; m.isPresent()) {</span>
+<span class="source-line-no">1707</span><span id="line-1707">      return</span>
+<span class="source-line-no">1708</span><span id="line-1708">        Optional.of(DynamicConstantDesc.ofNamed(BSM_INVOKE,</span>
+<span class="source-line-no">1709</span><span id="line-1709">                                                DEFAULT_NAME,</span>
+<span class="source-line-no">1710</span><span id="line-1710">                                                CD_Method,</span>
+<span class="source-line-no">1711</span><span id="line-1711">                                                DMHD_REFLECT_AS,</span>
+<span class="source-line-no">1712</span><span id="line-1712">                                                CD_Method,</span>
+<span class="source-line-no">1713</span><span id="line-1713">                                                m.orElseThrow()));</span>
+<span class="source-line-no">1714</span><span id="line-1714">    }</span>
+<span class="source-line-no">1715</span><span id="line-1715">    return Optional.empty();</span>
+<span class="source-line-no">1716</span><span id="line-1716">  }</span>
+<span class="source-line-no">1717</span><span id="line-1717"></span>
+<span class="source-line-no">1718</span><span id="line-1718">}</span>
 
 
 
