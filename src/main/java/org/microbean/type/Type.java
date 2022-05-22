@@ -1057,7 +1057,30 @@ public abstract class Type<T> implements Owner<T> {
     }
     return candidate;
   }
-
+  
+  /**
+   * Converts this {@link Type} to a {@link java.lang.reflect.Type
+   * java.lang.reflect.Type}, loading it if necessary, possibly by
+   * using the supplied {@link ClassLoader}, and returns it.
+   *
+   * @param classLoader a {@link ClassLoader} to use to load any
+   * unloaded type; may be {@code null}
+   *
+   * @return the loaded {@link java.lang.reflect.Type}, or {@code
+   * null} if the type could not be loaded
+   *
+   * @exception ClassNotFoundException if the load operation fails
+   *
+   * @nullability Overrides of this method may return {@code null}.
+   *
+   * @idempotency Overrides of this method must be deterministic.
+   *
+   * @threadsafety Overrides of this method must be safe for
+   * concurrent use by multiple threads.
+   */
+  @Experimental
+  public abstract java.lang.reflect.Type load(final ClassLoader classLoader) throws ClassNotFoundException;
+  
   @Override // Object
   public int hashCode() {
     return hashCode(this);

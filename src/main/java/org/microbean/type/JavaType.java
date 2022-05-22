@@ -677,6 +677,27 @@ public class JavaType extends org.microbean.type.Type<Type> implements Constable
     return Optional.empty();
   }
 
+  /**
+   * Calls the {@link #object()} method and returns the result.
+   *
+   * @param classLoader ignored
+   *
+   * @return the result of invoking the {@link #object()} method
+   *
+   * @nullability This method may return {@code null}.
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  @Experimental
+  @Override // org.microbean.type.Type<Type>
+  public final Type load(final ClassLoader classLoader) {
+    return this.object();
+  }
+  
+  
 
   /*
    * Static methods.
