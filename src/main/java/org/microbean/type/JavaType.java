@@ -637,6 +637,11 @@ public class JavaType extends org.microbean.type.Type<Type> implements Constable
     return List.of();
   }
 
+  @Override
+  public final boolean interfaceType() {
+    return interfaceType(this);
+  }
+
   @Override // Owner<Type>
   public final boolean objectEquals(final Object other) {
     return
