@@ -724,9 +724,25 @@ public abstract class Type<T> implements Owner<T> {
    *
    * @see #upperBounded()
    */
-  public final boolean classOrInterface() {
+  public final boolean classOrInterfaceType() {
     return this.named() && !this.upperBounded();
   }
+
+  /**
+   * Returns {@code true} if and only if this {@link Type} is not
+   * {@linkplain #customSupertyped() custom supertyped} and models an
+   * interface.
+   *
+   * @return {@code true} if and only if this {@link Type} is not
+   * {@linkplain #customSupertyped() custom supertyped} and models an
+   * interface
+   *
+   * @idempotency This method is idempotent and deterministic.
+   *
+   * @threadsafety This method is safe for concurrent use by multiple
+   * threads.
+   */
+  public abstract boolean interfaceType();
 
   /**
    * Returns {@code true} if and only if this {@link Type} models an
